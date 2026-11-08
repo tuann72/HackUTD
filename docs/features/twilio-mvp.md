@@ -165,9 +165,9 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 1.1 | Twilio setup and a recorded webhook fixture. **Partly done:** a synthetic fixture and the contract are in `contracts/`; the real number and recording need a person | — | 1.2–1.5 | In progress | `feat/twilio-mvp-contract` | Tuan + Claude Code | [#4](https://github.com/lytx02/HackUTD/pull/4) |
-| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | In review | `feat/twilio-mvp-gateway` | Tuan + Claude Code | [#10](https://github.com/lytx02/HackUTD/pull/10) |
+| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | Done | `feat/twilio-mvp-gateway` | Tuan + Claude Code | [#10](https://github.com/lytx02/HackUTD/pull/10) |
 | 1.3a | `apps/web` scaffold with the 3D-scene packages and the shared `lib/messages` data layer (done first, so the scene can start in parallel) | contract | all | Done | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | [#5](https://github.com/lytx02/HackUTD/pull/5) |
-| 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | In review | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#11](https://github.com/lytx02/HackUTD/pull/11) |
+| 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | Done | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#11](https://github.com/lytx02/HackUTD/pull/11) |
 | 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | Done | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#13](https://github.com/lytx02/HackUTD/pull/13) |
 | 1.5 | Classifier: train, evaluate on `val`/`test`, export. Tracked in [classifier-service.md](classifier-service.md) | 0.2 | 1.1–1.4 | In progress (code done; Vultr training next) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
@@ -176,7 +176,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 2.1 | Simulator CLI: scenario mode, random mode, dry run | 1.1, 1.4 | 2.2, 2.3 | Done | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#13](https://github.com/lytx02/HackUTD/pull/13) |
-| 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | In review | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#11](https://github.com/lytx02/HackUTD/pull/11) |
+| 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | Done | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#11](https://github.com/lytx02/HackUTD/pull/11) |
 | 2.3 | Replace the stub classifier with the real model | 1.2, 1.5 | 2.1, 2.2 | Not started | | | |
 
 ### Stage 3: demo
@@ -242,6 +242,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 ## Progress notes
 
 - **2026-11-07:** Contract (#4) and the `apps/web` scaffold (#5) merged. The 3D scene can branch from `main`. The `/messages` UI (#9) showed the gateway's live results: Inbox 3, Blocked 2.
+- **2026-11-07:** Gateway (#10) and `/messages` UI (#11) merged; tasks 1.2, 1.3 and 2.2 Done. Next: 2.3 (real classifier) and 3.1 (deploy, real-phone test); 1.1 still needs the real Twilio number.
 - **2026-11-07:** Message bank and simulator merged (#13): `data/message_bank/` (91 SMS-style `test` rows + 27 generated, two scenarios) and `services/perpetrator-sim/` (`scenario`, `random`, `send`, `--dry-run`). Bank size and mix are still open; re-check the webhook field list once task 1.1 records a real Twilio request.
 - **2026-11-07:** Local end-to-end check passed: the simulator (#7) played `grandparent.jsonl` against the gateway (#8). All 5 outcomes matched `expected` (3 delivered, 2 blocked as Imposter & Phishing), no raw numbers or SIDs appeared in `/api/messages`, and a wrong auth token got 403. Not yet tried with real Twilio traffic.
 - **2026-11-07:** Implementation started (Tuan). Decided: SQLite with debug reset, fail open, JSONL, UI at `apps/web` `/messages`. The query API contract is in `contracts/`. The gateway, UI and simulator are built in parallel on separate branches stacked on `feat/twilio-mvp-contract`. The classifier is PR #3's work; the gateway calls its `POST /classify` (`{messageId, text}` → `{messageId, label, score, category, model, highlights}`, bearer token). The query API dropped `since`: the UI re-fetches the list, because pending messages change.
