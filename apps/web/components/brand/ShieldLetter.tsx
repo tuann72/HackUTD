@@ -1,6 +1,7 @@
 /**
  * The "U" in GUARD, drawn as T-Guard's magenta shield (the Lucide `shield`
- * outline, ISC license, filled). Sized to the surrounding capitals and sitting
+ * outline, ISC license, filled). Exactly as tall as the surrounding capitals in any font (CSS `cap` unit, so
+ * Anton on the landing page and Inter in the headers both match), sitting
  * on the baseline; screen readers still get the letter "U".
  */
 export function ShieldLetter({ className = "" }: { className?: string }) {
@@ -10,7 +11,9 @@ export function ShieldLetter({ className = "" }: { className?: string }) {
       <svg
         aria-hidden
         viewBox="3.6 1.6 16.8 20.8"
-        className={`inline-block h-[0.74em] w-auto align-baseline ${className}`}
+        className={`inline-block h-[0.8em] w-auto align-baseline ${className}`}
+        // 1cap = the font's cap height; browsers without `cap` drop it and keep 0.8em.
+        style={{ height: "1cap" }}
       >
         <path
           fill="#e20074"

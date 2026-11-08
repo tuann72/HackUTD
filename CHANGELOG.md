@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Wordmark shield as tall as the letters
+
+- **Decision (Tuan):** the shield that stands for the U in T-GUARD is as tall as the capitals around it, on the landing page and wherever the wordmark appears (`/messages` and `/dashboard` headers). `ShieldLetter` sets its height to `1cap` (the font's cap height), so it matches Anton (0.86em) on the landing page and Inter (about 0.73em) in the headers. It was 0.74em, short of Anton's capitals. Browsers without the `cap` unit fall back to 0.8em.
+
 ### 2026-11-08: Shield or hand switch; Rapid fire button; two presets removed
 
 - **Decision (Tuan):** bring the hand back as an option. A **Shield | Hand** switch replaces the "On guard" status above the scene (shield is the default, not remembered across visits). Shield mode works as before; hand mode is the earlier slapping hand in its "T-GUARD" box: shots fly at the hand, delivered ones land in it, blocked ones stop short and get slapped. A shot keeps the guard it was fired with, so switching mid-flight is safe. `Hand.tsx`, `slap.ts`, its tests and the hand images are restored.
