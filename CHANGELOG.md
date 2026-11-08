@@ -12,6 +12,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Simulate:** the iMessage demo and Smoke test buttons are removed (their scenario files stay in the bank). A new **Rapid fire** button sends 50 mixed messages (60% scams) 100 ms apart; the interval floor (`LIMITS.minIntervalMs`) drops from 250 to 100 ms. Random presets now always use their own count, ratio and interval.
 - **Limit to know:** `/api/simulate` allows 60 simulated messages per minute, so one Rapid fire fits; a second one within the same minute stops partway with "Too many simulated messages; wait a minute." The scene animates at most one shot every 600 ms and drops older queued ones, so a burst shows only some of the 50; the lists show them all.
 
+### 2026-11-08: Message text size follows its length
+
+- **Decision (Tuan):** larger text for short messages, smaller for long ones. `bodySizeClass` in `components/messages/MessageBody.tsx` steps by trimmed character count: up to 30 characters 24px, up to 80 20px, up to 160 17px, up to 320 15px (the old size), longer 13px. It applies to every message body in the Inbox and Blocked cards.
+
 ### 2026-11-08: Nemotron always reviews large money asks, new decision prompt
 
 - **Rule:** a message asking for at least `MONEY_WARN_AMOUNT` now goes to Nemotron even when its score is below `REVIEW_BAND_LOW`, because the classifier can't weigh amounts. Scores at or above `REVIEW_BAND_HIGH` stay blocked without review.
