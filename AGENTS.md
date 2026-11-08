@@ -23,7 +23,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. The full plan is in [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md).
 
 - **MVP UI (Tuan, 2026-11-07):** a **basic Next.js page** that lists messages as delivered (inbox) or blocked. It polls the gateway's read-only query API (`GET /api/messages`); there's no event stream or WebSocket in the MVP. The **3D scene is parked** for later, along with the scam notice and blocked-scams panel. Don't build them for the MVP.
-- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. Recommendation: deploy the gateway early. Hosting is TBD.
+- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. The gateway will be deployed on a Vultr VM (Tuan, 2026-11-07); deploying it early is recommended.
 - **MVP decisions (Tuan, 2026-11-07):** SQLite storage with debug tools to clear it; **fail open** when the classifier is down (deliver, marked unverified); JSONL message bank; each package standalone (own `package.json`, no workspaces). The gateway and UI share only [`contracts/`](contracts/README.md).
 
 - The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `CHANGELOG.md`, "One Twilio number, simulated perpetrator".)
@@ -67,7 +67,7 @@ Planned after the MVP works, not part of the MVP:
 - **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Twilio webhook and query API, built with **Hono**), the perpetrator simulator and the web app.
 - **Python:** the model training and inference service.
 - **Web app (Tuan's decision):** Next.js with **React Three Fiber** for the 3D scene and **Motion** (`motion/react`) for DOM animation (bubbles, panel, toasts). Don't use the deprecated `framer-motion-3d`, which doesn't support React 19. Animate 3D objects in R3F (`useFrame` with damping).
-- **Gateway hosting:** recommended as a **separate TypeScript service** on an always-on host, not Next.js route handlers on Vercel. Vercel can't hold the event stream or local storage, and a web deploy must never be able to break interception. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
+- **Hosting (Tuan, 2026-11-07):** the gateway runs as a **separate TypeScript service on a Vultr VM**, not on Vercel. Vercel can't keep its SQLite file or its classify-after-reply work, and a web deploy must never be able to break interception. Only the web app (`apps/web`) deploys to **Vercel**, through the repo-root `vercel.json` (one service, `web`, no bindings). The browser reaches the gateway at `NEXT_PUBLIC_API_URL`. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
 
 **Components** (each separately runnable):
 

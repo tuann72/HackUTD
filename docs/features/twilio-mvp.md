@@ -139,7 +139,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 | Question | Recommendation | Status |
 |---|---|---|
-| Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **TBD** |
+| Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **Decided:** A, gateway on a **Vultr VM**, web app on Vercel (Tuan, 2026-11-07) |
 | Storage | **SQLite** (`node:sqlite`), with debug tools to clear it (`POST /debug/reset` when `GATEWAY_DEBUG=1`, and an `npm run db:reset` script) | **Decided** (Tuan, 2026-11-07) |
 | Classifier-down behavior | **Fail open:** deliver with `reason: classifier_unavailable`, shown as "unverified" | **Decided** (Tuan, 2026-11-07) |
 | Block threshold | `BLOCK_THRESHOLD` env var, default 0.5, tuned on `val` later | **TBD** |
@@ -157,7 +157,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
+| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Done (A: Vultr VM; web on Vercel) | `chore/deploy-vercel-web` | Tuan + Claude Code | |
 | 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | In progress (approach done: MiniLM on Vultr; label scheme after the Vultr training run) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 1: foundations
