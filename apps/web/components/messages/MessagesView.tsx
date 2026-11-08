@@ -1,8 +1,17 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { useMessages, type Message, type MessageChange, type SourceMode } from "@/lib/messages";
+import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
+import {
+  hideCleared,
+  loadClearedBefore,
+  newestReceivedAt,
+  saveClearedBefore,
+  useMessages,
+  type Message,
+  type MessageChange,
+  type SourceMode,
+} from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
 import { MessageCard } from "./MessageCard";
@@ -42,33 +51,64 @@ function Column({
   messages: Message[];
   now: number | null;
 }) {
+  const [open, setOpen] = useState(true);
+  const bodyId = useId();
   return (
     <section aria-label={title} className="flex min-w-0 flex-col gap-3">
-      <h2 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-        {title}
-        <span className="tabular-nums text-zinc-400 dark:text-zinc-500">{count}</span>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => setOpen((o) => !o)}
+          className="-mx-1 flex items-baseline gap-2 rounded px-1 uppercase hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:hover:text-zinc-200"
+        >
+          <svg
+            aria-hidden
+            viewBox="0 0 16 16"
+            className={`size-3 self-center transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`}
+          >
+            <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {title}
+          <span className="tabular-nums text-zinc-400 dark:text-zinc-500">{count}</span>
+        </button>
       </h2>
-      {messages.length === 0 && (
-        <p className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          {empty}
-        </p>
-      )}
-      <ul className="flex flex-col gap-3">
-        <AnimatePresence initial={false}>
-          {messages.map((m) => (
-            <motion.li
-              key={m.id}
-              layout="position"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              <MessageCard message={m} now={now} />
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={bodyId}
+            key="body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="flex flex-col gap-3 overflow-hidden"
+          >
+            {messages.length === 0 && (
+              <p className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                {empty}
+              </p>
+            )}
+            <ul className="flex flex-col gap-3">
+              <AnimatePresence initial={false}>
+                {messages.map((m) => (
+                  <motion.li
+                    key={m.id}
+                    layout="position"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <MessageCard message={m} now={now} />
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -87,8 +127,26 @@ export function MessagesView() {
     },
     [feed],
   );
-  const { messages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
+  const { messages: allMessages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
+
+  // "Clear" hides what's on screen in this browser only; nothing is deleted on the gateway.
+  // Reading storage at init is hydration-safe: messages arrive by polling, so the first render is empty either way.
+  const [clearedBefore, setClearedBefore] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : loadClearedBefore(),
+  );
+  const messages = useMemo(() => hideCleared(allMessages, clearedBefore), [allMessages, clearedBefore]);
+  const hiddenCount = allMessages.length - messages.length;
+  const clear = () => {
+    const cutoff = newestReceivedAt(allMessages);
+    if (cutoff == null) return;
+    setClearedBefore(cutoff);
+    saveClearedBefore(cutoff);
+  };
+  const showAll = () => {
+    setClearedBefore(null);
+    saveClearedBefore(null);
+  };
 
   const { inbox, blocked, deliveredCount } = useMemo(() => {
     const pending = messages.filter((m) => m.action === "pending");
@@ -103,7 +161,27 @@ export function MessagesView() {
         <header className="mb-6 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
-            <SourceIndicator mode={mode} />
+            <div className="flex items-center gap-2">
+              {hiddenCount > 0 && (
+                <button
+                  type="button"
+                  onClick={showAll}
+                  className="rounded-full px-2.5 py-1 text-xs font-medium text-zinc-500 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                  Show <span className="tabular-nums">{hiddenCount}</span> cleared
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={clear}
+                disabled={messages.length === 0}
+                title="Hide the current messages on this screen. Nothing is deleted on the gateway."
+                className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Clear chats
+              </button>
+              <SourceIndicator mode={mode} />
+            </div>
           </div>
           {error && (
             <p

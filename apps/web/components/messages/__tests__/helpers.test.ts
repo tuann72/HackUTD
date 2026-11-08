@@ -124,9 +124,13 @@ describe("time", () => {
     expect(formatRelative("2026-11-07T21:20:00.000Z", now)).toBe("just now");
     expect(formatRelative("not a date", now)).toBe("");
   });
-  it("formats scores as percentages", () => {
-    expect(formatScore(0.954)).toBe("95%");
-    expect(formatScore(0.04)).toBe("4%");
-    expect(formatScore(1.2)).toBe("100%");
+  it("formats scores as percentages with two decimals, truncated", () => {
+    expect(formatScore(0.954)).toBe("95.40%");
+    expect(formatScore(0.95437)).toBe("95.43%");
+    expect(formatScore(0.99999)).toBe("99.99%");
+    expect(formatScore(0.29)).toBe("29.00%");
+    expect(formatScore(0.04)).toBe("4.00%");
+    expect(formatScore(1.2)).toBe("100.00%");
+    expect(formatScore(-0.1)).toBe("0.00%");
   });
 });
