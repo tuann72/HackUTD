@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Message text size follows its length
+
+- **Decision (Tuan):** larger text for short messages, smaller for long ones. `bodySizeClass` in `components/messages/MessageBody.tsx` steps by trimmed character count: up to 30 characters 24px, up to 80 20px, up to 160 17px, up to 320 15px (the old size), longer 13px. It applies to every message body in the Inbox and Blocked cards.
+
 ### 2026-11-08: Nemotron always reviews large money asks, new decision prompt
 
 - **Rule:** a message asking for at least `MONEY_WARN_AMOUNT` now goes to Nemotron even when its score is below `REVIEW_BAND_LOW`, because the classifier can't weigh amounts. Scores at or above `REVIEW_BAND_HIGH` stay blocked without review.
