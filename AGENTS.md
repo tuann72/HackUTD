@@ -8,6 +8,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 > - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (gateway, simulator, basic message UI). Its Twilio webhook parts are superseded by the Photon plan.
 > - [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md): sender blocklist and scam fingerprints in MongoDB Atlas (in progress).
 > - [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md): proposed later feature for SIP-routed call transcription, classification, and warnings.
+> - [`docs/features/potential-threat-data.md`](docs/features/potential-threat-data.md): synthetic threat/coercion/fake-emergency texts with a proposed label 8 "Potential Threat" (in progress; label scheme TBD).
 >
 > New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
 
@@ -139,6 +140,7 @@ Keep these items marked **TBD** until the team resolves them. Distinguish agreed
 - The `*_full.csv` variants carry the metadata: `split`, `is_synthetic`, `source`, `label_method`, `label_confidence`.
 - **Evaluate only on the `val`/`test` splits.** These are 100% real messages and have no synthetic leakage. About 68% of rows are synthetic, and all of them are in `train`.
 - **Labels are machine-assigned** (keyword rules plus a classifier), not human-annotated, and the scam classes are imbalanced.
+- **Potential Threat data (proposal, 2026-11-08):** `data/potential_threat_synthetic.csv` (4,100 template rows, all `train`: proposed label 8 "Potential Threat" plus ham hard negatives) and the held-out `data/potential_threat_eval.csv` (`split = threat_eval`, never train on it), built by `data/build_threat_synthetic.py`. Label 8 is not in `scam_categories.csv` and `train.py` does not read these files yet; the label scheme stays TBD. See `data/README.md`, section 4.
 - **Rebuild scripts:** `data/build_100k.py`, `data/recategorize.py`, `data/ftc_taxonomy.py`. The raw source corpora are not in the repo; they are in `~/Downloads/scam_data` on the original author's machine.
 - **Repo size:** the CSVs are committed directly (no Git LFS). The four 100k files are 85–93 MB each, under GitHub's 100 MB limit but over its 50 MB warning. Do not add larger files; use Git LFS or keep them out of the repo instead. Each worktree checks out a full copy (about 450 MB).
 

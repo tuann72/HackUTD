@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Potential Threat synthetic dataset (proposal)
+
+- **Problem (Tuan):** the classifier handles threat and coercion texts badly, for example "MOM IM DYING RIGHT NOW GIVE ME $900 OR I EXPLODE" and "YOUR WIFFE IS IN DANGER GIVE ME 500$".
+- **Why (coverage check, Claude Code):** the training data has almost no such texts. Kidnap/ransom/hostage words appear in 86 rows, mostly Enron spam noise labeled Health or Internet; "or else / I know where you live" in 34, mostly eBay phishing and ham; "hitman" in 2 ham rows. "Hi mum/dad" family-emergency scams exist (143 rows, 139 of them label 1, all synthetic) but carry no threat. No short ALL-CAPS text has a money amount, and 215 of 239 short ALL-CAPS texts are ham, so caps likely pushes toward ham.
+- **What (proposal):** `data/build_threat_synthetic.py`, a seeded, stdlib-only template generator, writes `data/potential_threat_synthetic.csv` (4,100 train rows: 2,650 with a new label **8 "Potential Threat"**, 1,450 hard negatives labeled ham) and `data/potential_threat_eval.csv` (100 held-out hand-written-style rows, `split = threat_eval`, including Tuan's two examples). Hard negatives get the same caps, typo and emoji noise so the model can't learn "caps = threat". All rows are synthetic and in `train`, so `val`/`test` stay 100% real. Details and caveats: `data/README.md`, section 4.
+- **Not changed:** the four 100k CSVs, `data/scam_categories.csv` (a 9th row would change `train.py`'s label names and break `classifier/tests/test_offline.py`), and all code in `classifier/`, `services/`, `apps/` and `contracts/`. The changes needed to train and serve a 9th class are listed in [`docs/features/potential-threat-data.md`](docs/features/potential-threat-data.md), stage 2.
+- **Still TBD:** binary vs. 8-class vs. 9-class (or folding threats into label 1, Imposter & Phishing); how the extra file joins training; whether the gateway warns instead of blocks for this class (self-harm coercion); and whether to add real or LLM-written threat examples to reduce template overfitting.
+
 ### 2026-11-08: Stacked model option built (`train.py --model stacked`)
 
 - **What (Timothy + Claude Code, task 1.5):** the stacked flow recommended in the entry below is now a third model kind. `train.py --model stacked` trains TF-IDF + LR and MiniLM + LR on `train`, then the stacker (a small LR on both models' 16 class log-probabilities) on the real `val` split, and writes `head.joblib` (the stacker), `tfidf_head.joblib`, `minilm_head.joblib`, `vectorizer.joblib` and `keywords.json`. The service loads `kind: stacked-lr` from `model.json` and needs no API change, so the gateway can't tell which model is behind it.
