@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { PRESETS } from "@/lib/sim/presets";
 import { presetSteps, runDurationMs, SENDER_POOL, type RunSettings } from "@/lib/sim/plan";
+import { CollapseButton } from "@/components/brand/CollapseButton";
 import { useSimRunner } from "./useSimRunner";
 
 const field =
@@ -40,27 +41,37 @@ export function SimPanel() {
   return (
     <aside
       aria-label="Simulations"
-      className={`flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain border-t border-rule p-4 lg:border-t-0 lg:border-l ${
+      className={`flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain border-t border-rule p-4 lg:overflow-x-hidden lg:border-t-0 lg:border-l lg:transition-[width] lg:duration-300 lg:ease-out motion-reduce:transition-none ${
         open ? "lg:w-72 xl:w-80" : "lg:w-12 lg:items-center lg:px-0"
       }`}
     >
-      <h2 className="font-label text-[11px] uppercase tracking-[0.08em] text-muted">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={bodyId}
-          onClick={() => setOpen((o) => !o)}
-          title={open ? "Hide Simulate" : "Show Simulate"}
-          className={`-mx-1 flex items-center gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot ${
-            open ? "" : "lg:mx-0 lg:py-1 lg:[writing-mode:vertical-rl]"
-          }`}
-        >
-          <svg aria-hidden viewBox="0 0 16 16" className={`size-3 transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`}>
-            <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Simulate
-        </button>
-      </h2>
+      <div className={`flex items-center justify-between gap-2 ${open ? "" : "lg:flex-col-reverse lg:justify-end lg:gap-4"}`}>
+        <h2 className="font-label text-[11px] uppercase tracking-[0.08em] text-muted">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={bodyId}
+            onClick={() => setOpen((o) => !o)}
+            title={open ? "Hide Simulate" : "Show Simulate"}
+            className={`-mx-1 flex items-center gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot ${
+              open ? "" : "lg:mx-0 lg:py-1 lg:[writing-mode:vertical-rl]"
+            }`}
+          >
+            <svg aria-hidden viewBox="0 0 16 16" className={`size-3 transition-transform motion-reduce:transition-none lg:hidden ${open ? "rotate-90" : ""}`}>
+              <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Simulate
+          </button>
+        </h2>
+        <CollapseButton
+          side="right"
+          open={open}
+          label="Simulate"
+          controls={bodyId}
+          onToggle={() => setOpen((o) => !o)}
+          className="hidden lg:grid"
+        />
+      </div>
 
       {open && (
         <div id={bodyId} className="flex flex-col gap-4 border-t border-rule pt-3">

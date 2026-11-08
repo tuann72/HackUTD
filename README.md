@@ -116,6 +116,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Collapse buttons on the /messages side panels (messages left, Simulate right) | `feat/web-panel-collapse` | Tuan + Claude Code | In review | TBD |
 | Message UI | Redesign /messages (inbox and blocked in a filterable left panel, fits the screen) and /dashboard, with Motion | `feat/web-ui-revamp` | Tuan + Claude Code | In review | [#88](https://github.com/tuann72/HackUTD/pull/88) |
 | Sender blocklist | Turn the blocklist on; password-protected (4321) Unblock button per blocked message and Clear blocks button that unblocks every sender | `feat/sender-blocklist-clear` | Tuan + Claude Code (subagents) | Done | [#86](https://github.com/tuann72/HackUTD/pull/86) |
 | Project docs | Add LiveKit to the tech stack (AGENTS.md, README) and the diagram | `docs/livekit-stack` | Tuan + Claude Code | Done | [#85](https://github.com/tuann72/HackUTD/pull/85) |
