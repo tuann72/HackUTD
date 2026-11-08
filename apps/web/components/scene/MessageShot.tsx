@@ -163,8 +163,8 @@ export const MessageShot = memo(function MessageShot({
       <Html position={[0, -0.45, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <div
           ref={label}
-          className={`whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-medium shadow ${
-            potentialScam ? "bg-red-600/90 text-white" : "bg-white/90 text-slate-800"
+          className={`whitespace-nowrap px-2 py-0.5 font-label text-[10px] font-bold uppercase shadow ${
+            potentialScam ? "bg-hot text-white" : "bg-card text-ink ring-1 ring-rule"
           }`}
         >
           {message.label}
@@ -177,7 +177,7 @@ export const MessageShot = memo(function MessageShot({
             initial={{ scale: 2.2, opacity: 0, rotate: -18 }}
             animate={{ scale: 1, opacity: 1, rotate: -8 }}
             transition={{ type: "spring", stiffness: 500, damping: 18 }}
-            className="whitespace-nowrap rounded border-2 border-red-500 bg-red-950/80 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-red-300"
+            className="whitespace-nowrap border-2 border-hot bg-ink px-2 py-0.5 font-label text-[11px] font-bold uppercase tracking-wide text-hot"
           >
             Potential scam · Blocked
           </motion.div>

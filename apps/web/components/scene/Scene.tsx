@@ -170,7 +170,7 @@ function BlobLabel({ text, className, ref }: { text: string; className: string; 
     <span
       ref={ref}
       style={{ visibility: "hidden" }}
-      className={`pointer-events-none absolute left-0 top-0 z-10 whitespace-nowrap rounded-md bg-slate-900/70 px-2 py-0.5 text-sm font-medium ${className}`}
+      className={`pointer-events-none absolute left-0 top-0 z-10 whitespace-nowrap bg-ink px-2 py-1 font-label text-[11px] font-bold uppercase tracking-[0.06em] ${className}`}
     >
       {text}
     </span>
@@ -190,7 +190,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
   const victimLabel = useRef<HTMLSpanElement>(null);
 
   return (
-    <div className="relative h-full w-full bg-[#0b1020]">
+    <div className="relative h-full w-full bg-paper">
       {/* No `shadows`: nothing receives a shadow map. ContactShadows draws the
           ground shadow on its own. */}
       {/* Local clipping cuts the hand off at the top of its box. */}
@@ -204,10 +204,10 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
         <FitCamera />
         <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
         <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
-        <color attach="background" args={["#0b1020"]} />
+        <color attach="background" args={["#f2f0e9"]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 6, 5]} intensity={1.6} />
-        <pointLight position={[-4, 2, 3]} intensity={8} color="#93c5fd" />
+        <pointLight position={[-4, 2, 3]} intensity={6} color="#ffcee6" />
 
         <Blob
           position={[SENDER_X, 0, 0]}
@@ -225,8 +225,8 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
 
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} resolution={256} />
       </Canvas>
-      <BlobLabel ref={senderLabel} text="Sender" className="text-slate-100" />
-      <BlobLabel ref={victimLabel} text="Receiver" className="text-pink-300" />
+      <BlobLabel ref={senderLabel} text="Sender" className="text-paper" />
+      <BlobLabel ref={victimLabel} text="Receiver" className="text-hot" />
     </div>
   );
 }

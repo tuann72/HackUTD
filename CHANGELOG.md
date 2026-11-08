@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: `/messages` restyled to match the T-GUARD prototype
+
+- **Decision (Tuan):** make `/messages` match the T-GUARD offline prototype (the source of the scene's hand) and the landing page. Palette from the prototype's `demo/style.css`: paper `#f2f0e9`, ink `#211e20`, hot pink `#ef167d`, rules `#c9c6c0`, cards `#fffdf9`. Anton for big numbers, Courier New for small uppercase labels. These are Tailwind theme tokens in `app/globals.css` (`bg-paper`, `text-ink`, `text-hot`, `border-rule`, `bg-card`, `text-muted`, `font-display`, `font-label`).
+- **Page:** `T—GUARD®` wordmark header linking to `/`, the scene on paper (was navy) with prototype-style captions, a "000 Threats blocked" / "Delivered" counter row, square cards (blocked ones with a pink edge), pink "Potential scam" stamps, pink keyword highlights, and the Simulate sidebar as outlined label buttons.
+- **Light only:** the prototype has no dark mode, so `dark:` utilities now apply only under a `.dark` class (nothing sets it). The OS dark setting no longer changes the site.
+
 ### 2026-11-08: Government-threat, IRS, ID-request and health scam training texts
 
 Tuan asked for more synthetic scam data covering government threat scams, health scams, anything asking for ID, and IRS scams, 150 rows each, all scams. `data/build_gov_health_id_scam_synthetic.py` writes `data/gov_health_id_scam_synthetic.csv` (600 template rows). Labels follow `scam_categories.csv`: government threats, IRS and ID requests are impersonation or phishing, so label 1 (Imposter & Phishing); health scams are label 5 (Health & Pharmacy). They're not label 8 (Threats & Extortion), which covers personal threats and fake emergencies, not an agency threatening arrest. `classifier/build_splits.py` reads the file with the threat templates, so 15% of each scenario goes to val; its manifest key `val_threat_templates` is now `val_templates`. No hard negatives were added (real IRS or pharmacy texts), and the model was not retrained. See `data/README.md`, section 6.

@@ -1,22 +1,33 @@
 @import "tailwindcss";
 
+/*
+ * T-Guard is light only, like the T-GUARD offline prototype it follows: paper,
+ * ink, one hot pink, thin rules. `dark:` utilities only apply under a `.dark`
+ * class (nothing sets it), so the OS dark setting can't half-darken a page.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f2f0e9;
+  --foreground: #211e20;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Prototype palette (demo/style.css). */
+  --color-paper: #f2f0e9;
+  --color-ink: #211e20;
+  --color-hot: #ef167d;
+  --color-hot-deep: #c80064;
+  --color-rule: #c9c6c0;
+  --color-card: #fffdf9;
+  --color-muted: #827b7e;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Condensed headlines (Anton, like the landing page) and Courier labels. */
+  --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
+  --font-label: "Courier New", Courier, ui-monospace, monospace;
 }
 
 body {
