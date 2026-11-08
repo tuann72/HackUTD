@@ -130,17 +130,20 @@ describe('MemoryBlocklist storage', () => {
 });
 
 describe('blocklist config', () => {
-  const base = { TWILIO_AUTH_TOKEN: 't' };
+  const base = { PHOTON_WEBHOOK_SECRET: 't' };
 
   it('defaults to 3 strikes, 0.95, 7 days, no Atlas', () => {
     const c = loadConfig(base);
     expect(c).toMatchObject({ mongodbUri: null, mongodbDb: 'tgate', senderBlockStrikes: 3, senderBlockScore: 0.95, senderBlockTtlDays: 7 });
   });
 
-  it('requires a long FINGERPRINT_SECRET with MONGODB_URI', () => {
-    expect(() => loadConfig({ ...base, MONGODB_URI: 'mongodb+srv://x' })).toThrow(/FINGERPRINT_SECRET/);
-    expect(() => loadConfig({ ...base, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).toThrow(/32/);
-    expect(loadConfig({ ...base, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: SECRET }).fingerprintSecret).toBe(SECRET);
+  it('requires a long FINGERPRINT_SECRET with MONGODB_URI when SENDER_BLOCKLIST=on', () => {
+    const on = { ...base, SENDER_BLOCKLIST: 'on' };
+    expect(() => loadConfig({ ...on, MONGODB_URI: 'mongodb+srv://x' })).toThrow(/FINGERPRINT_SECRET/);
+    expect(() => loadConfig({ ...on, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).toThrow(/32/);
+    expect(loadConfig({ ...on, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: SECRET }).fingerprintSecret).toBe(SECRET);
+    // Off (default): not validated.
+    expect(() => loadConfig({ ...base, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).not.toThrow();
   });
 
   it('rejects bad rule values', () => {

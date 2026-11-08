@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
-import { createApp } from './app.js';
+import { WEBHOOK_PATH, createApp } from './app.js';
+import { MemoryBlocklist, MongoBlocklist, ephemeralSecret, makeFingerprinter, type Blocklist } from './blocklist.js';
 import { HttpClassifier, StubClassifier, type Classifier } from './classifier.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db.js';
@@ -11,12 +12,32 @@ const classifier: Classifier = config.classifierUrl
   ? new HttpClassifier({ baseUrl: config.classifierUrl, token: config.classifierToken, timeoutMs: config.classifierTimeoutMs })
   : new StubClassifier();
 
-const app = createApp({ db, classifier, config });
+const rules = {
+  strikes: config.senderBlockStrikes,
+  highScore: config.senderBlockScore,
+  ttlMs: config.senderBlockTtlDays * 24 * 60 * 60 * 1000,
+};
+// SENDER_BLOCKLIST=off (default, Tuan 2026-11-08): no blocklist object, no Atlas connection.
+// on: Atlas if MONGODB_URI is set, else an in-process blocklist and per-process key (both reset on restart).
+let blocklist: Blocklist | undefined;
+if (config.senderBlocklist) {
+  blocklist = config.mongodbUri
+    ? new MongoBlocklist({ uri: config.mongodbUri, dbName: config.mongodbDb, rules })
+    : new MemoryBlocklist(rules);
+} else if (config.mongodbUri) {
+  console.warn('[gateway] MONGODB_URI is set but SENDER_BLOCKLIST=off: ignored, not connecting to Atlas');
+}
+const fingerprinter = blocklist ? makeFingerprinter(config.fingerprintSecret ?? ephemeralSecret()) : undefined;
+
+const app = createApp({ db, classifier, config, blocklist, fingerprinter });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[gateway] listening on http://localhost:${info.port}`);
   console.log(`[gateway] db=${config.dbPath} classifier=${config.classifierUrl ? `http (${config.classifierUrl})` : 'stub'} threshold=${config.blockThreshold}`);
-  console.log(`[gateway] signature URL=${config.publicWebhookUrl ?? '(from request)'} debug=${config.debug ? 'ON' : 'off'}`);
+  console.log(
+    `[gateway] sender blocklist=${!blocklist ? 'off (each message judged on its own)' : `on, ${config.mongodbUri ? `atlas (${config.mongodbDb})` : 'memory (resets on restart)'}, strikes=${rules.strikes} score>=${rules.highScore} ttl=${config.senderBlockTtlDays}d`} admin=${config.adminToken ? 'ON' : 'off'}`,
+  );
+  console.log(`[gateway] Photon webhook: POST ${WEBHOOK_PATH} (signature tolerance ${config.signatureToleranceSeconds}s) debug=${config.debug ? 'ON' : 'off'}`);
 });
 
 let closing = false;
@@ -25,6 +46,7 @@ function shutdown() {
   closing = true;
   server.close(async () => {
     await app.idle();
+    await blocklist?.close().catch(() => {});
     db.close();
     process.exit(0);
   });

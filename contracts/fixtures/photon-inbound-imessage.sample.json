@@ -1,0 +1,26 @@
+{
+  "_note": "SYNTHETIC. Built from Photon's documented Spectrum webhook payload (https://photon.codes/docs/webhooks/events), not recorded. Replace with a real recording (photon-imessage task 1.3). Numbers are fictional 555-01xx; ids are placeholders.",
+  "method": "POST",
+  "path": "/webhooks/photon",
+  "headers": {
+    "Content-Type": "application/json",
+    "User-Agent": "spectrum-webhook/<version>",
+    "X-Spectrum-Event": "messages",
+    "X-Spectrum-Webhook-Id": "00000000-0000-4000-8000-000000000000",
+    "X-Spectrum-Timestamp": "<unix seconds at signing>",
+    "X-Spectrum-Signature": "v0=<hex HMAC-SHA256 of \"v0:\" + timestamp + \":\" + raw body>"
+  },
+  "body": {
+    "event": "messages",
+    "space": { "id": "any;-;+15555550142", "platform": "imessage", "type": "dm", "phone": "+15555550100" },
+    "message": {
+      "id": "spc-msg-00000000-0000-4000-8000-000000000001",
+      "platform": "imessage",
+      "direction": "inbound",
+      "timestamp": "2026-11-08T15:04:05.000Z",
+      "sender": { "id": "+15555550142", "platform": "imessage" },
+      "space": { "id": "any;-;+15555550142", "platform": "imessage", "type": "dm", "phone": "+15555550100" },
+      "content": { "type": "text", "text": "Hi Grandma it's me, I lost my phone, this is my new number" }
+    }
+  }
+}

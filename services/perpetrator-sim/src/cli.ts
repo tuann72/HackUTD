@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { configFromEnv, loadDotEnv, type SimConfig } from "./config.ts";
+import { guessMimeType, type SimContent } from "./content.ts";
 import { runSteps, type RunOptions, type SendResult } from "./sender.ts";
 import { loadBank, loadScenario, randomSteps, type Step } from "./steps.ts";
 
@@ -11,13 +12,16 @@ Commands:
   random [--n 20] [--scam-ratio 0.6] [--seed N] [--interval-ms 1500]
                                    Draw messages from data/message_bank/{bank,generated}.jsonl
   send --from <+1555...> "<text>"  Send one typed message
+       [--group <id>]              ...into a group chat with this id
+       [--attachment <file.jpg>]   ...as an attachment (metadata only); text, if any, becomes an album caption
+       [--react <emoji>]           ...as a reaction; the text is the message reacted to
 
 Options (any command):
   --dry-run              Print the signed requests instead of sending
-  --allow-real-numbers   Allow From/To numbers outside +1555xxxxxxx
+  --allow-real-numbers   Allow sender/line numbers outside +1555xxxxxxx
   -h, --help             Show this help
 
-Env: GATEWAY_WEBHOOK_URL, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID, VICTIM_NUMBER (.env is loaded if present)`;
+Env: GATEWAY_WEBHOOK_URL, PHOTON_WEBHOOK_SECRET, VICTIM_NUMBER (.env is loaded if present)`;
 
 export interface CliDeps extends Omit<RunOptions, "dryRun" | "allowRealNumbers"> {
   config?: SimConfig;
@@ -48,6 +52,9 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
         seed: { type: "string" },
         "interval-ms": { type: "string" },
         from: { type: "string" },
+        group: { type: "string" },
+        attachment: { type: "string" },
+        react: { type: "string" },
       },
     });
   } catch (err) {
@@ -84,8 +91,17 @@ export async function main(argv: string[], deps: CliDeps = {}): Promise<number> 
     } else if (command === "send") {
       if (!values.from) throw new Error("send needs --from <number>");
       const text = rest.join(" ");
-      if (!text) throw new Error('send needs the message text, e.g. send --from +15555550142 "hello"');
-      steps = [{ delayMs: 0, from: values.from, body: text }];
+      if (values.attachment && values.react) throw new Error("send takes --attachment or --react, not both");
+      let content: SimContent | undefined;
+      if (values.react) {
+        content = { type: "reaction", emoji: values.react, ...(text ? { targetPreview: text } : {}) };
+      } else if (values.attachment) {
+        const file: SimContent = { type: "attachment", name: values.attachment, mimeType: guessMimeType(values.attachment) };
+        content = text ? { type: "group", items: [{ type: "text", text }, file] } : file;
+      } else if (!text) {
+        throw new Error('send needs the message text, e.g. send --from +15555550142 "hello"');
+      }
+      steps = [{ delayMs: 0, from: values.from, body: content ? "" : text, ...(content ? { content } : {}), ...(values.group ? { group: values.group } : {}) }];
     } else {
       throw new Error(`unknown command: ${command}`);
     }

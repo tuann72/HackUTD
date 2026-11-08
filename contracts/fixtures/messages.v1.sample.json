@@ -3,13 +3,77 @@
   "version": 1,
   "messages": [
     {
+      "id": "msg_0009",
+      "from": { "participantId": "p_bank", "display": "***-***-0177" },
+      "body": "Final notice: your account will be closed. Call us now",
+      "receivedAt": "2026-11-07T21:14:45.000Z",
+      "action": "blocked",
+      "reason": "sender_blocked",
+      "verdict": null,
+      "kind": "text",
+      "conversation": { "id": "c_bank", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
+    },
+    {
+      "id": "msg_0008",
+      "from": { "participantId": "p_daughter", "display": "***-***-0110" },
+      "body": "",
+      "receivedAt": "2026-11-07T21:14:40.000Z",
+      "action": "delivered",
+      "reason": "not_classified",
+      "verdict": null,
+      "kind": "reaction",
+      "conversation": { "id": "c_family", "type": "group" },
+      "attachments": [],
+      "reaction": { "emoji": "❤️", "targetPreview": "Photos from the lake!" },
+      "contact": null
+    },
+    {
+      "id": "msg_0007",
+      "from": { "participantId": "p_grandson", "display": "***-***-0142" },
+      "body": "Photos from the lake!",
+      "receivedAt": "2026-11-07T21:14:36.000Z",
+      "action": "delivered",
+      "reason": "model_verdict",
+      "verdict": { "label": "legit", "score": 0.03, "category": null, "model": "stub@0", "highlights": [] },
+      "kind": "album",
+      "conversation": { "id": "c_family", "type": "group" },
+      "attachments": [
+        { "name": "IMG_0412.HEIC", "mimeType": "image/heic", "size": 2483112 },
+        { "name": "IMG_0413.HEIC", "mimeType": "image/heic", "size": 2391044 }
+      ],
+      "reaction": null,
+      "contact": null
+    },
+    {
+      "id": "msg_0006",
+      "from": { "participantId": "p_bank", "display": "***-***-0177" },
+      "body": "",
+      "receivedAt": "2026-11-07T21:14:31.000Z",
+      "action": "delivered",
+      "reason": "not_classified",
+      "verdict": null,
+      "kind": "contact",
+      "conversation": { "id": "c_bank", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": { "name": "Bank Fraud Dept", "phones": ["***-***-0199"] }
+    },
+    {
       "id": "msg_0005",
       "from": { "participantId": "p_daughter", "display": "***-***-0110" },
       "body": "Dinner Sunday still on?",
       "receivedAt": "2026-11-07T21:14:25.000Z",
       "action": "pending",
       "reason": null,
-      "verdict": null
+      "verdict": null,
+      "kind": "text",
+      "conversation": { "id": "c_daughter", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
     },
     {
       "id": "msg_0004",
@@ -19,12 +83,20 @@
       "action": "blocked",
       "reason": "model_verdict",
       "verdict": {
-        "label": "scam", "score": 0.95, "category": "Imposter & Phishing", "model": "stub@0",
+        "label": "scam",
+        "score": 0.95,
+        "category": "Imposter & Phishing",
+        "model": "stub@0",
         "highlights": [
           { "start": 16, "end": 22, "text": "locked", "weight": 0.4 },
           { "start": 24, "end": 30, "text": "Verify", "weight": 0.5 }
         ]
-      }
+      },
+      "kind": "text",
+      "conversation": { "id": "c_bank", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
     },
     {
       "id": "msg_0003",
@@ -34,9 +106,17 @@
       "action": "blocked",
       "reason": "model_verdict",
       "verdict": {
-        "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "stub@0",
+        "label": "scam",
+        "score": 0.97,
+        "category": "Imposter & Phishing",
+        "model": "stub@0",
         "highlights": [{ "start": 31, "end": 41, "text": "gift cards", "weight": 0.8 }]
-      }
+      },
+      "kind": "text",
+      "conversation": { "id": "c_grandson", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
     },
     {
       "id": "msg_0002",
@@ -45,7 +125,12 @@
       "receivedAt": "2026-11-07T21:14:06.000Z",
       "action": "delivered",
       "reason": "classifier_unavailable",
-      "verdict": null
+      "verdict": null,
+      "kind": "text",
+      "conversation": { "id": "c_grandson", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
     },
     {
       "id": "msg_0001",
@@ -54,7 +139,12 @@
       "receivedAt": "2026-11-07T21:14:00.000Z",
       "action": "delivered",
       "reason": "model_verdict",
-      "verdict": { "label": "legit", "score": 0.04, "category": null, "model": "stub@0", "highlights": [] }
+      "verdict": { "label": "legit", "score": 0.04, "category": null, "model": "stub@0", "highlights": [] },
+      "kind": "text",
+      "conversation": { "id": "c_pharmacy", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
     }
   ]
 }

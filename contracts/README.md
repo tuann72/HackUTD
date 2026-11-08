@@ -6,7 +6,7 @@ The only thing the gateway and the web app share (see `AGENTS.md`, "Decoupling r
 |---|---|
 | [`query-api.v1.schema.json`](query-api.v1.schema.json) | JSON Schema for `GET /api/messages`, the gateway's read-only query API |
 | [`fixtures/messages.v1.sample.json`](fixtures/messages.v1.sample.json) | A sample `GET /api/messages` response. The web app uses it when `NEXT_PUBLIC_API_URL` is unset |
-| [`fixtures/twilio-inbound-sms.sample.json`](fixtures/twilio-inbound-sms.sample.json) | The form fields Twilio posts for an inbound SMS. **Synthetic**, built from Twilio's documented fields; replace with a recorded real request (task 1.1) |
+| [`fixtures/photon-inbound-imessage.sample.json`](fixtures/photon-inbound-imessage.sample.json) | The headers and JSON body Photon (Spectrum) posts for an inbound iMessage. **Synthetic**, built from Photon's documented payload; replace with a recorded real delivery (photon-imessage task 1.3) |
 
 ## `GET /api/messages` (v1)
 
@@ -18,26 +18,36 @@ Each message:
 
 | Field | Meaning |
 |---|---|
-| `id` | Opaque message id (not the Twilio `MessageSid`) |
-| `from.participantId`, `from.display` | Opaque sender id and masked number (`***-***-0142`). Never a raw number |
+| `id` | Opaque message id (not Photon's `message.id`) |
+| `from.participantId`, `from.display` | Opaque sender id and masked iMessage handle (`***-***-0142`, or `j***@icloud.com` for an email handle). Never a raw handle |
 | `body` | Message text |
 | `receivedAt` | ISO 8601 time the gateway accepted it |
 | `action` | `pending`, `delivered` or `blocked` |
-| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified) or `null` while pending |
-| `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending or unavailable |
+| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified), `not_classified` (no text to check: attachment, reaction, contact card), `sender_blocked` (blocked without the model because the sender is on the blocklist; `verdict` is `null`. **Not emitted by default:** only with the gateway's parked `SENDER_BLOCKLIST=on`), `override` (a person marked this message "Not a scam" and it moved to the inbox; the original `verdict` is kept) or `null` while pending |
+| `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending, unavailable or not classified |
+| `kind` | `text`, `link`, `attachment`, `reaction`, `contact` or `album` (iMessage content). Optional: absent means `text` |
+| `conversation` | `{ id, type }`: an opaque chat id (`c_<hex>`) and `dm` or `group`. Optional: absent means a DM |
+| `attachments` | `[{ name, mimeType, size }]`, metadata only (never a file or URL). Optional, `[]` when none |
+| `reaction` | `{ emoji, targetPreview }` for `kind: "reaction"`, else `null`. `targetPreview` is up to ~80 characters of the message reacted to |
+| `contact` | `{ name, phones }` for a shared contact card, else `null`. `phones` are masked like `from.display` |
+
+`kind`, `conversation`, `attachments`, `reaction` and `contact` were added to v1 on 2026-11-08 as optional fields, so older v1 data stays valid. The gateway always sends them. For non-text kinds, `body` is `""`. The UI renders from `kind` and the extras, never from guessing at `body`.
 
 Highlight spans are character offsets into `body` with `0 <= start < end <= body.length` (JSON Schema can't express this; the gateway drops spans that don't fit). Consumers should still guard against bad spans.
 
-Display rule: `action == "delivered"` with `reason == "classifier_unavailable"` shows as **unverified**. The UI never re-decides scam vs. legitimate.
+Display rules: `action == "delivered"` with `reason == "classifier_unavailable"` shows as **unverified**, `reason == "not_classified"` shows as **not checked**, `sender_blocked` as **blocked: known scam sender**, and `override` as **restored**. The UI never re-decides scam vs. legitimate.
 
 ## Webhook signing (gateway and simulator)
 
-Twilio signs each webhook over the **exact URL** configured for the number plus the sorted form fields. The gateway must validate against that same URL string:
+Photon signs each webhook with the webhook's signing secret ([docs](https://photon.codes/docs/webhooks/verifying-signatures)):
 
-- In dev, the simulator signs for `GATEWAY_WEBHOOK_URL` (default `http://localhost:8787/twilio/sms`), and the gateway validates against `http://localhost:<PORT>/twilio/sms`.
-- Behind a tunnel or proxy, set the gateway's `PUBLIC_WEBHOOK_URL` to the public URL configured in Twilio (and point the simulator's `GATEWAY_WEBHOOK_URL` at it too). Otherwise the URL the gateway rebuilds from the request won't match, and every request gets 403.
+- `X-Spectrum-Signature: v0=<hex>`, where `hex` is HMAC-SHA256 over `"v0:" + X-Spectrum-Timestamp + ":" + <raw body>`. Verify the raw bytes before parsing JSON.
+- The gateway rejects timestamps more than 300 s from its clock. The URL isn't signed, so proxies and tunnels need no extra config.
+- In dev, the simulator and the gateway share the placeholder secret `dev-photon-webhook-secret-change-me`.
 - A 200 from the webhook only means the message was accepted, not classified. Read the outcome from `GET /api/messages`.
 
 ## Not part of the contract
+
+`POST /admin/messages/restore` ("Not a scam" for one message, only when `ADMIN_TOKEN` is set) and `POST /debug/reset` (clears the SQLite database) are operator tools.
 
 `POST /debug/reset` on the gateway clears its SQLite database. It's a developer tool, off unless `GATEWAY_DEBUG=1`, and the web app must never call it.

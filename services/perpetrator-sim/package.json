@@ -1,7 +1,7 @@
 {
   "name": "@t-gate/perpetrator-sim",
   "version": "0.1.0",
-  "description": "Simulated perpetrator: sends signed, Twilio-format inbound SMS webhooks to the T-Gate gateway",
+  "description": "Simulated perpetrator: sends signed, Photon (Spectrum) format inbound iMessage webhooks to the T-Gate gateway",
   "scripts": {
     "sim": "tsx src/cli.ts",
     "fake-gateway": "tsx src/fake-gateway.ts",
@@ -10,9 +10,6 @@
   },
   "license": "UNLICENSED",
   "type": "module",
-  "dependencies": {
-    "twilio": "^6.3.0"
-  },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "tsx": "^4.23.15",
