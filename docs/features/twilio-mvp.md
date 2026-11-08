@@ -162,14 +162,14 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | In progress | `feat/twilio-mvp-gateway` | Tuan + Claude Code | |
 | 1.3a | `apps/web` scaffold with the 3D-scene packages and the shared `lib/messages` data layer (done first, so the scene can start in parallel) | contract | all | In review | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | [#5](https://github.com/lytx02/HackUTD/pull/5) |
 | 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | In progress | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | |
-| 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | In progress | `feat/twilio-mvp-simulator` | Tuan + Claude Code | |
+| 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | In review | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#7](https://github.com/lytx02/HackUTD/pull/7) |
 | 1.5 | Classifier: train, evaluate on `val`/`test`, export | 0.2 | 1.1–1.4 | In progress | `feat/classifier-minilm-vultr` | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 2: integration
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Simulator CLI: scenario mode, random mode, dry run | 1.1, 1.4 | 2.2, 2.3 | In progress | `feat/twilio-mvp-simulator` | Tuan + Claude Code | |
+| 2.1 | Simulator CLI: scenario mode, random mode, dry run | 1.1, 1.4 | 2.2, 2.3 | In review | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#7](https://github.com/lytx02/HackUTD/pull/7) |
 | 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | In progress | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | |
 | 2.3 | Replace the stub classifier with the real model | 1.2, 1.5 | 2.1, 2.2 | Not started | | | |
 

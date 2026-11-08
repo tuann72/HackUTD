@@ -29,6 +29,6 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Twilio MVP + 3D scene | `apps/web` scaffold: Next.js 16, R3F packages, shared `lib/messages` data layer (unblocks scene 1.1) | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | In review | [#5](https://github.com/lytx02/HackUTD/pull/5) |
 | Twilio MVP | 1.2 Gateway (Hono, SQLite) | `feat/twilio-mvp-gateway` | Tuan + Claude Code | In progress | TBD |
 | Twilio MVP | 1.3 + 2.2 Message UI (`apps/web`, `/messages`) | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | In progress | TBD |
-| Twilio MVP | 1.4 + 2.1 Message bank and perpetrator simulator | `feat/twilio-mvp-simulator` | Tuan + Claude Code | In progress | TBD |
+| Twilio MVP | 1.4 + 2.1 Message bank and perpetrator simulator | `feat/twilio-mvp-simulator` | Tuan + Claude Code | In review | [#7](https://github.com/lytx02/HackUTD/pull/7) |
 
 Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).
