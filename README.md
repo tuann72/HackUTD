@@ -34,6 +34,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Message text size follows length (short = larger, long = smaller) | `feat/web-text-size` | Tuan + Claude Code | In review | — |
 | Initial 3D scene | Move the shield a little left (x 2.2 → 1.9); a white "T" replaces its check mark; the U in the GUARD wordmark is the shield | `fix/scene-shield-left` | Tuan + Claude Code | Done | [#69](https://github.com/tuann72/HackUTD/pull/69) |
 | Initial 3D scene | Replace the hand and box with a pink (T-Mobile magenta) Lucide shield in the same spot | `feat/scene-shield` | Tuan + Claude Code | Done | [#68](https://github.com/tuann72/HackUTD/pull/68) |
 | Message UI | No em dashes in UI, sortable most-active-numbers table, landing blocks form a "T" | `feat/web-ui-polish` | Tuan + Claude Code | Done | [#67](https://github.com/tuann72/HackUTD/pull/67) |
