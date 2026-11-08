@@ -12,6 +12,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Each model alone on the same 606 texts (missed / false blocks):** stacked LR 8 / 4, TF-IDF + SGD 11 / 2, TF-IDF + LR 10 / 7, MiniLM + LR 9 / 29. TF-IDF and MiniLM are the two halves of v0.5. SGD was trained on the same rows, with alpha picked on val, and isn't deployed.
 - **Web:** the model name on a card opens these figures as a fixed table labeled "Model comparison". It doesn't switch models.
 
+### 2026-11-08: Rapid fire uses its own 200-sentence dataset
+
+- **Decision (Tuan):** a Rapid fire dataset of 200 complete sentences, 40% scam and 60% legitimate, and Rapid fire draws from it. No note about it in the UI.
+- **Data:** `data/message_bank/rapid.jsonl`, written by `build_rapid.py` (hand-written messages, fictional links and names). 80 scams: Imposter & Phishing 22, Prizes 12, Jobs & Investment 12, Loans 10, Health 8, Shopping 8, Internet & Telecom 5, Threats & Extortion 3. 120 everyday texts. No grandparent-style scams. Demo input, not training data.
+- **Wiring:** `npm run sync:bank` copies it into `apps/web/lib/sim/bank.json` as `rapid`. The Rapid fire preset has `dataset: "rapid"` and a scam ratio of 0.4 (was 0.6), so each run sends 20 scams and 30 legit texts with no repeats. Send a scam, Send a legit text, Random burst and the CLI simulator keep the main bank.
+
 ### 2026-11-08: Less small text on /messages, bigger totals labels
 
 - **Decision (Tuan):** remove the small captions on `/messages`: "01 / The protector" and "Fictional senders. Real classifier." under the scene, "You're in good hands." and "Let through, untouched." under the totals, and the footer note "“Potential scam” is the classifier's verdict and can be wrong. Links and phone numbers in blocked messages are disabled." The "Threats blocked" and "Delivered" labels go from 10px to 20px (`text-xl`). Links and numbers in blocked messages are still disabled; only the note saying so is gone.

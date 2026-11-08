@@ -15,16 +15,17 @@ const jsonl = (path) =>
     .filter((l) => l.trim())
     .map((l) => JSON.parse(l));
 
-const rows = ["bank.jsonl", "generated.jsonl"].flatMap((f) =>
-  jsonl(dir + f).map((r) => ({ id: r.id, text: r.text, label: r.expected_label, category: r.category })),
-);
+const toRow = (r) => ({ id: r.id, text: r.text, label: r.expected_label, category: r.category });
+const rows = ["bank.jsonl", "generated.jsonl"].flatMap((f) => jsonl(dir + f).map(toRow));
+// Rapid fire's own dataset (rapid.jsonl), kept apart from the main bank.
+const rapid = jsonl(dir + "rapid.jsonl").map(toRow);
 const scenarios = Object.fromEntries(
   readdirSync(dir + "scenarios")
     .filter((f) => f.endsWith(".jsonl"))
     .sort()
     .map((f) => [f.replace(/\.jsonl$/, ""), jsonl(dir + "scenarios/" + f)]),
 );
-const want = JSON.stringify({ rows, scenarios }, null, 1) + "\n";
+const want = JSON.stringify({ rows, rapid, scenarios }, null, 1) + "\n";
 
 if (process.argv.includes("--check")) {
   let have = "";
@@ -38,5 +39,5 @@ if (process.argv.includes("--check")) {
   console.log("bank is in sync with data/message_bank/");
 } else {
   writeFileSync(dest, want);
-  console.log(`copied ${rows.length} bank rows and ${Object.keys(scenarios).length} scenarios -> lib/sim/bank.json`);
+  console.log(`copied ${rows.length} bank rows, ${rapid.length} rapid rows and ${Object.keys(scenarios).length} scenarios -> lib/sim/bank.json`);
 }
