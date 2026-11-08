@@ -146,6 +146,14 @@ export function MessagesView() {
           <span className="hidden font-label text-[10px] uppercase tracking-[0.06em] text-muted sm:block">
             Personal space. Protected.
           </span>
+          <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          >
+            Dashboard
+            <span aria-hidden>▤</span>
+          </Link>
           <button
             type="button"
             onClick={clear}
@@ -156,6 +164,7 @@ export function MessagesView() {
             {clearing ? "Clearing…" : "Clear chats"}
             <span aria-hidden>↺</span>
           </button>
+          </div>
         </header>
 
         <div className="min-w-0">

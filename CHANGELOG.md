@@ -6,6 +6,11 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Dashboard page; T-Guard moved left of the Receiver
+
+- **Decision (Tuan):** a **Dashboard** button left of Clear chats opens `/dashboard`, "overall analytics based on the messages sent and what they are composed of", noting the most prevalent values. It counts the gateway's decisions in the polled data (the latest 100 messages): totals, block rate, average scam score, the most active senders (masked numbers, with blocked counts), scam categories of blocked messages, message types, a score histogram, outcomes and reasons. The top row of each breakdown is tagged "Most common". Aggregation is a pure function (`lib/messages/stats.ts`, tested).
+- **Scene:** T-Guard's box and hand moved 0.8 units left so they no longer hide the Receiver bean; the bean moved a little forward and its label is under its feet like the Sender's. The "T—GUARD / Active defense system" text is back on the box, which is still labeled "T-Guard" underneath.
+
 ### 2026-11-08: Thicker fonts, bean characters, T-Guard box label
 
 - **Decision (Tuan):** fonts were too thin. Body text and `font-label` are **Inter** (body weight 500, labels bold), replacing Arial and Courier New. Archivo was tried first and was hard to read. Anton stays for the big counter numbers.
