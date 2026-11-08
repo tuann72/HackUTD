@@ -54,7 +54,7 @@ npm run sim -- scenario imessage-demo
 | ~0:14 | A ❤️ **reaction**, marked "Not checked" | "Reactions and attachments have no text to judge, so they're delivered and clearly labeled as not checked. No false sense of safety." |
 | ~0:23 | "Hi Grandma it's me, I lost my phone…", delivered | "This is how the grandparent scam starts. On its own it's harmless, so it goes through." |
 | ~0:31 | "…I need $800 in gift cards, please don't tell mom" turns **red and pops** in the scene, then lands in **Blocked** with a category badge and highlighted words | "This one is flagged as a **potential scam** and blocked before Grandma sees it. The badge shows the category, Imposter & Phishing, and the highlights show why: 'gift cards', 'don't tell'." |
-| ~0:39 | The scammer's photo, delivered and not checked | "Photos can't be read yet, so they're marked not checked. Blocking a proven scammer's later messages, photos included, is what our sender blocklist is for." Only say this if it's merged; otherwise "is next." |
+| ~0:39 | The scammer's photo, delivered and not checked | "Each message is checked on its own. A scammer's photo with no text is delivered as Not checked, because the model reads text. We don't hold it back just because of who sent it." |
 | ~0:48 | A `bit.ly` **link**, blocked, with the link defanged | "Phishing links get blocked, and in the blocked list they're disabled, so they can't be tapped." |
 | ~0:56 | A "Bank Fraud Dept" **contact card**, with its number masked | "Scammers send fake contact cards so their number looks official. We show it and mask the number." |
 | ~1:04 | "Your account is locked… verify your PIN", blocked | "Then the follow-up asks for a PIN. It's blocked." |
@@ -71,6 +71,7 @@ Only do this once the Photon line is connected ([`photon-imessage.md`](features/
 ## Talking points (if asked)
 
 - **Architecture:** the iPhone sends an iMessage to the Photon line. Photon sends a signed webhook to the gateway (TypeScript and Hono on a Vultr VM). The gateway asks the classifier (Python on Vultr), applies the deliver/block decision and stores it in SQLite. The web app (Next.js on Vercel) only reads the result.
+- **Messages, not people:** we block messages, not people, so a spoofed or misjudged number is never cut off.
 - **Fail open:** if the classifier is down, messages are delivered and marked **Unverified**. We never silently drop someone's messages.
 - **Privacy:**
   - Webhooks are checked by HMAC signature with replay protection.
