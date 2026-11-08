@@ -34,6 +34,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Remove small captions and the footer note on /messages; bigger Threats blocked / Delivered labels | `feat/web-trim-copy` | Tuan + Claude Code | Done | [#77](https://github.com/tuann72/HackUTD/pull/77) |
 | Message UI | Remove the Grandparent scam button from the Simulate sidebar | `feat/web-no-grandparent` | Tuan + Claude Code | Done | [#74](https://github.com/tuann72/HackUTD/pull/74) |
 | Message UI | Landing T: remove the black slab, add the right serif and two small pink squares beside the stem | `feat/landing-t-dots` | Tuan + Claude Code | Done | [#76](https://github.com/tuann72/HackUTD/pull/76) |
 | Initial 3D scene | Shield's T in Manrope ExtraBold (closest free match to T-Mobile's TeleNeo) | `feat/scene-shield-t-font` | Tuan + Claude Code | Done | [#75](https://github.com/tuann72/HackUTD/pull/75) |

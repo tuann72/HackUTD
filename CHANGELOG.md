@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Less small text on /messages, bigger totals labels
+
+- **Decision (Tuan):** remove the small captions on `/messages`: "01 / The protector" and "Fictional senders. Real classifier." under the scene, "You're in good hands." and "Let through, untouched." under the totals, and the footer note "“Potential scam” is the classifier's verdict and can be wrong. Links and phone numbers in blocked messages are disabled." The "Threats blocked" and "Delivered" labels go from 10px to 20px (`text-xl`). Links and numbers in blocked messages are still disabled; only the note saying so is gone.
+
 ### 2026-11-08: Grandparent scam button removed from Simulate
 
 - **Decision (Tuan):** remove the grandparent scam story from the Simulate sidebar. Its preset is gone from `apps/web/lib/sim/presets.ts`, so the sidebar now has Send a scam, Send a legit text, Random burst and Rapid fire. The scenario file `data/message_bank/scenarios/grandparent.jsonl` stays, like the removed iMessage demo and Smoke test presets, because the CLI simulator (`npm run sim -- scenario grandparent`) can still run it. The demo walkthrough in `docs/DEMO.md` runs `imessage-demo` from the CLI and is unchanged.

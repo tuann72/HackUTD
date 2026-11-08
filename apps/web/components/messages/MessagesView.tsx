@@ -226,10 +226,6 @@ export function MessagesView() {
           >
             <SceneClient feed={feed} guard={guard} />
           </section>
-          <div className="flex justify-between gap-2 pt-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
-            <span>01 / The protector</span>
-            <span className="hidden sm:inline">Fictional senders. Real classifier.</span>
-          </div>
 
           <section
             aria-label="Totals"
@@ -237,19 +233,11 @@ export function MessagesView() {
           >
             <div className="flex items-center gap-4">
               <span className="font-display text-6xl leading-none text-hot tabular-nums">{pad3(blocked.length)}</span>
-              <span className="font-label text-[10px] uppercase leading-relaxed tracking-[0.06em]">
-                Threats blocked
-                <br />
-                <span className="text-muted">You&apos;re in good hands.</span>
-              </span>
+              <span className="font-label text-xl uppercase leading-tight tracking-[0.04em]">Threats blocked</span>
             </div>
             <div className="flex items-center gap-4">
               <span className="font-display text-6xl leading-none text-ink tabular-nums">{pad3(deliveredCount)}</span>
-              <span className="font-label text-[10px] uppercase leading-relaxed tracking-[0.06em]">
-                Delivered
-                <br />
-                <span className="text-muted">Let through, untouched.</span>
-              </span>
+              <span className="font-label text-xl uppercase leading-tight tracking-[0.04em]">Delivered</span>
             </div>
           </section>
 
@@ -271,11 +259,6 @@ export function MessagesView() {
               />
             </div>
           </LayoutGroup>
-
-          <p className="mt-10 border-t border-rule pt-3 font-label text-[9px] uppercase leading-relaxed tracking-[0.06em] text-muted">
-            &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
-            blocked messages are disabled.
-          </p>
         </div>
         <SimPanel />
       </main>
