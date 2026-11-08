@@ -6,33 +6,11 @@ import {
   useMessages,
   type Message,
   type MessageChange,
-  type SourceMode,
 } from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
-
-const MODE_LABEL: Record<SourceMode, string> = {
-  live: "Live",
-  replay: "Replay (mock)",
-  static: "Static (mock)",
-};
-
-function SourceIndicator({ mode }: { mode: SourceMode | null }) {
-  const live = mode === "live";
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-      <span
-        aria-hidden
-        className={`size-2 rounded-full ${
-          mode == null ? "bg-zinc-300 dark:bg-zinc-600" : live ? "bg-emerald-500" : "bg-sky-500"
-        } ${live ? "animate-pulse motion-reduce:animate-none" : ""}`}
-      />
-      {mode == null ? "Connecting…" : MODE_LABEL[mode]}
-    </span>
-  );
-}
 
 function Column({
   title,
@@ -166,7 +144,6 @@ export function MessagesView() {
               >
                 {clearing ? "Clearing…" : "Clear chats"}
               </button>
-              <SourceIndicator mode={mode} />
             </div>
           </div>
           {error && (
