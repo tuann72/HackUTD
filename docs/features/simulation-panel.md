@@ -2,7 +2,7 @@
 
 - **Slug:** `sim-panel` (branch `feat/web-sim-panel`)
 - **Phase:** MVP (demo tooling)
-- **Status:** In review
+- **Status:** Done
 - **Owner:** Tuan + Claude Code
 
 ## Goal
