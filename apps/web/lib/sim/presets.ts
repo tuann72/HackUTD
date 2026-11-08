@@ -21,13 +21,15 @@ export type Preset =
       scamRatio: number;
       /** ms between messages. */
       intervalMs: number;
+      /** Which rows to draw from: the main bank (default) or the rapid dataset. */
+      dataset?: "bank" | "rapid";
     };
 
 export const PRESETS: Preset[] = [
   { kind: "random", id: "one-scam", label: "Send a scam", description: "One potential scam from the bank", n: 1, scamRatio: 1, intervalMs: 0 },
   { kind: "random", id: "one-legit", label: "Send a legit text", description: "One ordinary message from the bank", n: 1, scamRatio: 0, intervalMs: 0 },
   { kind: "random", id: "burst", label: "Random burst", description: "Mixed messages from the bank", n: 10, scamRatio: 0.6, intervalMs: 1500 },
-  { kind: "random", id: "rapid", label: "Rapid fire", description: "50 mixed messages, 100 ms apart", n: 50, scamRatio: 0.6, intervalMs: 100 },
+  { kind: "random", id: "rapid", label: "Rapid fire", description: "50 mixed messages, 100 ms apart", n: 50, scamRatio: 0.4, intervalMs: 100, dataset: "rapid" },
 ];
 
 /** Limits the panel's settings enforce, so a stray value can't flood the gateway. */

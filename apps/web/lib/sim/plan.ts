@@ -31,6 +31,8 @@ interface BankRow {
 }
 
 const ROWS = (bank as { rows: BankRow[] }).rows;
+/** Rapid fire's dataset: 200 complete sentences, 40% scam (data/message_bank/rapid.jsonl). */
+export const RAPID_ROWS = (bank as { rapid: BankRow[] }).rapid;
 const SCENARIOS = (bank as unknown as { scenarios: Record<string, Step[]> }).scenarios;
 
 export const SCENARIO_IDS = Object.keys(SCENARIOS);
@@ -108,7 +110,8 @@ export function scenarioSteps(id: string): Step[] {
  */
 export function presetSteps(p: Preset, s: RunSettings): Step[] {
   if (p.kind === "scenario") return scenarioSteps(p.scenario);
-  return randomSteps({ ...s, n: p.n, scamRatio: p.scamRatio, intervalMs: p.intervalMs });
+  const rows = p.dataset === "rapid" ? RAPID_ROWS : ROWS;
+  return randomSteps({ ...s, n: p.n, scamRatio: p.scamRatio, intervalMs: p.intervalMs }, rows);
 }
 
 /** Total wait of a run, for the panel's "about N s". */
