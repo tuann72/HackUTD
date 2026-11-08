@@ -4,9 +4,9 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 
 > **Feature plans live in [`docs/features/`](docs/features/).** Before working on a feature, read its plan there: it has the concrete design, ordered tasks, what can run in parallel, and who's on what. Current plans:
 >
-> - [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md): the gateway takes iMessages through Photon (Spectrum) webhooks, replacing the Twilio webhook (done, #54).
+> - [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md): the gateway takes iMessages through Photon (Spectrum) webhooks, replacing the Twilio webhook (in progress).
 > - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (gateway, simulator, basic message UI). Its Twilio webhook parts are superseded by the Photon plan.
-> - [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md): sender blocklist and scam fingerprints in MongoDB Atlas (done, #54).
+> - [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md): sender blocklist and scam fingerprints in MongoDB Atlas (in progress).
 > - [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md): proposed later feature for SIP-routed call transcription, classification, and warnings.
 > - [`docs/features/potential-threat-data.md`](docs/features/potential-threat-data.md): synthetic threat/coercion/fake-emergency texts with a proposed label 8 "Potential Threat" (in progress; label scheme TBD).
 > - [`docs/features/simulation-panel.md`](docs/features/simulation-panel.md): Simulate sidebar on `/` that sends configurable simulated iMessages to the gateway through `POST /api/simulate` (done, #54).
