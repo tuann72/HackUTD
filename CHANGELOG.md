@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Grandparent scam button removed from Simulate
+
+- **Decision (Tuan):** remove the grandparent scam story from the Simulate sidebar. Its preset is gone from `apps/web/lib/sim/presets.ts`, so the sidebar now has Send a scam, Send a legit text, Random burst and Rapid fire. The scenario file `data/message_bank/scenarios/grandparent.jsonl` stays, like the removed iMessage demo and Smoke test presets, because the CLI simulator (`npm run sim -- scenario grandparent`) can still run it. The demo walkthrough in `docs/DEMO.md` runs `imessage-demo` from the CLI and is unchanged.
+
 ### 2026-11-08: Landing T without the black slab, with two small squares
 
 - **Decision (Tuan):** in the landing page's block "T" (`components/landing/Blocks.tsx`), remove the black slab, add the missing serif under the right end of the crossbar (it mirrors the left one), and add two small squares beside the stem with a small gap (3% of the panel) on each side. Each square is its own shade of pink: paler `#f483b0` on the left, darker `#d81b6a` on the right. The squares keep a 1:1 aspect ratio, so they stay square whatever the panel's shape.
@@ -51,6 +55,7 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Implementation:** use a Node.js/TypeScript LiveKit agent worker, consistent with the repository service stack. Subscribe only to the SIP caller track, buffer final transcript text in memory, and call the text classifier after hangup. Do not write audio to persistent storage or print transcript text in logs.
 - **Still TBD:** deployment target, consent/disclosure process, transcript retention duration, result storage/API, and call-level classifier evaluation. No test call or paid usage test was part of the original decision.
 - **References:** [LiveKit STT models](https://docs.livekit.io/agents/models/stt/), [LiveKit Inference privacy and authentication](https://docs.livekit.io/agents/models/inference/), and [LiveKit Inference pricing](https://livekit.com/pricing/inference).
+
 ### 2026-11-08: Wordmark shield as tall as the letters
 
 - **Decision (Tuan):** the shield that stands for the U in T-GUARD is as tall as the capitals around it, on the landing page and wherever the wordmark appears (`/messages` and `/dashboard` headers). `ShieldLetter` sets its height to `1cap` (the font's cap height), so it matches Anton (0.86em) on the landing page and Inter (about 0.73em) in the headers. It was 0.74em, short of Anton's capitals. Browsers without the `cap` unit fall back to 0.8em.
