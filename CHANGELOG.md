@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: The shield's T uses a font close to T-Mobile's
+
+- **Decision (Tuan):** make the T on the 3D shield closer to T-Mobile's font. T-Mobile's typeface, TeleNeo, belongs to Deutsche Telekom and isn't free to use, so the T is the "T" outline of **Manrope ExtraBold** (weight 800, SIL Open Font License), a free geometric sans with similar flat-ended, even strokes. It replaces the hand-drawn block T in `components/scene/Shield.tsx`, at the same top and bottom (11.1 icon units tall). It is narrower and slimmer: stem 2.1 and crossbar 2.0 units, where the block T's were 3.1. The outline is stored as eight points, so no font file is loaded at runtime. It is a letter in a font, not T-Mobile's logo.
+
 ### 2026-11-08: Add the after-call classifier result path and Vercel display
 
 - **User request:** pass the caller transcript to the existing classifier and render the result in the Vercel app.
