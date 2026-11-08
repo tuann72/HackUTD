@@ -90,6 +90,7 @@
         "category": { "type": ["string", "null"] },
         "model": { "type": "string" },
         "warning": { "enum": ["large_money_request"] },
+        "review": { "type": "object", "required": ["decision", "reason", "model", "checks", "bankSource"], "additionalProperties": false, "properties": { "decision": { "enum": ["block", "deliver"] }, "reason": { "type": "string" }, "model": { "type": "string" }, "checks": { "type": "array", "items": { "type": "object", "required": ["check", "keyword", "found"], "additionalProperties": false, "properties": { "check": { "type": "string" }, "keyword": { "type": ["string", "null"] }, "found": { "type": "boolean" } } } }, "bankSource": { "enum": ["nessie", "mock", null] } } },
         "highlights": {
           "type": "array",
           "items": {

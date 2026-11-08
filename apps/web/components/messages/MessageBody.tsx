@@ -41,7 +41,7 @@ export function MessageBody({
           <mark
             key={seg.start}
             title={seg.highlight.text ? `Flagged word: ${seg.highlight.text}` : "Flagged word"}
-            className="rounded bg-amber-200/70 px-0.5 text-inherit dark:bg-amber-400/25"
+            className="bg-[#ffcee6] px-0.5 text-inherit"
           >
             {content}
           </mark>

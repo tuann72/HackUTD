@@ -33,6 +33,17 @@ export interface GatewayConfig {
   senderBlockStrikes: number;
   senderBlockScore: number;
   senderBlockTtlDays: number;
+  /** REVIEWER=on: Nemotron reviews scores in the band below. Off (default) changes nothing. */
+  reviewer: boolean;
+  reviewBandLow: number;
+  reviewBandHigh: number;
+  reviewTimeoutMs: number;
+  nvidiaApiKey: string | null;
+  nemotronModel: string;
+  nvidiaBaseUrl: string;
+  nessieApiKey: string | null;
+  nessieAccountId: string | null;
+  nessieBaseUrl: string;
 }
 
 type Env = Record<string, string | undefined>;
@@ -91,6 +102,15 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     if (!isIP(s)) throw new Error(`DNS_SERVERS must be comma-separated IP addresses, got "${s}"`);
   }
 
+  const reviewerRaw = (str(env, 'REVIEWER') ?? 'off').toLowerCase();
+  if (reviewerRaw !== 'off' && reviewerRaw !== 'on') {
+    throw new Error(`REVIEWER must be "off" or "on", got "${reviewerRaw}"`);
+  }
+  const unit = (n: number) => n >= 0 && n <= 1;
+  const reviewBandLow = num(env, 'REVIEW_BAND_LOW', 0.22, unit, 'a number between 0 and 1');
+  const reviewBandHigh = num(env, 'REVIEW_BAND_HIGH', 0.77, unit, 'a number between 0 and 1');
+  if (reviewBandLow >= reviewBandHigh) throw new Error('REVIEW_BAND_LOW must be below REVIEW_BAND_HIGH');
+
   return {
     port: num(env, 'PORT', 8787, (n) => Number.isInteger(n) && n > 0 && n < 65536, 'a TCP port'),
     photonWebhookSecret,
@@ -116,5 +136,15 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     senderBlockStrikes: num(env, 'SENDER_BLOCK_STRIKES', 3, (n) => Number.isInteger(n) && n >= 1, 'an integer of at least 1'),
     senderBlockScore: num(env, 'SENDER_BLOCK_SCORE', 0.95, (n) => n > 0 && n <= 1, 'a number above 0 and at most 1'),
     senderBlockTtlDays: num(env, 'SENDER_BLOCK_TTL_DAYS', 7, (n) => n > 0, 'a positive number'),
+    reviewer: reviewerRaw === 'on',
+    reviewBandLow,
+    reviewBandHigh,
+    reviewTimeoutMs: num(env, 'REVIEW_TIMEOUT_MS', 12000, (n) => Number.isInteger(n) && n > 0, 'a positive integer'),
+    nvidiaApiKey: str(env, 'NVIDIA_API_KEY'),
+    nemotronModel: str(env, 'NEMOTRON_MODEL') ?? 'nvidia/nemotron-3.5-lightning-30b-a3b',
+    nvidiaBaseUrl: str(env, 'NVIDIA_BASE_URL') ?? 'https://integrate.api.nvidia.com/v1',
+    nessieApiKey: str(env, 'NESSIE_API_KEY'),
+    nessieAccountId: str(env, 'NESSIE_ACCOUNT_ID'),
+    nessieBaseUrl: str(env, 'NESSIE_BASE_URL') ?? 'https://api.nessieisreal.com',
   };
 }

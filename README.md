@@ -34,6 +34,9 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Restyle `/messages` after the T-GUARD prototype (paper/ink/pink, labels, counter row, light only) | `feat/web-messages-theme` | Tuan + Claude Code | Done | [#62](https://github.com/tuann72/HackUTD/pull/62) |
+| Classifier data | 600 synthetic scam texts: government threats, IRS, ID/identification requests, health scams (150 each); merged by `build_splits.py` | `data/gov-health-id-irs-scams` | Tuan + Claude Code | Done (retrain not run) | [#61](https://github.com/tuann72/HackUTD/pull/61) |
+| Nemotron review | Second-opinion review in the score band, with Nessie bank checks, behind `REVIEWER=off` | `feat/nemotron-review` | Timothy + Claude Code | Done | [#59](https://github.com/tuann72/HackUTD/pull/59) |
 | Initial 3D scene | Replace the right (Receiver) blob with the T-GUARD pink box and a photographic hand that slaps blocked potential scams away (art and strike timings from the T-GUARD offline prototype) | `feat/scene-slap-hand` | Tuan + Claude Code | Done | [#60](https://github.com/tuann72/HackUTD/pull/60) |
 | Simulation panel | Remove the "Burst settings" inputs from the Simulate sidebar (bursts use fixed defaults) | `fix/web-sim-remove-burst-settings` | Tuan + Claude Code | Done | [#58](https://github.com/tuann72/HackUTD/pull/58) |
 | Classifier data | Merge the 300 free-ham rows into `scam_categories_100k(_full).csv` (100,300 rows); `build_splits.py` stops reading them separately | `data/free-ham-into-100k` | Tuan + Claude Code | Done (retrain not run) | [#57](https://github.com/tuann72/HackUTD/pull/57) |
