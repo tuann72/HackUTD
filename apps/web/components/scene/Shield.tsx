@@ -20,19 +20,24 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 
 // Outline of the Lucide `shield` icon (lucide.dev, ISC license), in its
 // 24 x 24 viewBox. It is filled and extruded into a badge, with a raised white
-// block "T" on its face (an original letterform, not T-Mobile's logo).
+// "T" on its face. T-Mobile's typeface (TeleNeo) is proprietary, so the T is
+// the closest free match: Manrope ExtraBold's "T" (SIL Open Font License),
+// not T-Mobile's logo.
 const OUTLINE =
   "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z";
-/** The "T", in the same viewBox (y down): a crossbar over a stem, centered on the shield. */
+/**
+ * The "T", in the same viewBox (y down): Manrope ExtraBold's T outline (wght 800,
+ * 2000 units per em), scaled to 11.1 units tall and centered on the shield.
+ */
 const T_GLYPH: [number, number][] = [
-  [7.25, 6.5],
-  [16.75, 6.5],
-  [16.75, 9.6],
-  [13.55, 9.6],
-  [13.55, 17.6],
-  [10.45, 17.6],
-  [10.45, 9.6],
-  [7.25, 9.6],
+  [7.45, 6.5],
+  [16.55, 6.5],
+  [16.55, 8.46],
+  [13.05, 8.46],
+  [13.05, 17.6],
+  [10.95, 17.6],
+  [10.95, 8.46],
+  [7.45, 8.46],
 ];
 /** How far the T stands out from the badge's face, in icon units. */
 const T_DEPTH = 0.35;
@@ -100,7 +105,7 @@ interface ShieldProps {
 }
 
 /**
- * T-Guard: a pink shield (Lucide's shield outline, a white "T" on it) between the sender and the
+ * T-Guard: a pink shield (Lucide's shield outline, a white Manrope "T" on it) between the sender and the
  * Receiver. Blocked messages bounce off its face; delivered ones arc over it.
  * It only animates the gateway's decision; it never makes one.
  */
