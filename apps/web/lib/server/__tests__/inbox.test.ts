@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { handleWebhook, MemoryStore, spectrumSignature, type InboxConfig } from "../inbox";
+import { handleWebhook, MemoryStore, spectrumSignature, standardSignature, type InboxConfig } from "../inbox";
 
 const SECRET = "test-secret";
 const NOW = new Date("2026-11-08T15:04:05Z");
@@ -69,5 +69,62 @@ describe("Vercel Photon webhook", () => {
     expect((await run(req({ event: "typing" }), store)).status).toBe(200);
     expect(store.rows.size).toBe(0);
     expect((await run(req(event("spc-7", { type: "text", text: "x" })), store, { webhookSecret: "" })).status).toBe(503);
+  });
+});
+
+describe("Vercel Photon webhook, Photon 2.0 / Beta deliveries", () => {
+  const WHSEC = "whsec_" + Buffer.from("beta-signing-key").toString("base64");
+  const betaCfg = { ...cfg, webhookSecret: WHSEC };
+
+  function betaEvent(msgId: string, content: unknown, handle = "+15555550142", type = "message.received") {
+    return {
+      id: `pho_evt_${msgId}`,
+      type,
+      apiVersion: "2026-07-01",
+      source: "imessage.photon",
+      timestamp: NOW.toISOString(),
+      data: {
+        projectId: "pho_prj_1",
+        object: { id: `pho_msg_${msgId}`, platform: "imessage", status: "received", sentBy: { handle, platform: "imessage" }, space: { id: "pho_spc_1" }, content },
+      },
+    };
+  }
+  function betaReq(body: unknown, secret = WHSEC, extraSig = "") {
+    const raw = JSON.stringify(body);
+    const id = (body as { id: string }).id;
+    const ts = String(Math.floor(NOW.getTime() / 1000));
+    const sig = `v1,${standardSignature(secret, id, ts, raw)}`;
+    return new Request("https://x/webhooks/photon", {
+      method: "POST",
+      headers: { "content-type": "application/json", "webhook-id": id, "webhook-timestamp": ts, "webhook-signature": extraSig ? `${extraSig} ${sig}` : sig },
+      body: raw,
+    });
+  }
+  const runBeta = (r: Request, store = new MemoryStore()) => handleWebhook(r, { cfg: betaCfg, store, now: () => NOW });
+
+  it("verifies Standard Webhooks signatures, including the second one during a rotation", async () => {
+    const store = new MemoryStore();
+    expect((await runBeta(betaReq(betaEvent("1", { type: "text", format: "plain", text: "Your account is locked, verify at bit.ly/x" })), store)).status).toBe(200);
+    expect((await runBeta(betaReq(betaEvent("2", { type: "text", format: "plain", text: "see you at dinner" }), WHSEC, "v1,b2xkLXNpZw=="), store)).status).toBe(200);
+    expect((await runBeta(betaReq(betaEvent("3", { type: "text", format: "plain", text: "x" }), "whsec_" + Buffer.from("wrong").toString("base64")))).status).toBe(401);
+    const byBody = Object.fromEntries((await store.list(10)).map((m) => [m.body, m]));
+    expect(byBody["Your account is locked, verify at bit.ly/x"]).toMatchObject({ action: "blocked", reason: "model_verdict", from: { display: "***-***-0142" } });
+    expect(byBody["see you at dinner"]).toMatchObject({ action: "delivered", reason: "model_verdict" });
+    expect(JSON.stringify(await store.list(10))).not.toMatch(/pho_msg_|\+15555550142/);
+  });
+
+  it("classifies album text, skips the model for attachments, ignores other events, dedupes retries", async () => {
+    const store = new MemoryStore();
+    const album = { type: "group", parts: [{ type: "text", format: "plain", text: "Claim your prize now" }, { type: "attachment", attachmentId: "pho_att_1" }] };
+    await runBeta(betaReq(betaEvent("4", album)), store);
+    await runBeta(betaReq(betaEvent("5", { type: "attachment", attachmentId: "pho_att_2" }, "jane@icloud.com")), store);
+    await runBeta(betaReq(betaEvent("5", { type: "attachment", attachmentId: "pho_att_2" }, "jane@icloud.com")), store);
+    expect((await runBeta(betaReq(betaEvent("6", { type: "text", format: "plain", text: "hi" }, "+1", "message.delivered")), store)).status).toBe(200);
+    expect((await runBeta(betaReq(betaEvent("7", { type: "message.read" })), store)).status).toBe(200);
+    const rows = await store.list(10);
+    expect(rows).toHaveLength(2);
+    expect(rows.map((m) => [m.kind, m.reason, m.from.display])).toEqual(
+      expect.arrayContaining([["album", "model_verdict", "***-***-0142"], ["attachment", "not_classified", "j***@icloud.com"]]),
+    );
   });
 });
