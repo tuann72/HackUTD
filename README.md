@@ -116,7 +116,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Message UI | Password (4321) on Clear chats, checked by the gateway and the Vercel backup | `feat/clear-chats-password` | Tuan + Claude Code | Done | TBD |
+| Message UI | Password (4321) on Clear chats, checked by the gateway and the Vercel backup | `feat/clear-chats-password` | Tuan + Claude Code | Done | [#91](https://github.com/tuann72/HackUTD/pull/91) |
 | Message UI | Collapse buttons on the /messages side panels (messages left, Simulate right) | `feat/web-panel-collapse` | Tuan + Claude Code | Done | [#90](https://github.com/tuann72/HackUTD/pull/90) |
 | Message UI | Remove the Voice results page, its API route, store and contracts | `chore/remove-voice-page` | Tuan + Claude Code | Done | [#89](https://github.com/tuann72/HackUTD/pull/89) |
 | Message UI | Redesign /messages (inbox and blocked in a filterable left panel, fits the screen) and /dashboard, with Motion | `feat/web-ui-revamp` | Tuan + Claude Code | Done | [#88](https://github.com/tuann72/HackUTD/pull/88) |
