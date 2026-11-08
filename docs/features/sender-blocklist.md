@@ -2,7 +2,7 @@
 
 - **Slug:** `sender-blocklist`
 - **Phase:** MVP
-- **Status:** **On by default** (Tuan, 2026-11-08, `feat/sender-blocklist-clear`, [#86](https://github.com/tuann72/HackUTD/pull/86)), with password-protected Unblock and Clear blocks buttons in the web UI (stage 4). `SENDER_BLOCKLIST=off` still judges each message on its own.
+- **Status:** **On by default** (Tuan, 2026-11-08, `feat/sender-blocklist-clear`, [#86](https://github.com/tuann72/HackUTD/pull/86)), with password-protected Unblock and Clear blocks buttons in the web UI (stage 4). **Those two buttons were removed from the UI on 2026-11-08 (Tuan, #93) because they weren't working;** the server routes are unchanged. `SENDER_BLOCKLIST=off` still judges each message on its own.
 - **Owner:** Timothy
 
 ## Goal

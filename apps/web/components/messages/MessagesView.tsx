@@ -3,38 +3,15 @@
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { AppHeader } from "@/components/brand/AppHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  clearBlocksText,
-  useMessages,
-  type Message,
-  type MessageChange,
-} from "@/lib/messages";
+import { useMessages, type MessageChange } from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
 import type { Guard } from "@/components/scene/Scene";
 import { SimPanel } from "@/components/sim/SimPanel";
 import { MessagePanel } from "./MessagePanel";
 import { PasswordPrompt } from "./PasswordPrompt";
-import { clearBlocksLabel, useBlocklist } from "./useBlocklist";
 import { useNow } from "./useNow";
 
-/** Tooltip on Unblock and Clear blocks when there's no gateway to check the password (mock data). */
-const MOCK_ACTIONS_OFF = "Needs a live gateway (set NEXT_PUBLIC_API_URL). The demo data can't be unblocked.";
-
-type Prompt = { kind: "chats" } | { kind: "clear" } | { kind: "unblock"; message: Message };
-
-const PROMPT_TEXT = {
-  chats: {
-    title: "Clear chats",
-    description: "Delete every message, in the inbox and the Blocked list, for everyone. This can't be undone.",
-    confirm: "Clear chats",
-  },
-  clear: {
-    title: "Clear blocks",
-    description: "Unblock every sender T-Guard has blocked. Messages already in the Blocked list stay there.",
-    confirm: "Clear blocks",
-  },
-} as const;
 
 /** The scene's guard switch: the pink shield or the slapping hand. */
 const GUARDS: { id: Guard; label: string }[] = [
@@ -83,7 +60,7 @@ export function MessagesView() {
     },
     [feed],
   );
-  const { messages, mode, error, clear: clearSource, actions, refresh } = useMessages({ intervalMs: 1500, onChanges });
+  const { messages, mode, error, clear: clearSource, actions } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
 
   // "Clear chats" deletes every stored message on the gateway (or the Vercel backup), not just this screen.
@@ -93,7 +70,7 @@ export function MessagesView() {
   const clear = async () => {
     if (!clearSource) return;
     if (actions) {
-      setPrompt({ kind: "chats" });
+      setPromptOpen(true);
       return;
     }
     if (!window.confirm("Delete all messages? This can't be undone.")) return;
@@ -108,35 +85,19 @@ export function MessagesView() {
     }
   };
 
-  // Unblock and Clear blocks: both ask for the password, which the server checks.
-  const blocklist = useBlocklist(actions);
-  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  // The password prompt for Clear chats (live sources only; the server checks it).
+  const [promptOpen, setPromptOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(null), 5000);
     return () => clearTimeout(t);
   }, [notice]);
-  // Null while loading too, so the buttons stay off until the source is known.
-  const actionsOff = actions ? null : mode == null ? "Loading…" : MOCK_ACTIONS_OFF;
-  const openUnblock = useCallback((message: Message) => setPrompt({ kind: "unblock", message }), []);
   const runPrompt = async (password: string) => {
-    if (!actions || !prompt) return;
-    if (prompt.kind === "chats") {
-      if (!clearSource) return;
-      await clearSource(password);
-      setClearError(null);
-      setNotice("Deleted every message.");
-    } else if (prompt.kind === "clear") {
-      const r = await actions.clearBlocks(password);
-      setNotice(clearBlocksText(r));
-      blocklist.refresh();
-    } else {
-      const r = await actions.unblock(prompt.message.id, password);
-      setNotice(r.allowlisted ? "Moved to the inbox. That sender won't be blocked again." : "Moved to the inbox.");
-      refresh();
-      blocklist.refresh();
-    }
+    if (!actions || !clearSource) return;
+    await clearSource(password);
+    setClearError(null);
+    setNotice("Deleted every message.");
   };
 
   const { blockedCount, deliveredCount } = useMemo(
@@ -213,8 +174,6 @@ export function MessagesView() {
             messages={messages}
             loading={mode == null}
             now={now}
-            onUnblock={openUnblock}
-            unblockOff={actionsOff}
             status={
               (error || clearError) && (
                 <div className="flex flex-col gap-2">
@@ -232,26 +191,15 @@ export function MessagesView() {
               )
             }
             tools={
-              <>
-                <button
-                  type="button"
-                  onClick={clear}
-                  disabled={!clearSource || clearing || messages.length === 0}
-                  title={actions ? "Delete all messages from the gateway. Needs the password." : "Delete all messages. This can't be undone."}
-                  className={TOOL}
-                >
-                  {clearing ? "Clearing…" : "Clear chats"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPrompt({ kind: "clear" })}
-                  disabled={!!actionsOff}
-                  title={actionsOff ?? "Unblock every sender T-Guard has blocked. Needs the password."}
-                  className={TOOL}
-                >
-                  <span className="tabular-nums">{clearBlocksLabel(blocklist.status)}</span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={clear}
+                disabled={!clearSource || clearing || messages.length === 0}
+                title={actions ? "Delete all messages from the gateway. Needs the password." : "Delete all messages. This can't be undone."}
+                className={TOOL}
+              >
+                {clearing ? "Clearing…" : "Clear chats"}
+              </button>
             }
           />
 
@@ -275,18 +223,13 @@ export function MessagesView() {
         )}
       </AnimatePresence>
 
-      {prompt && (
+      {promptOpen && (
         <PasswordPrompt
-          key={prompt.kind === "unblock" ? prompt.message.id : prompt.kind}
-          title={prompt.kind === "unblock" ? "Unblock message" : PROMPT_TEXT[prompt.kind].title}
-          description={
-            prompt.kind === "unblock"
-              ? `Move this potential scam from ${prompt.message.from.display} to the inbox. It will show as restored.`
-              : PROMPT_TEXT[prompt.kind].description
-          }
-          confirmLabel={prompt.kind === "unblock" ? "Unblock" : PROMPT_TEXT[prompt.kind].confirm}
+          title="Clear chats"
+          description="Delete every message, in the inbox and the Blocked list, for everyone. This can't be undone."
+          confirmLabel="Clear chats"
           onSubmit={runPrompt}
-          onClose={() => setPrompt(null)}
+          onClose={() => setPromptOpen(false)}
         />
       )}
     </MotionConfig>
