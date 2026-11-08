@@ -44,8 +44,8 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 |---|---|---|---|---|---|---|---|
 | 1.1 | Route a test call from the Photon voice number into a LiveKit room; verify caller audio | 0.1, 0.2 | 1.3 | In review | `feat/voice-scam-guard-stt` | Codex | [#51](https://github.com/tuann72/HackUTD/pull/51) |
 | 1.2 | Stream caller audio to STT; buffer transcript only and discard audio; finalize on hangup | 1.1 | — | In review | `feat/voice-scam-guard-stt` | Codex | [#51](https://github.com/tuann72/HackUTD/pull/51) |
-| 1.3 | Evaluate short call transcripts with the existing text classifier and define call-result fields | 0.1 | 1.1 | In progress | `feat/voice-guard-call-results` | Codex (agent) | Draft PR pending |
-| 1.4 | Add versioned read-only call-result contract/API and Vercel result display | 1.2, 1.3 | — | In progress | `feat/voice-guard-call-results` | Codex (agent) | Draft PR pending |
+| 1.3 | Evaluate short call transcripts with the existing text classifier and define call-result fields | 0.1 | 1.1 | In progress | `feat/voice-guard-call-results` | Codex (agent) | [#63](https://github.com/tuann72/HackUTD/pull/63) |
+| 1.4 | Add versioned read-only call-result contract/API and Vercel result display | 1.2, 1.3 | — | In progress | `feat/voice-guard-call-results` | Codex (agent) | [#63](https://github.com/tuann72/HackUTD/pull/63) |
 | 1.5 | Verify caller-only end-to-end call: hang up, then see transcript and verdict in the web app | 1.1, 1.2, 1.3, 1.4 | — | Not started | — | TBD | — |
 | 1.6 | Deploy the caller-only worker to LiveKit Cloud and verify production dispatch | 1.1, 1.2 | 1.3, 1.4 | In progress | `feat/voice-scam-guard-stt` | Codex | [#51](https://github.com/tuann72/HackUTD/pull/51) |
 
@@ -83,14 +83,22 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 ### 1.3 Reuse and evaluate the classifier
 
 - **What:** Send transcript text and an opaque call/segment ID to the existing `POST /classify`. Measure behavior on short scam-style and legitimate call scripts. The existing classifier is SMS/text-message trained, and MiniLM input truncates at 256 tokens, so long calls require a separately evaluated windowing and aggregation design.
-- **Files:** `classifier/` and future voice-service code; model and dataset changes only after evaluation.
+- **Files:** `services/voice-guard/`, `contracts/`, and the Vercel result API; model and dataset changes only after evaluation.
 - **Done when:** A small held-out test set, score behavior, and limitations are documented; no call-level accuracy claim is made from SMS metrics.
 
 ### 1.4 Show call results in the Vercel app
 
 - **What:** Define a versioned call-result schema and read-only API. Render transcript, verdict, score, and model information; keep classification and call logic server-side.
-- **Files:** `contracts/`, `apps/web/`, and the voice result service.
+- **Files:** `contracts/`, `apps/web/`, and `services/voice-guard/`.
 - **Done when:** The Vercel page reads a real or fixture call result without calling the classifier or changing the verdict.
+
+Implementation details for tasks 1.3–1.4:
+
+- The worker posts `{ messageId, text }` to the existing classifier, where `messageId` is a random opaque UUID. After classification, it sends the v1 call-result payload to `VOICE_GUARD_RESULTS_URL` with `VOICE_GUARD_RESULTS_INGEST_TOKEN`.
+- Vercel `POST /api/voice/calls` stores only validated result payloads in the separate Atlas `voiceCallResults` collection. `GET /api/voice/calls` returns the v1 contract and requires `VOICE_GUARD_RESULTS_VIEW_TOKEN`; the `/voice` page accepts this token in memory only and polls the read API.
+- On Vercel, result storage stays disabled unless `MONGODB_URI`, `VOICE_GUARD_RESULTS_INGEST_TOKEN`, `VOICE_GUARD_RESULTS_VIEW_TOKEN`, and an explicit positive `VOICE_GUARD_RESULTS_TTL_SECONDS` are configured. The write route derives `expiresAt` from call completion, applies an Atlas TTL index, and filters expired rows on every read. No default retention duration is selected.
+- The view-token mechanism is a protective gate for this prototype, not a resolved identity or access policy. Who should hold it remains TBD. Local development without Atlas uses process memory and loses results on restart.
+- The classifier call and result-upload failures are logged by opaque call ID only; transcript text is not logged, and publication failure does not terminate the call.
 
 ### 2.1-2.3 Bridge and verify the caller–victim call
 
@@ -112,4 +120,5 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 - **2026-11-08 (first inbound call):** The caller reached LiveKit through the configured inbound trunk and dispatch rule. LiveKit created a `tgate-voice-` room and recorded the SIP participant as joining and active; its SIP call status stayed `ringing`. The caller then canceled, and LiveKit recorded SIP response `487` (`Request Terminated`). Photon marked the call canceled. This confirms delivery to the LiveKit room, but not that the call was answered or that usable audio reached an app. The dispatch rule has no agent, so adding a receiver is the next implementation step. No transcript or classifier result was produced.
 - **2026-11-08 (STT decision and implementation start):** The user selected AssemblyAI Universal-Streaming through LiveKit Inference for Stage 1. LiveKit's current pricing lists the model at `$0.0025/min`; its docs say Inference uses LiveKit credentials and is zero-data-retention by default, including audio passed to the underlying STT provider. The TypeScript worker will subscribe to the SIP caller's audio track, keep final transcript text in memory only, and classify after hangup. Tasks 1.1–1.2 are in progress on `feat/voice-scam-guard-stt`. No test call or paid usage test is authorized in this task. Worker deployment, consent/disclosure, transcript retention, and call-result storage remain open.
 - **2026-11-08 (local call verification and deployment target):** the `T-Gate Voice` dispatch rule was updated to target `voice-guard`. To complete the SIP answer, the worker publishes a zero-amplitude audio track; it does not speak or send caller audio back. A consented call showed `ringing` → `active` → `hangup`; STT returned non-empty speech and the transcript was discarded after the call. A one-call local debug log was enabled at the user's request, displayed the speech text, and was removed before restarting the worker. The classifier was not configured, so no verdict was produced. The user selected LiveKit Cloud Build; `Dockerfile`, `.dockerignore`, build config, and deployment notes are prepared. Tasks 1.1–1.2 are in review, and task 1.6 is in progress on `feat/voice-scam-guard-stt`.
+- **2026-11-08 (classifier and Vercel call results):** tasks 1.3–1.4 are under review on `feat/voice-guard-call-results` (draft PR #63, stacked on #51). The worker now publishes the transcript and classifier fields to Vercel after a successful classification, using an opaque UUID; Vercel exposes a versioned read API and a protected `/voice` display. The result route uses a separate Atlas collection with expiry anchored to completion time. On Vercel, it fails closed unless the owner configures Atlas, separate ingest/view tokens, and `VOICE_GUARD_RESULTS_TTL_SECONDS`; no retention duration or viewer list is selected by code. The UI holds the view token in memory only. No test call, classifier evaluation, or paid usage check was run.
 - **2026-11-08 (classifier/result implementation):** tasks 1.3–1.4 are in progress on `feat/voice-guard-call-results`, stacked on the worker branch. The existing classifier accepts caller transcript text with an opaque ID and returns label, score, category, model, and highlights. Transcript retention duration and who may view Vercel results remain TBD; production storage/display must require explicit configuration rather than silently retaining transcripts or exposing them publicly.

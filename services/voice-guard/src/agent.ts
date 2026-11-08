@@ -10,6 +10,7 @@ import {
 } from '@livekit/rtc-node';
 import dotenv from 'dotenv';
 import { classifyTranscript } from './classifier.js';
+import { publishCallResult } from './callResults.js';
 import { readConfig } from './config.js';
 import { publishSilenceTrack } from './silence.js';
 import { transcribeCallerTrack } from './transcribe.js';
@@ -126,6 +127,25 @@ export default defineAgent({
             model: result.model,
           }),
         );
+        if (config.callResultsUrl && config.callResultsToken) {
+          try {
+            await publishCallResult(
+              {
+                url: config.callResultsUrl,
+                token: config.callResultsToken,
+                timeoutMs: config.classifierTimeoutMs,
+              },
+              messageId,
+              transcript,
+              result,
+            );
+            console.info(JSON.stringify({ event: 'call_result_published', messageId }));
+          } catch {
+            console.warn(JSON.stringify({ event: 'call_result_publish_failed', messageId }));
+          }
+        } else {
+          console.info(JSON.stringify({ event: 'call_result_sink_not_configured', messageId }));
+        }
       } catch {
         console.warn(JSON.stringify({ event: 'classification_unavailable', messageId }));
       }

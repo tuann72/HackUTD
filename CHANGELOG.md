@@ -6,6 +6,15 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Add the after-call classifier result path and Vercel display
+
+- **User request:** pass the caller transcript to the existing classifier and render the result in the Vercel app.
+- **Worker flow:** after STT finalizes on hangup, the worker sends `{ messageId, text }` to `POST /classify`. On success, it posts the transcript and verdict fields to `VOICE_GUARD_RESULTS_URL` with an opaque UUID and `VOICE_GUARD_RESULTS_INGEST_TOKEN`. Neither transcript nor credentials are logged, and an upload failure does not affect call completion.
+- **Contract and app:** added v1 submission and query schemas, a synthetic fixture, `POST /api/voice/calls`, and a read-only `GET /api/voice/calls`. The `/voice` page requires an operator-entered view token, keeps it only in React memory, refreshes every five seconds, and renders transcript, verdict, score, category, model, and completion time. The worker and web app exchange only the versioned contract, not code.
+- **Persistence gate:** Vercel refuses result writes unless Atlas, separate ingest and view tokens, and a positive `VOICE_GUARD_RESULTS_TTL_SECONDS` are configured. Records go to a separate Atlas collection with `expiresAt` anchored to call completion, a Mongo TTL index, and an expiry filter on reads. Local development may use process memory. No default TTL is selected; the duration and intended viewer list remain TBD. The view token is a protective shared-secret mechanism, not a settled identity policy.
+- **Limit:** the classifier is SMS-trained, so the call verdict is an experimental plumbing result, not validated call-level accuracy. No live call, classifier evaluation, or paid usage test was run in this task.
+- **Status:** tasks 1.3–1.4 are in progress on `feat/voice-guard-call-results`, stacked on `feat/voice-scam-guard-stt` (draft PR #63).
+
 ### 2026-11-08: Verify local voice answer and transcription; select LiveKit Cloud deployment
 
 - **Verification:** the user placed a consented call after the `T-Gate Voice` SIP dispatch rule was assigned to `voice-guard`. The worker published a zero-amplitude audio track, LiveKit SIP status changed `ringing` → `active` → `hangup`, and AssemblyAI Universal-Streaming produced non-empty speech text. A one-call local log displayed the transcript at the user's request, then the logging change was removed; no transcript was persisted.

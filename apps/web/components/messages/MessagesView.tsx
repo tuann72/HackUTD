@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
+import Link from "next/link";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useMessages, type Message, type MessageChange, type SourceMode } from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
@@ -116,7 +117,12 @@ export function MessagesView() {
         <header className="mb-6 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
-            <SourceIndicator mode={mode} />
+            <div className="flex items-center gap-4">
+              <Link href="/voice" className="text-sm font-medium text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400">
+                Voice results
+              </Link>
+              <SourceIndicator mode={mode} />
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="rounded-md bg-zinc-100 px-2 py-1 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">

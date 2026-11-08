@@ -30,6 +30,9 @@ export async function classifyTranscript(
   text: string,
 ): Promise<CallClassification> {
   const endpoint = new URL('/classify', options.baseUrl);
+  if (endpoint.protocol !== 'https:' && endpoint.hostname !== 'localhost' && endpoint.hostname !== '127.0.0.1') {
+    throw new Error('Classifier endpoint must use HTTPS outside local development');
+  }
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
