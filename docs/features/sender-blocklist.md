@@ -68,7 +68,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | Done | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 | 1.2 | Gateway: fingerprint + blocklist module (store interface, MongoDB implementation, in-memory fake, tests) | — | 1.1, 1.3, 1.4 | Done | `feat/sender-blocklist-module` | Timothy + Claude Code | [#23](https://github.com/tuann72/HackUTD/pull/23) |
 | 1.3 | Atlas setup: M0 cluster, database user, IP allowlist, connection string in `.env` (person, not agent) | — | 1.1, 1.2, 1.4 | Parked (only needed with `SENDER_BLOCKLIST=on`) | | Timothy | |
 | 1.4 | Vultr: train the model and deploy the classifier ([classifier plan](classifier-service.md), tasks 2.1 and 3.x) | — | 1.1, 1.2, 1.3 | Not started | | Tuan | |
@@ -77,8 +77,8 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
-| 2.2 | Override: `POST /admin/messages/restore` + `npm run message:restore`, which restores one message (allowlists the sender only when on) | 1.2 | 2.1 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | Done | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| 2.2 | Override: `POST /admin/messages/restore` + `npm run message:restore`, which restores one message (allowlists the sender only when on) | 1.2 | 2.1 | Done | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 
 ### Stage 3: on Vultr, end to end
 

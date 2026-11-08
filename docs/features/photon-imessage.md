@@ -76,14 +76,14 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 
 | # | Task | Depends on | Parallel? | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Scaffolding: gateway `/webhooks/photon` (signature, dedupe, content parsing), SQLite schema for handles, simulator signs Spectrum payloads, fixture, docs | — | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
+| 1.1 | Scaffolding: gateway `/webhooks/photon` (signature, dedupe, content parsing), SQLite schema for handles, simulator signs Spectrum payloads, fixture, docs | — | — | Done | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 | 1.2 | Provision a Photon iMessage line and project. Register the webhook against the deployed gateway | 1.1, gateway deploy | Yes, with 1.3 | Not started | — | — | — |
 | 1.3 | Record a real delivery and replace the synthetic fixture (`contracts/fixtures/photon-inbound-imessage.sample.json`) | 1.2 | — | Not started | — | — | — |
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
-| 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
-| 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
-| 1.7 | Deploy tooling and setup checklist: `docs/SETUP.md`, `npm run photon:webhook`, `services/gateway/deploy/` (Caddyfile, systemd unit, bootstrap), tunnel helper | 1.1 | Yes | In review | `chore/photon-deploy-tooling` | Tuan + Claude Code | [#25](https://github.com/tuann72/HackUTD/pull/25) |
-| 1.8 | Simulator: send attachments, reactions, contact cards, links, albums and group chats; `imessage-demo` scenario; `docs/DEMO.md` demo script | 1.6 | Yes | In review | `feat/photon-sim-rich-content` | Tuan + Claude Code | [#26](https://github.com/tuann72/HackUTD/pull/26) |
+| 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | Done | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | Done | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
+| 1.7 | Deploy tooling and setup checklist: `docs/SETUP.md`, `npm run photon:webhook`, `services/gateway/deploy/` (Caddyfile, systemd unit, bootstrap), tunnel helper | 1.1 | Yes | Done | `chore/photon-deploy-tooling` | Tuan + Claude Code | [#25](https://github.com/tuann72/HackUTD/pull/25) |
+| 1.8 | Simulator: send attachments, reactions, contact cards, links, albums and group chats; `imessage-demo` scenario; `docs/DEMO.md` demo script | 1.6 | Yes | Done | `feat/photon-sim-rich-content` | Tuan + Claude Code | [#26](https://github.com/tuann72/HackUTD/pull/26) |
 
 ## Open questions (TBD)
 
