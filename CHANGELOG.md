@@ -14,6 +14,22 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Payload:** `message.id` `voice-<uuid>`, sender = the SIP caller number (`sip.phoneNumber`, or `+10000000000` if missing), `space.id` `voice;-;<caller>`, text content = the transcript.
 - **Limits / follow-ups:** a call appears in the UI as a text message (no call badge or message kind); one send with no retry; the Vercel `/voice` page and `/api/voice/calls` route stay in the web app but the worker no longer feeds them (remove or keep is TBD).
 
+### 2026-11-08: End-to-end result and a model comparison on the message cards
+
+- **End to end, v0.5 plus Nemotron with Nessie, 606 real test texts (156 scams), cutoff 0.70:** accuracy 98.5%, F1 97.1%, 5 scams missed, 4 false blocks. Nemotron reviewed 18 of the 606, caught 3 more scams and added no false blocks. No text reached it through the money rule alone, so this doesn't measure that rule. Roughly, the true catch rate is 93-99% and the false-block rate 0.3-2.3%.
+- **Each model alone on the same 606 texts (missed / false blocks):** stacked LR 8 / 4, TF-IDF + SGD 11 / 2, TF-IDF + LR 10 / 7, MiniLM + LR 9 / 29. TF-IDF and MiniLM are the two halves of v0.5. SGD was trained on the same rows, with alpha picked on val, and isn't deployed.
+- **Web:** the model name on a card opens these figures as a fixed table labeled "Model comparison". It doesn't switch models.
+
+### 2026-11-08: Two more captions removed
+
+- **Decision (Tuan):** remove the Simulate sidebar's line "Sends signed, simulated iMessages from fictional numbers to <gateway host>." and the "Masked by the gateway" note on the dashboard's Most active numbers panel. Nothing else changes: simulated senders are still fictional `+1555` numbers and the numbers shown are still masked by the gateway.
+
+### 2026-11-08: Rapid fire uses its own 200-sentence dataset
+
+- **Decision (Tuan):** a Rapid fire dataset of 200 complete sentences, 40% scam and 60% legitimate, and Rapid fire draws from it. No note about it in the UI.
+- **Data:** `data/message_bank/rapid.jsonl`, written by `build_rapid.py` (hand-written messages, fictional links and names). 80 scams: Imposter & Phishing 22, Prizes 12, Jobs & Investment 12, Loans 10, Health 8, Shopping 8, Internet & Telecom 5, Threats & Extortion 3. 120 everyday texts. No grandparent-style scams. Demo input, not training data.
+- **Wiring:** `npm run sync:bank` copies it into `apps/web/lib/sim/bank.json` as `rapid`. The Rapid fire preset has `dataset: "rapid"` and a scam ratio of 0.4 (was 0.6), so each run sends 20 scams and 30 legit texts with no repeats. Send a scam, Send a legit text, Random burst and the CLI simulator keep the main bank.
+
 ### 2026-11-08: Less small text on /messages, bigger totals labels
 
 - **Decision (Tuan):** remove the small captions on `/messages`: "01 / The protector" and "Fictional senders. Real classifier." under the scene, "You're in good hands." and "Let through, untouched." under the totals, and the footer note "“Potential scam” is the classifier's verdict and can be wrong. Links and phone numbers in blocked messages are disabled." The "Threats blocked" and "Delivered" labels go from 10px to 20px (`text-xl`). Links and numbers in blocked messages are still disabled; only the note saying so is gone.
