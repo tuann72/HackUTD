@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import { Vector3 } from "three";
@@ -20,22 +20,37 @@ interface Shot {
   message: FakeMessage;
 }
 
-export default function Scene() {
+type HitRef = RefObject<number>;
+
+interface ShotsProps {
+  victimHit: HitRef;
+  victimShield: HitRef;
+  senderHit: HitRef;
+  onDelivered: () => void;
+  onBlocked: () => void;
+}
+
+/**
+ * Owns the in-flight shots. It lives inside <Canvas> so adding and removing
+ * shots commits in the R3F renderer, not in React DOM. Each shot's drei <Html>
+ * label is its own React DOM root, and unmounting one during a React DOM render
+ * (which is what happened when this state lived in Scene) triggers React's
+ * "synchronously unmount a root while React was already rendering" warning.
+ */
+function Shots({ victimHit, victimShield, senderHit, onDelivered, onBlocked }: ShotsProps) {
   const [shots, setShots] = useState<Shot[]>([]);
-  const [counts, setCounts] = useState({ delivered: 0, blocked: 0 });
-  const victimHit = useRef(0);
-  const victimShield = useRef(0);
-  const senderHit = useRef(0);
+  // Refs, not effect locals: Strict Mode runs the effect twice in dev, and a
+  // counter that restarts per run hands out duplicate keys.
+  const nextMessage = useRef(0);
+  const nextKey = useRef(0);
 
   // Cycle through the fake messages forever.
   useEffect(() => {
-    let next = 0;
-    let key = 0;
     const fire = () => {
-      const message = FAKE_MESSAGES[next % FAKE_MESSAGES.length];
-      next += 1;
-      key += 1;
-      const shot = { key, message };
+      const message = FAKE_MESSAGES[nextMessage.current % FAKE_MESSAGES.length];
+      nextMessage.current += 1;
+      nextKey.current += 1;
+      const shot = { key: nextKey.current, message };
       setShots((s) => [...s, shot]);
     };
     fire();
@@ -47,9 +62,40 @@ export default function Scene() {
     setShots((s) => s.filter((x) => x.key !== key));
   }, []);
 
+  return shots.map(({ key, message }) => {
+    const toVictim = message.direction === "toVictim";
+    return (
+      <MessageShot
+        key={key}
+        message={message}
+        from={toVictim ? SENDER_EDGE : VICTIM_EDGE}
+        to={toVictim ? VICTIM_EDGE : SENDER_EDGE}
+        onArrive={() => {
+          (toVictim ? victimHit : senderHit).current = performance.now();
+          onDelivered();
+        }}
+        onBlocked={() => {
+          victimShield.current = performance.now();
+          onBlocked();
+        }}
+        onDone={() => remove(key)}
+      />
+    );
+  });
+}
+
+export default function Scene() {
+  const [counts, setCounts] = useState({ delivered: 0, blocked: 0 });
+  const victimHit = useRef(0);
+  const victimShield = useRef(0);
+  const senderHit = useRef(0);
+
+  const onDelivered = useCallback(() => setCounts((c) => ({ ...c, delivered: c.delivered + 1 })), []);
+  const onBlocked = useCallback(() => setCounts((c) => ({ ...c, blocked: c.blocked + 1 })), []);
+
   return (
     <div className="relative h-dvh w-full bg-[#0b1020]">
-      <Canvas shadows camera={{ position: [0, 1.6, 8.5], fov: 45 }} dpr={[1, 2]}>
+      <Canvas shadows="percentage" camera={{ position: [0, 1.6, 8.5], fov: 45 }} dpr={[1, 2]}>
         <color attach="background" args={["#0b1020"]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 6, 5]} intensity={1.6} castShadow />
@@ -58,26 +104,13 @@ export default function Scene() {
         <Blob position={[SENDER_X, 0, 0]} color="#94a3b8" facing={1} hitAt={senderHit} phase={1.3} />
         <Blob position={[VICTIM_X, 0, 0]} color="#f472b6" facing={-1} hitAt={victimHit} shieldAt={victimShield} />
 
-        {shots.map(({ key, message }) => {
-          const toVictim = message.direction === "toVictim";
-          return (
-            <MessageShot
-              key={key}
-              message={message}
-              from={toVictim ? SENDER_EDGE : VICTIM_EDGE}
-              to={toVictim ? VICTIM_EDGE : SENDER_EDGE}
-              onArrive={() => {
-                (toVictim ? victimHit : senderHit).current = performance.now();
-                setCounts((c) => ({ ...c, delivered: c.delivered + 1 }));
-              }}
-              onBlocked={() => {
-                victimShield.current = performance.now();
-                setCounts((c) => ({ ...c, blocked: c.blocked + 1 }));
-              }}
-              onDone={() => remove(key)}
-            />
-          );
-        })}
+        <Shots
+          victimHit={victimHit}
+          victimShield={victimShield}
+          senderHit={senderHit}
+          onDelivered={onDelivered}
+          onBlocked={onBlocked}
+        />
 
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} />
       </Canvas>
