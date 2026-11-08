@@ -11,7 +11,7 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 | Need metadata (splits, source, synthetic flag, label confidence) | the matching `*_full.csv` |
 | Only the original real messages, no synthetic rows | `unified_spam_dataset.csv` |
 | Threat / coercion / fake-emergency extortion texts (proposed label 8) | `potential_threat_synthetic.csv` (train), `potential_threat_eval.csv` (held-out) |
-| Harmless "free" texts (label 0), so "free" alone doesn't read as scam | `free_ham_synthetic.csv` (train) |
+| Harmless "free" texts (label 0), so "free" alone doesn't read as scam | already inside `scam_categories_100k*.csv`; `free_ham_synthetic.csv` is the standalone copy |
 
 **Which files can be aggregated (combined into one training set)**
 
@@ -21,7 +21,7 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 |---|---|---|
 | `scam_categories_100k_full.csv` | **Yes, the base** | Its `train` and `val` rows go in. Its `test` rows are held out (read only by `classifier/evaluate.py`). |
 | `potential_threat_synthetic.csv` | **Yes** | Label 8 plus ham hard negatives. 15% of each scenario goes to val, the rest to train. |
-| `free_ham_synthetic.csv` | **Yes** | Label 0. Same handling as the threat rows (255 train, 45 val). |
+| `free_ham_synthetic.csv` | No, already merged | Its 300 rows are appended to `scam_categories_100k_full.csv` and `scam_categories_100k.csv` (`split = train`, `source = synthetic_free_ham`). Adding the file again would duplicate them. |
 | `potential_threat_eval.csv` | **No, held out** | `split = threat_eval`. Never train on it; `build_splits.py` drops any training row that matches it. |
 | `scam_categories_100k.csv` | No | The same rows as the `_full` file without metadata. Use one or the other, never both. |
 | `spam_ham_100k.csv`, `spam_ham_100k_full.csv` | No | The same 100k messages with binary labels. Adding them would duplicate every row. Use `is_spam` in the `_full` file instead. |
@@ -34,7 +34,7 @@ Any new synthetic file that should train has to be read in `build_splits.py` (`m
 
 ## 1. `scam_categories_100k.csv` (main dataset, multi-class)
 
-100,000 rows, 2 columns: `message`, `label`.
+100,300 rows (the original 100,000 plus the 300 harmless "free" texts from [section 5](#5-harmless-free-texts-label-0)), 2 columns: `message`, `label`.
 
 The labels are based on the FTC Consumer Sentinel report categories ([category definitions PDF](https://www.ftc.gov/system/files/attachments/data-sets/category_definitions.pdf), Jan 2024). The FTC's 28 fraud and "other" categories are merged into 7 scam groups, and 0 is used for ham:
 
@@ -134,7 +134,7 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 
 | file | rows | use |
 |---|---|---|
-| `free_ham_synthetic.csv` | 300, all label 0 | Extra **training** rows (`split = train`). `classifier/build_splits.py` merges them with the threat rows, so 15% of each scenario goes to val (255 train / 45 val). |
+| `free_ham_synthetic.csv` | 300, all label 0 | Standalone copy. **The same 300 rows are appended to the end of `scam_categories_100k_full.csv` and `scam_categories_100k.csv`** (`split = train`), so they train with the base file. `spam_ham_100k*` and `unified_spam_dataset*` are unchanged. |
 | `build_free_ham_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_free_ham_synthetic.py [out_dir]`. Two runs give byte-identical files. |
 
 **Columns:** the same as `potential_threat_synthetic.csv`: `label_class` 0, `category_name` Ham, `is_spam` 0, `label_method` `ham`, `source` `synthetic_free_ham`, `gen_method` `template`, `style` `sms`, `is_synthetic` True.
@@ -143,7 +143,7 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 
 **Method:** slot-filled templates (names, family words, times, foods, places, events), then light styling: openers and closers ("hey", "lmk", "love you"), punctuation, emojis, and 14% ALL CAPS so caps plus "free" doesn't read as spam either. No row has a link, a phone number, a prize, a "claim/reply/call now" call to action or a money request. Rows are deduplicated case- and punctuation-insensitively and never repeat a row in `scam_categories_100k.csv` or the threat files.
 
-**Caveats:** template-generated, so easy to recognize; 300 rows is small next to the ~5,800 scam rows with "free", so it may soften the cue without removing it. There's no held-out "free" ham check yet. Retrain to take effect.
+**Caveats:** template-generated, so easy to recognize; 300 rows is small next to the ~5,800 scam rows with "free", so it may soften the cue without removing it. There's no held-out "free" ham check yet. Retrain to take effect. If the generator changes, replace the 300 `synthetic_free_ham` rows in both 100k files as well.
 
 ---
 
