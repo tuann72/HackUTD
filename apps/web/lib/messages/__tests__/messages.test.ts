@@ -61,3 +61,19 @@ describe("replaySource", () => {
     }
   });
 });
+
+describe("replaySource.clear", () => {
+  it("empties the list, then keeps replaying with fresh ids", async () => {
+    let t = 0;
+    const src = replaySource({ everyMs: 10, pendingMs: 1, now: () => t });
+    t = 25;
+    expect((await src.fetch()).length).toBe(3);
+    const before = new Set((await src.fetch()).map((m) => m.id));
+    await src.clear!();
+    expect(await src.fetch()).toEqual([]);
+    t = 31;
+    const after = await src.fetch();
+    expect(after.length).toBe(1);
+    expect(before.has(after[0].id)).toBe(false);
+  });
+});

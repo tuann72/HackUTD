@@ -13,6 +13,8 @@ export interface MessageSource {
   mode: SourceMode;
   /** Current list, newest first. */
   fetch(): Promise<Message[]>;
+  /** Deletes every message (live: DELETE /api/messages; replay: restarts empty). Absent for static. */
+  clear?(): Promise<void>;
 }
 
 const FIXTURE = (fixture as MessagesResponse).messages;
@@ -29,6 +31,10 @@ export function liveSource(apiUrl: string, limit = 100): MessageSource {
         throw new Error(`unexpected contract: ${data.schema} v${data.version}`);
       }
       return data.messages;
+    },
+    async clear() {
+      const res = await fetch(`${base}/api/messages`, { method: "DELETE", cache: "no-store" });
+      if (!res.ok) throw new Error(`DELETE /api/messages failed: ${res.status}`);
     },
   };
 }
@@ -55,6 +61,8 @@ export interface ReplayOptions {
  */
 export function replaySource({ everyMs = 3000, pendingMs = 1200, now = Date.now }: ReplayOptions = {}): MessageSource {
   const start = now();
+  // After a clear, nothing has arrived yet: the first message comes `everyMs` later.
+  let skip = 0;
   const script = [...FIXTURE].reverse(); // oldest first
   return {
     mode: "replay",
@@ -62,7 +70,7 @@ export function replaySource({ everyMs = 3000, pendingMs = 1200, now = Date.now 
       const t = now() - start;
       const arrived = Math.floor(t / everyMs) + 1;
       const out: Message[] = [];
-      for (let i = 0; i < arrived; i++) {
+      for (let i = skip; i < arrived; i++) {
         const base = script[i % script.length];
         const loop = Math.floor(i / script.length);
         const arrivedAt = start + i * everyMs;
@@ -84,6 +92,10 @@ export function replaySource({ everyMs = 3000, pendingMs = 1200, now = Date.now 
         });
       }
       return out.reverse().slice(0, 100); // newest first
+    },
+    async clear() {
+      // Keep the loop counter going so replayed ids stay unique after a clear.
+      skip = Math.floor((now() - start) / everyMs) + 1;
     },
   };
 }

@@ -77,7 +77,11 @@ Raw handles and Photon message and space ids live only in the SQLite file. They 
 
 ### `GET /api/messages?limit=N`
 
-Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET only.
+Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET and DELETE.
+
+### `DELETE /api/messages`
+
+Deletes every stored message, conversation and participant (the same as `POST /debug/reset`) and returns `{ok, cleared}`. The web app's "Clear chats" button calls it (Tuan, 2026-11-08). **No token:** anyone who can reach the gateway can wipe the inbox.
 
 ### `GET /healthz`
 
