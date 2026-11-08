@@ -183,7 +183,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Deploy the gateway, point the Twilio number at it, run a scenario and one real-phone text end to end; write the demo script | 2.1, 2.2 (2.3 if ready) | — | Not started | | | |
+| 3.1 | Deploy the gateway ([runbook](../../services/gateway/DEPLOY.md)), point the Twilio number at it, run a scenario and one real-phone text end to end; write the demo script | 2.1, 2.2 (2.3 if ready) | — | Not started | | | |
 
 ## Task details
 
@@ -236,7 +236,9 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ### 3.1 End-to-end demo
 
-- **What:** deploy the gateway (or tunnel it), set the Twilio webhook URL, run a scenario, and text the number from a real phone.
+- **What:** deploy the gateway to the Vultr VM, set the Twilio webhook URL, run a scenario, and text the number from a real phone.
+- **How:** follow the step-by-step runbook in [`services/gateway/DEPLOY.md`](../../services/gateway/DEPLOY.md): VM, Node 24, systemd, Caddy for HTTPS, `.env` on the VM, Vercel `NEXT_PUBLIC_API_URL` + redeploy, `CORS_ORIGINS`, simulator check, then Twilio.
+- **Decide first (TBD):** the gateway's domain, the VM size and region, and the HTTPS setup (the runbook assumes Caddy). Record them in `CHANGELOG.md`.
 - **Done when:** both kinds of message appear on the page, and the demo script is written down.
 
 ## Progress notes

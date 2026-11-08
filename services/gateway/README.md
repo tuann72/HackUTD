@@ -87,7 +87,7 @@ curl -X POST -H "X-Debug-Token: $DEBUG_TOKEN" localhost:8787/debug/reset
 
 ## Pointing a real Twilio number at it
 
-1. Run the gateway somewhere Twilio can reach over HTTPS.
+1. Run the gateway somewhere Twilio can reach over HTTPS. For the Vultr VM, follow [`DEPLOY.md`](DEPLOY.md).
 2. In the Twilio console, under the victim number → Messaging → "A message comes in", set **Webhook**, `HTTP POST`, URL `https://<host>/twilio/sms`.
 3. Set `TWILIO_AUTH_TOKEN` to the account's auth token and `PUBLIC_WEBHOOK_URL` to that exact URL, then restart.
 
