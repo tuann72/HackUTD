@@ -13,6 +13,11 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Checks (hand-written, small, real Nemotron, mock bank):** in the texts the prompt was tuned on, "Free at last! No more school!", the $600 flights text and "free cinnamon rolls!" reach the inbox, and the $6000 bus fare is blocked. In a batch of 24 written before the final prompt (one wording tweak followed its first run): every harmless text that was reviewed was delivered (6 of 6), and 2 of 3 reviewed scams were blocked.
 - **Known limits:** "can you please help me with $1800, i got stranded and nobody else can help" is delivered with the money warning. Some harmless money asks score at or above 0.77 and are blocked without review ("can you transfer $900 for your share of rent", 88%). "the $800 for the security deposit like we talked about" is still blocked, with an inaccurate reason ("Urgent request for a large sum"). Nemotron has a rate limit; a 429 keeps the model's decision.
 
+### 2026-11-08: A "T" on the shield instead of the check mark; shield moved left
+
+- **Decision (Tuan):** put a "T" on the shield instead of the check mark, and move the shield a few pixels left. The T is a raised white block letter (crossbar over a stem) extruded on the shield's face. It is an original letterform, not T-Mobile's logo (the T with small squares beside it), which is their trademark; the magenta shield keeps the T-Mobile feel. The shield moved from x 2.2 to 1.9 world units (about 25 to 35 px).
+- **Wordmark (Tuan):** the "U" in "GUARD" is the magenta shield (`components/brand/ShieldLetter.tsx`, Lucide `shield` outline, filled `#e20074`) in the landing title and the `/messages` and `/dashboard` headers. Screen readers still read "U".
+
 ### 2026-11-08: A pink shield replaces T-Guard's hand and box
 
 - **Decision (Tuan):** replace the hand and box with a shield icon, "pink like T-Mobile", in the same position. The shield is Lucide's `shield-check` (lucide.dev, ISC license): the outline is filled and extruded into a 3D badge in T-Mobile magenta `#e20074`, with the check mark in white on its face (`apps/web/components/scene/Shield.tsx`, built with three.js `SVGLoader`). It floats and sways and keeps the "T-Guard" label underneath.
