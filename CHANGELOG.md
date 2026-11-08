@@ -6,6 +6,43 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Add the after-call classifier result path and Vercel display
+
+- **User request:** pass the caller transcript to the existing classifier and render the result in the Vercel app.
+- **Worker flow:** after STT finalizes on hangup, the worker sends the finalized caller transcript unchanged as `text` in `{ messageId, text }` to `POST /classify`. The ID is an opaque UUID and the worker verifies that the response echoes it. On success, it posts the transcript and verdict fields to `VOICE_GUARD_RESULTS_URL` with `VOICE_GUARD_RESULTS_INGEST_TOKEN`. Neither transcript nor credentials are logged, and an upload failure does not affect call completion.
+- **Contract and app:** added v1 submission and query schemas, a synthetic fixture, `POST /api/voice/calls`, and a read-only `GET /api/voice/calls`. The `/voice` page requires an operator-entered view token, keeps it only in React memory, refreshes every five seconds, and renders transcript, verdict, score, category, model, and completion time. The worker and web app exchange only the versioned contract, not code.
+- **Persistence gate:** Vercel refuses result writes unless Atlas, separate ingest and view tokens, and a positive `VOICE_GUARD_RESULTS_TTL_SECONDS` are configured. Records go to a separate Atlas collection with `expiresAt` anchored to call completion, a Mongo TTL index, and an expiry filter on reads. Local development may use process memory. No default TTL is selected; the duration and intended viewer list remain TBD. The view token is a protective shared-secret mechanism, not a settled identity policy.
+- **Limit:** the classifier is SMS-trained, so the call verdict is an experimental plumbing result, not validated call-level accuracy. No live call, classifier evaluation, or paid usage test was run in this task.
+- **Status:** task 1.3 call-script evaluation remains in progress; task 1.4 is under review in the consolidated `feat/voice-guard-call-results` PR #63. The worker and result API are included together; the production Cloud worker still needs classifier/result configuration.
+
+### 2026-11-08: Deploy the caller-only worker to LiveKit Cloud
+
+- **Deployment:** the production `voice-guard` agent was deployed in `us-east` on the existing LiveKit Cloud Build project and registered under the expected agent name.
+- **Configuration:** `VOICE_GUARD_CAPTURE_ENABLED=true`; LiveKit injects its project credentials. The local `.env` was excluded from the deployment. `CLASSIFIER_URL`/`CLASSIFIER_TOKEN` and result publishing are not configured in Cloud.
+- **Limit:** the deployment answers/transcribes only until classifier and Vercel result settings are configured. No post-deployment call was placed.
+
+### 2026-11-08: Verify local voice answer and transcription; select LiveKit Cloud deployment
+
+- **Verification:** the user placed a consented call after the `T-Gate Voice` SIP dispatch rule was assigned to `voice-guard`. The worker published a zero-amplitude audio track, LiveKit SIP status changed `ringing` → `active` → `hangup`, and AssemblyAI Universal-Streaming produced non-empty speech text. A one-call local log displayed the transcript at the user's request, then the logging change was removed; no transcript was persisted.
+- **Answer media:** the worker publishes a zero-amplitude audio track so the caller is answered without a spoken response. Caller audio remains the only audio sent to STT.
+- **Limit:** `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` were unset, so no verdict was produced. At that point no call-result store or Vercel display existed yet.
+- **Deployment decision (user):** deploy the worker to LiveKit Cloud on the existing Build plan. The service has a multi-stage Dockerfile, production build config, and `.dockerignore`. `npm run build` and `npm run typecheck` passed; the Cloud deployment itself was not yet complete.
+- **Plan:** [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md), tasks 1.1, 1.2, and 1.6.
+
+### 2026-11-08: Add the caller-only LiveKit STT worker
+
+- **What:** add `services/voice-guard/`, a TypeScript LiveKit Agents worker that subscribes only to SIP participant audio, streams to AssemblyAI Universal-Streaming through LiveKit Inference, buffers final transcript text in memory, and calls the existing classifier after the audio track ends using a random UUID as `messageId`.
+- **Privacy and failure behavior:** capture is disabled unless `VOICE_GUARD_CAPTURE_ENABLED=true`; audio and transcripts are not persisted, and transcript text is not logged. STT/classifier errors are caught so the worker does not explicitly terminate the call. No call-result store or Vercel display is added at this point in the history.
+- **Initial status:** `npm run typecheck` passed. The worker had not yet been deployed or attached to the SIP dispatch rule; Stage 1.1 audio verification and Stage 1.2 live transcription remained in progress. No test call or inference usage test was run at that stage.
+- **Reference:** [LiveKit job lifecycle and raw audio track processing](https://docs.livekit.io/agents/server/job/).
+
+### 2026-11-08: Select STT for the voice scam guard
+
+- **Decision (user):** use AssemblyAI Universal-Streaming through LiveKit Inference for the caller-only voice prototype. The model ID is `assemblyai/universal-streaming`; English is sufficient for the planned scripted proof.
+- **Why:** it integrates through the existing LiveKit room, needs no separate AssemblyAI API key, and the current LiveKit Build/Ship rate is `$0.0025/min`. LiveKit documents that Inference is zero-data-retention by default, including model audio and output; this does not define how T-Gate retains the final transcript.
+- **Implementation:** use a Node.js/TypeScript LiveKit agent worker, consistent with the repository service stack. Subscribe only to the SIP caller track, buffer final transcript text in memory, and call the text classifier after hangup. Do not write audio to persistent storage or print transcript text in logs.
+- **Still TBD:** deployment target, consent/disclosure process, transcript retention duration, result storage/API, and call-level classifier evaluation. No test call or paid usage test was part of the original decision.
+- **References:** [LiveKit STT models](https://docs.livekit.io/agents/models/stt/), [LiveKit Inference privacy and authentication](https://docs.livekit.io/agents/models/inference/), and [LiveKit Inference pricing](https://livekit.com/pricing/inference).
 ### 2026-11-08: Wordmark shield as tall as the letters
 
 - **Decision (Tuan):** the shield that stands for the U in T-GUARD is as tall as the capitals around it, on the landing page and wherever the wordmark appears (`/messages` and `/dashboard` headers). `ShieldLetter` sets its height to `1cap` (the font's cap height), so it matches Anton (0.86em) on the landing page and Inter (about 0.73em) in the headers. It was 0.74em, short of Anton's capitals. Browsers without the `cap` unit fall back to 0.8em.

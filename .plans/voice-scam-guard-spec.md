@@ -14,10 +14,11 @@ This is a plan, not a change to the current iMessage MVP. The detailed task trac
 ## Interview decisions
 
 - The Photon number is intended to be the victim's call entry point.
-- The repository's Photon project is confirmed as Photon 2.0/Beta by the current gateway setup; whether the voice number is on that project and is eligible for Voice still needs verification.
+- The voice number is confirmed on the team's Photon 2.0/Beta project and is Voice-capable. Inbound routing to LiveKit over TLS is enabled. A caller reached a LiveKit room, but the call remained ringing and usable audio is not yet verified.
 - The first proof is a human tester calling that Photon number. The app captures only the caller's speech; it classifies after hangup.
 - The main follow-up is a warning while the call is still active.
 - Retain the transcript and verdict for the prototype. Do not retain raw call audio.
+- **STT decision (2026-11-08):** use AssemblyAI Universal-Streaming through LiveKit Inference for the caller-only prototype. LiveKit's current Build/Ship rate is `$0.0025/min`; the integration uses LiveKit Cloud credentials and LiveKit documents zero data retention for Inference audio and outputs. The Node.js/TypeScript agent worker matches the repository's service stack. Deployment target and transcript retention duration remain TBD.
 - The production call should let the caller and victim talk while the guard listens to the caller's audio. The exact victim endpoint (phone bridge or browser) is still open.
 - Warnings appear in the Vercel web app. Automatic call blocking, hangup, or spoken intervention is not in the requested first two stages.
 
@@ -35,7 +36,7 @@ In that room, a LiveKit app or agent can subscribe to the caller's audio track a
 
 This routing condition matters: if a caller dials a separate victim number directly and the call never passes through Photon or another media bridge, the Photon webhook will not see it. To protect a person, the voice application must keep the caller connected to a victim endpoint, such as a second phone reached over SIP or a browser participant in the LiveKit room.
 
-The repository's current iMessage line is a shared-pool line. Photon 2.0's LiveKit voice guide says shared iMessage assignments do not support Voice; it lists eligible SMS, WhatsApp, or dedicated iMessage lines. The team has said it set up a voice number, but its exact Photon version, line type, and Voice-profile status still need verification. Do not route calls to the shared iMessage line on the assumption that it is voice-capable.
+The repository's current iMessage line is a shared-pool line. Photon 2.0's LiveKit voice guide says shared iMessage assignments do not support Voice; it lists eligible SMS, WhatsApp, or dedicated iMessage lines. The separate voice number is confirmed on the team's Photon 2.0/Beta project and Voice-capable; its inbound route now points to LiveKit. Do not route calls to the shared iMessage line on the assumption that it is voice-capable.
 
 ### Product-version distinction
 
@@ -51,7 +52,7 @@ flowchart LR
     C[Tester or caller] -->|PSTN call| P[Photon voice number]
     P -->|SIP signaling + RTP/SRTP audio| LK[LiveKit room]
     LK -->|caller audio track| G[Guard worker]
-    G -->|streaming speech-to-text| STT[STT provider]
+    G -->|streaming speech-to-text| STT[AssemblyAI Universal-Streaming via LiveKit Inference]
     STT -->|transcript text| G
     G -->|after hangup: transcript + opaque ID| CL[Existing classifier API]
     CL -->|verdict + score| G
@@ -120,8 +121,7 @@ The guard worker, not the Vercel page, receives media and calls the classifier. 
 
 ## Open questions
 
-- Does the configured voice number belong to the team's Photon 2.0/Beta project, and what exact line type/Voice profile does it use?
-- What speech-to-text provider/model and host should be used? What latency, accuracy, language, and cost targets apply?
+- What deployment target should host the Node.js/TypeScript LiveKit agent, and what latency and transcription-quality acceptance targets apply?
 - Should the final victim endpoint be a real handset via an outbound SIP leg or a browser participant?
 - How long should transcripts remain stored, and who can view them?
 - What transcript chunking and call-level aggregation should map multiple utterances to one warning?
