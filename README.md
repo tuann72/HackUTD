@@ -34,6 +34,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Classifier data | 300 harmless "free" ham texts ("feel free", "free pizza") so "free" stops reading as a scam cue; merged by `build_splits.py` | `data/free-ham-synthetic` | Tuan + Claude Code | Done (retrain not run) | [#56](https://github.com/tuann72/HackUTD/pull/56) |
 | Message UI | Landing page at `/` with a Start button; scene + lists move to `/messages` | `feat/web-landing-page` | Tuan + Claude Code | Done | [#55](https://github.com/tuann72/HackUTD/pull/55) |
 | Simulation panel | Sidebar buttons on `/messages` that run configurable simulations (presets, random bursts, custom text) through a server-side signing route | `feat/web-sim-panel` | Tuan + Claude Code | Done | [#54](https://github.com/tuann72/HackUTD/pull/54) |
 | Project | Rename the project T-Gate → T-Guard (display name; technical ids unchanged) | `chore/rename-t-guard` | Tuan + Claude Code | Done | [#53](https://github.com/tuann72/HackUTD/pull/53) |
