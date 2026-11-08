@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, type ReactNode } from "react";
-import { messageStats, useMessages, type Count, type SenderCount } from "@/lib/messages";
+import { useMemo, useState, type ReactNode } from "react";
+import {
+  messageStats,
+  sortSenders,
+  useMessages,
+  type Count,
+  type SenderCount,
+  type SenderSortKey,
+  type SortDir,
+} from "@/lib/messages";
 
 const LABEL = "font-label text-[10px] uppercase tracking-[0.06em]";
 const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -102,10 +110,22 @@ function ScoreColumns({ buckets }: { buckets: Count[] }) {
   );
 }
 
+const SORT_COLUMNS: { key: SenderSortKey; label: string }[] = [
+  { key: "messages", label: "Messages" },
+  { key: "blocked", label: "Blocked" },
+  { key: "share", label: "Share" },
+];
+
+/** Most active numbers. Click Messages, Blocked or Share to sort; click again to flip the order. */
 function Senders({ senders, total }: { senders: SenderCount[]; total: number }) {
+  const [sort, setSort] = useState<{ key: SenderSortKey; dir: SortDir }>({ key: "messages", dir: "desc" });
+  const sorted = useMemo(() => sortSenders(senders, sort.key, sort.dir), [senders, sort]);
   if (!senders.length) return <Empty>No senders yet.</Empty>;
-  const rows = senders.slice(0, 8);
-  const max = senders[0]!.total;
+  const rows = sorted.slice(0, 8);
+  const max = Math.max(...senders.map((s) => s.total));
+  const onSort = (key: SenderSortKey) =>
+    setSort((cur) => (cur.key === key ? { key, dir: cur.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" }));
+
   return (
     <table className="w-full text-sm">
       <thead>
@@ -113,27 +133,48 @@ function Senders({ senders, total }: { senders: SenderCount[]; total: number }) 
           <th scope="col" className="pb-2 text-left font-bold">
             Number
           </th>
-          <th scope="col" className="pb-2 text-right font-bold">
-            Messages
-          </th>
-          <th scope="col" className="pb-2 text-right font-bold">
-            Blocked
-          </th>
-          <th scope="col" className="pb-2 text-right font-bold">
-            Share
-          </th>
+          {SORT_COLUMNS.map((c) => {
+            const active = sort.key === c.key;
+            return (
+              <th
+                key={c.key}
+                scope="col"
+                aria-sort={active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"}
+                className="pb-2 text-right font-bold"
+              >
+                <button
+                  type="button"
+                  onClick={() => onSort(c.key)}
+                  title={`Sort by ${c.label.toLowerCase()}`}
+                  className={`inline-flex items-center gap-1 px-1 py-0.5 uppercase transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot ${
+                    active ? "text-ink" : ""
+                  }`}
+                >
+                  {c.label}
+                  <span aria-hidden className={active ? "text-hot" : "opacity-30"}>
+                    {active && sort.dir === "asc" ? "▲" : "▼"}
+                  </span>
+                </button>
+              </th>
+            );
+          })}
         </tr>
       </thead>
       <tbody>
         {rows.map((s, i) => (
-          <tr key={s.display + i} className="border-t border-rule hover:bg-card">
+          // Masked numbers can repeat (same last four digits), so the index joins the key.
+          <tr key={`${s.display}-${i}`} className="border-t border-rule hover:bg-card">
             <td className="py-2 font-label font-bold">
               {s.display}
               {s.total === max && senders.length > 1 && <Leader />}
             </td>
-            <td className="py-2 text-right font-bold tabular-nums">{s.total}</td>
-            <td className={`py-2 text-right tabular-nums ${s.blocked ? "font-bold text-hot-deep" : "text-muted"}`}>{s.blocked}</td>
-            <td className="py-2 text-right tabular-nums text-muted">{share(s.total, total)}</td>
+            <td className={`py-2 pr-1 text-right tabular-nums ${sort.key === "messages" ? "font-bold" : ""}`}>{s.total}</td>
+            <td className={`py-2 pr-1 text-right tabular-nums ${s.blocked ? "text-hot-deep" : "text-muted"} ${sort.key === "blocked" ? "font-bold" : ""}`}>
+              {s.blocked}
+            </td>
+            <td className={`py-2 pr-1 text-right tabular-nums ${sort.key === "share" ? "font-bold text-ink" : "text-muted"}`}>
+              {share(s.total, total)}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -183,7 +224,7 @@ export function DashboardView() {
           href="/"
           className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
         >
-          T—GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
+          T-GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
         </Link>
         <span className={`hidden ${LABEL} text-muted sm:block`}>Dashboard</span>
         <Link
@@ -204,7 +245,7 @@ export function DashboardView() {
             : error
               ? `Couldn't refresh: ${error}`
               : s.span
-                ? `Latest ${s.total} messages · ${fmtTime(s.span.from)} – ${fmtTime(s.span.to)}`
+                ? `Latest ${s.total} messages · ${fmtTime(s.span.from)} to ${fmtTime(s.span.to)}`
                 : "No messages yet"}
         </p>
       </div>
@@ -213,8 +254,8 @@ export function DashboardView() {
         <Tile value={String(s.total)} label="Messages" sub="Received" />
         <Tile value={String(s.blocked)} label="Blocked" sub="Potential scams" hot />
         <Tile value={String(s.delivered)} label="Delivered" sub="Let through" />
-        <Tile value={s.blockRate == null ? "—" : pct(s.blockRate)} label="Block rate" sub="Of decided messages" />
-        <Tile value={s.avgScore == null ? "—" : s.avgScore.toFixed(2)} label="Avg scam score" sub="0 fine · 1 scam" />
+        <Tile value={s.blockRate == null ? "N/A" : pct(s.blockRate)} label="Block rate" sub="Of decided messages" />
+        <Tile value={s.avgScore == null ? "N/A" : s.avgScore.toFixed(2)} label="Avg scam score" sub="0 fine · 1 scam" />
       </section>
 
       <div className="grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">

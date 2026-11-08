@@ -81,7 +81,7 @@ export function messageStats(messages: Message[]): MessageStats {
 
   const scores: Count[] = Array.from({ length: 10 }, (_, i) => ({
     key: String(i),
-    label: `${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}`,
+    label: `${(i / 10).toFixed(1)} to ${((i + 1) / 10).toFixed(1)}`,
     count: 0,
   }));
   for (const s of scored) scores[Math.min(9, Math.max(0, Math.floor(s * 10)))]!.count += 1;
@@ -124,4 +124,21 @@ export function messageStats(messages: Message[]): MessageStats {
     senders: [...bySender.values()].sort((a, b) => b.total - a.total || b.blocked - a.blocked),
     span: times.length ? { from: times[0]!, to: times[times.length - 1]! } : null,
   };
+}
+
+export type SenderSortKey = "messages" | "blocked" | "share";
+export type SortDir = "desc" | "asc";
+
+/**
+ * Senders ordered by a column. Share is each sender's part of all messages, so
+ * it orders like messages. Ties fall back to the other count, then the number.
+ */
+export function sortSenders(senders: SenderCount[], key: SenderSortKey, dir: SortDir = "desc"): SenderCount[] {
+  const primary = (s: SenderCount) => (key === "blocked" ? s.blocked : s.total);
+  const secondary = (s: SenderCount) => (key === "blocked" ? s.total : s.blocked);
+  const sign = dir === "desc" ? -1 : 1;
+  return [...senders].sort(
+    (a, b) =>
+      sign * (primary(a) - primary(b)) || sign * (secondary(a) - secondary(b)) || a.display.localeCompare(b.display),
+  );
 }

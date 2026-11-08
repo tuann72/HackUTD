@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { messageStats } from "../stats";
+import { messageStats, sortSenders } from "../stats";
 import type { Message, Verdict } from "../types";
 
 const verdict = (score: number, category: string | null = null): Verdict => ({
@@ -86,5 +86,31 @@ describe("messageStats", () => {
       ["***-***-0001", 2, 0],
       ["***-***-0003", 1, 1],
     ]);
+  });
+});
+
+describe("sortSenders", () => {
+  const rows = [
+    { display: "***-***-0001", total: 5, blocked: 0 },
+    { display: "***-***-0002", total: 2, blocked: 2 },
+    { display: "***-***-0003", total: 5, blocked: 1 },
+  ];
+  const order = (r: { display: string }[]) => r.map((x) => x.display.slice(-1));
+
+  it("sorts by messages (ties by blocked), and share the same way", () => {
+    expect(order(sortSenders(rows, "messages"))).toEqual(["3", "1", "2"]);
+    expect(order(sortSenders(rows, "share"))).toEqual(["3", "1", "2"]);
+    expect(order(sortSenders(rows, "messages", "asc"))).toEqual(["2", "1", "3"]);
+  });
+
+  it("sorts by blocked (ties by messages)", () => {
+    expect(order(sortSenders(rows, "blocked"))).toEqual(["2", "3", "1"]);
+    expect(order(sortSenders(rows, "blocked", "asc"))).toEqual(["1", "3", "2"]);
+  });
+
+  it("does not change its input", () => {
+    const copy = structuredClone(rows);
+    sortSenders(rows, "blocked");
+    expect(rows).toEqual(copy);
   });
 });
