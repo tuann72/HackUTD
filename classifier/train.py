@@ -9,7 +9,10 @@
                               val split. Wants a GPU for the MiniLM half. Best SMS F1, calibration
                               and unseen-scam recall in the 2026-11-07 comparison (CHANGELOG.md).
 
-    python classifier/train.py                          # MiniLM, 8-class scam categories
+Run classifier/build_splits.py first. train.py reads train and val only; test rows are dropped on
+load, and classifier/evaluate.py scores the finished model on the test set in a separate run.
+
+    python classifier/train.py                          # MiniLM, 9 categories (Ham + 8 scam types)
     python classifier/train.py --model tfidf            # TF-IDF + LR
     python classifier/train.py --model stacked          # TF-IDF + MiniLM, stacked
     python classifier/train.py --labels binary          # spam/ham only (any model)
@@ -21,9 +24,9 @@ Outputs (in --out, default classifier/artifacts/, never committed):
     vectorizer.joblib   the TF-IDF vectorizer (tfidf, stacked)
     keywords.json       top "words to watch" per scam class (tfidf, stacked)
     tfidf_head.joblib, minilm_head.joblib   the two base models (stacked only)
-    metrics.json        val/test metrics on the real splits only, plus suggested thresholds
+    metrics.json        metrics on real val rows only, plus suggested thresholds
 
-Stacked caveat: the stacker is fit on val, so its val metrics are in-sample; judge it on test.
+Stacked caveat: the stacker is fit on val, so its val metrics are in-sample; judge it with evaluate.py.
 Its suggested thresholds come from 5-fold out-of-fold stacker scores on val, not in-sample ones.
 """
 
@@ -116,7 +119,7 @@ def scam_vs_ham(true: np.ndarray, pred: np.ndarray) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", choices=["minilm", "tfidf", "stacked"], default="minilm")
-    ap.add_argument("--data", default=str(REPO_ROOT / "data" / "scam_categories_100k_full.csv"))
+    ap.add_argument("--data", default=str(REPO_ROOT / "classifier" / "splits" / "train_val.csv"))
     ap.add_argument("--labels", choices=["category", "binary"], default="category")
     ap.add_argument("--out", default=str(REPO_ROOT / "classifier" / "artifacts"))
     ap.add_argument("--device", default="auto", help="minilm/stacked only: auto | cuda | mps | cpu")
@@ -130,7 +133,9 @@ def main() -> None:
     target = "label_class" if args.labels == "category" else "is_spam"
     label_names = load_label_names(args.labels)
 
-    df = pd.read_csv(args.data, usecols=["id", "message", target, "split", "style"])
+    optional = [c for c in ("is_synthetic",) if c in pd.read_csv(args.data, nrows=0).columns]
+    df = pd.read_csv(args.data, usecols=["id", "message", target, "split", "style", *optional])
+    df = df[df["split"].isin(["train", "val"])]  # never look at test here: that is evaluate.py's job
     df["message"] = df["message"].fillna("").astype(str)
     if args.limit:
         train = df[df.split == "train"].sample(n=min(args.limit, (df.split == "train").sum()), random_state=0)
@@ -138,7 +143,9 @@ def main() -> None:
     y = df[target].to_numpy()
     split = df["split"].to_numpy()
     style = df["style"].to_numpy()
-    is_train, is_val, is_test = split == "train", split == "val", split == "test"
+    is_train, is_val = split == "train", split == "val"
+    # Threat templates sit in val so the stacker can learn that class. Metrics and thresholds use real rows.
+    is_real = ~df["is_synthetic"].to_numpy(dtype=bool) if "is_synthetic" in df else np.ones(len(df), dtype=bool)
     texts = df["message"].tolist()
 
     use_tfidf = args.model in ("tfidf", "stacked")
@@ -205,8 +212,8 @@ def main() -> None:
                      "fit_seconds": round(fit_secs, 1), "device": device}
     if args.model == "stacked":
         metrics["note"] = "stacker trained on val: val metrics are in-sample, judge it on test"
-    for name in ("val", "test"):
-        mask = split == name
+    for name in ("val",):
+        mask = (split == name) & is_real
         pred = pred_all[mask]
         true = y[mask]
         sms = style[mask] == "sms"
@@ -238,18 +245,19 @@ def main() -> None:
         print(classification_report(true, pred, labels=list(range(len(label_names))),
                                     target_names=label_names, zero_division=0))
 
-    # Suggested cutoffs for the gateway's BLOCK_THRESHOLD. Picked on val, checked on test.
+    # Suggested cutoffs for the gateway's BLOCK_THRESHOLD. Picked on real val rows.
     # Only suggestions: the block policy stays in the gateway.
     suggested = {}
     for target_p in (0.97, 0.99):
-        t = precision_threshold(y[is_val] != 0, val_scam, target_p)
+        real_val = is_real[is_val]
+        t = precision_threshold(y[is_val][real_val] != 0, val_scam[real_val], target_p)
         if t is not None:
-            p, r, _, _ = precision_recall_fscore_support(y[is_test] != 0, scam_all[is_test] >= t,
+            p, r, _, _ = precision_recall_fscore_support(y[is_val][real_val] != 0, val_scam[real_val] >= t,
                                                          average="binary", zero_division=0)
-            suggested[f"precision_{target_p:.2f}"] = {"threshold": t, "test_precision": round(p, 4),
-                                                      "test_recall": round(r, 4)}
+            suggested[f"precision_{target_p:.2f}"] = {"threshold": t, "val_precision": round(p, 4),
+                                                      "val_recall": round(r, 4)}
     metrics["suggested_thresholds"] = suggested
-    print(f"suggested thresholds (picked on val, checked on test): {json.dumps(suggested)}")
+    print(f"suggested thresholds (picked on val): {json.dumps(suggested)}")
 
     files = ["model.json", "head.joblib", "metrics.json"]
     joblib.dump(head, out / "head.joblib")

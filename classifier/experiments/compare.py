@@ -34,7 +34,7 @@ enc = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cuda
 E = enc.encode(texts, batch_size=128, normalize_embeddings=True, convert_to_numpy=True)
 mn_clf = joblib.load(runs / "minilm-category" / "head.joblib")
 P_mn = mn_clf.predict_proba(E)
-assert list(tf_clf.classes_) == list(mn_clf.classes_) == list(range(8))
+assert list(tf_clf.classes_) == list(mn_clf.classes_)
 
 y = df.label_class.to_numpy()
 is_val, is_test = (df.split == "val").to_numpy(), (df.split == "test").to_numpy()

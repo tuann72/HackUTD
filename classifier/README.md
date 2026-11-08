@@ -313,6 +313,10 @@ Rules:
   - It only ever receives message text and an opaque id, never phone numbers.
 - **Security:** every `/classify` call needs `Authorization: Bearer <token>`, and the service refuses to start without a token. HTTPS comes from Caddy. The container runs as a non-root user.
 
+### Data splits and separate test runs
+
+Run `python classifier/build_splits.py` before training. It writes leak-free files to `classifier/splits/` (gitignored). `train.py` reads only train and val. After training, score the model once with `python classifier/evaluate.py --artifacts <dir>`, which reads the test file and writes `metrics_test.json`. Tune on val, never on those numbers.
+
 ### Files
 
 ```
@@ -323,6 +327,8 @@ classifier/
   requirements-train-tfidf.txt  training packages (TF-IDF only; no PyTorch)
   scripts/vultr_gpu_train.sh one-command MiniLM training on the GPU server
   scripts/train_tfidf.sh     one-command TF-IDF training on any Linux server
+  build_splits.py            builds the leak-free train/val and test files
+  evaluate.py                scores a finished model on the held-out files
   service/app.py             the web service: POST /classify, GET /healthz
   service/requirements.txt   service packages
   Dockerfile                 packages the service, MiniLM and the model into one image
