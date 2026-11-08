@@ -60,7 +60,7 @@ export function Blob({ position, color, facing, hitAt, shieldAt, phase = 0 }: Bl
   return (
     <group ref={group} position={position}>
       <group ref={body}>
-        <mesh castShadow>
+        <mesh>
           <sphereGeometry args={[BLOB_RADIUS, 48, 48]} />
           <meshStandardMaterial color={color} roughness={0.45} />
         </mesh>
