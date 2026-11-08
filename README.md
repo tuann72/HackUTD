@@ -26,6 +26,6 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Classifier service | Training script, inference service, Dockerfile; record MiniLM + Vultr decision | `feat/classifier-minilm-vultr` | Tuan + Claude Code | In progress | _draft PR_ |
+| Classifier service | Training script, inference service, Dockerfile; record MiniLM + Vultr decision | `feat/classifier-minilm-vultr` | Tuan + Claude Code | In progress | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).
