@@ -24,7 +24,7 @@ The only thing the gateway and the web app share (see `AGENTS.md`, "Decoupling r
 - Query: `limit` (1–200, default 100).
 - Returns `{ "schema": "t-gate.query-api", "version": 1, "messages": [...] }`, newest first.
 - The UI re-fetches the whole list each poll, because a message's `action` changes from `pending` once it's classified.
-- `DELETE /api/messages` deletes every message and returns `{ "ok": true, "cleared": <n> }`. It's the web UI's "Clear chats" button and the only write the web app makes (Tuan, 2026-11-08). Unauthenticated.
+- `DELETE /api/messages` deletes every message and returns `{ "ok": true, "cleared": <n> }`. It's the web UI's "Clear chats" button (Tuan, 2026-11-08). Unauthenticated. The other writes are the password-protected Unblock and Clear blocks below.
 
 Each message:
 
@@ -35,7 +35,7 @@ Each message:
 | `body` | Message text |
 | `receivedAt` | ISO 8601 time the gateway accepted it |
 | `action` | `pending`, `delivered` or `blocked` |
-| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified), `not_classified` (no text to check: attachment, reaction, contact card), `sender_blocked` (blocked without the model because the sender is on the blocklist; `verdict` is `null`. **Not emitted by default:** only with the gateway's parked `SENDER_BLOCKLIST=on`), `override` (a person marked this message "Not a scam" and it moved to the inbox; the original `verdict` is kept) or `null` while pending |
+| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified), `not_classified` (no text to check: attachment, reaction, contact card), `sender_blocked` (blocked without the model because the sender is on the blocklist; `verdict` is `null`. emitted while the gateway's `SENDER_BLOCKLIST` is `on`, the default since 2026-11-08), `override` (a person marked this message "Not a scam" and it moved to the inbox; the original `verdict` is kept) or `null` while pending |
 | `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending, unavailable or not classified |
 | `kind` | `text`, `link`, `attachment`, `reaction`, `contact` or `album` (iMessage content). Optional: absent means `text` |
 | `conversation` | `{ id, type }`: an opaque chat id (`c_<hex>`) and `dm` or `group`. Optional: absent means a DM |
@@ -50,6 +50,14 @@ Each message:
 Highlight spans are character offsets into `body` with `0 <= start < end <= body.length` (JSON Schema can't express this; the gateway drops spans that don't fit). Consumers should still guard against bad spans.
 
 Display rules: `action == "delivered"` with `reason == "classifier_unavailable"` shows as **unverified**, `reason == "not_classified"` shows as **not checked**, `sender_blocked` as **blocked: known scam sender**, and `override` as **restored**. The UI never re-decides scam vs. legitimate.
+
+## Unblock and Clear blocks (v1, added 2026-11-08)
+
+Two password-protected writes from the web UI (Tuan, 2026-11-08). Both need the header `X-Action-Password`, checked on the server against `UI_ACTION_PASSWORD` (default `4321`). The web app never hardcodes the password; the user types it. A missing or wrong password returns `401 { "error": "wrong password" }`.
+
+- `POST /api/messages/:id/unblock` moves one blocked message to the inbox (`action: "delivered"`, `reason: "override"`, original `verdict` kept). With the sender blocklist on, it also allowlists that sender. Returns `{ "ok": true, "messageId": "<id>", "allowlisted": true | false | null }` (`null` when the blocklist is off). `404` if no such message, `409` if it isn't blocked.
+- `GET /api/blocklist` returns `{ "enabled": <bool>, "blockedSenders": <n> }`: whether the sender blocklist is on and how many senders are blocked right now. No password.
+- `POST /api/blocklist/clear` unblocks every sender: it deletes every sender record (blocks, strikes and allowlist entries) and keeps the text fingerprints. Messages already in the blocked log stay there. Returns `{ "ok": true, "cleared": <senders removed>, "enabled": <bool> }` (`cleared: 0, enabled: false` when the blocklist is off).
 
 ## Webhook signing (gateway and simulator)
 
