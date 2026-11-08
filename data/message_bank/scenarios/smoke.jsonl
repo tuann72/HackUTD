@@ -1,0 +1,3 @@
+{"delayMs": 0, "from": "+15555550110", "body": "Smoke test: dinner Sunday still on?", "expected": "deliver"}
+{"delayMs": 500, "from": "+15555550177", "body": "Smoke test: your account is locked. Verify at bit.ly/acct-verify now", "expected": "block"}
+{"delayMs": 500, "from": "+15555550101", "body": "Smoke test: your prescription is ready for pickup.", "expected": "deliver"}

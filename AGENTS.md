@@ -14,7 +14,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 - **Problem:** Scam calls and messages pressure people, especially older adults, into rash decisions that cause financial, personal, or emotional harm.
 - **Concept:** Detect likely scam activity, warn the recipient, and potentially help respond on their behalf while keeping the recipient in control.
 - **Hackathon tracks:** **Safe Signal (T-Mobile)** and **Vultr** (Tuan, 2026-11-07). The Vultr track is covered by training and serving the classifier on Vultr. Photon, listed in the SRS, is dropped.
-- **Current project state:** Building the Twilio MVP (Tuan lifted the scaffolding hold for it on 2026-11-07): the query API contract in [`contracts/`](contracts/README.md), and the gateway (`services/gateway/`), simulator (`services/perpetrator-sim/`) and message UI (`apps/web/`, route `/messages`) on their own branches. The repo also has the classifier's training script and inference service (MiniLM and a TF-IDF + LR baseline) in [`classifier/`](classifier/README.md), and a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
+- **Current project state:** Building the Twilio MVP (Tuan lifted the scaffolding hold for it on 2026-11-07): the query API contract in [`contracts/`](contracts/README.md), the message bank in [`data/message_bank/`](data/message_bank/README.md) and the perpetrator simulator in [`services/perpetrator-sim/`](services/perpetrator-sim/README.md) are on `main`; the gateway (`services/gateway/`) and message UI (`apps/web/`, route `/messages`) are on their own branches. The repo also has the classifier's training script and inference service (MiniLM and a TF-IDF + LR baseline) in [`classifier/`](classifier/README.md), and a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
 
 ## Current scope (agreed)
 
@@ -98,7 +98,7 @@ Everything above except the two firm requirements is a proposal. Open items stay
 
 - **Message type:** the MVP assumes text messages to the victim number. Whether voice calls are in scope for the Twilio MVP is TBD.
 - **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
-- **Perpetrator simulator:** whether it sends scripted conversations, random draws from the message bank, messages typed by a teammate, or a mix.
+- **Perpetrator simulator:** the CLI supports all three (scripted `scenario` files, `random` bank draws, typed `send`). Which mix the demo uses is TBD.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
 - **Classifier:** MiniLM on Vultr is agreed (see above). Still open: label scheme (binary spam/ham or the 8-class scam categories), thresholds, whether fine-tuning is needed, and evaluation measures.
 - **Live public demo:** moderation, rate limits, privacy of numbers texting in, and cost controls.
