@@ -34,7 +34,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Voice scam guard | Send the call transcript to the VM gateway as a signed Photon-format webhook (like the simulator); remove the direct classifier and Vercel results path from the worker (task 1.7) | `feat/voice-scam-detection` | LacsJP27 + Claude Code | In progress | TBD |
+| Voice scam guard | Send the call transcript to the VM gateway as a signed Photon-format webhook (like the simulator); remove the direct classifier and Vercel results path from the worker (task 1.7) | `feat/voice-scam-detection` | LacsJP27 + Claude Code | In progress | [#82](https://github.com/tuann72/HackUTD/pull/82) |
 | Message UI | Remove small captions and the footer note on /messages; bigger Threats blocked / Delivered labels | `feat/web-trim-copy` | Tuan + Claude Code | Done | [#77](https://github.com/tuann72/HackUTD/pull/77) |
 | Message UI | Remove the Grandparent scam button from the Simulate sidebar | `feat/web-no-grandparent` | Tuan + Claude Code | Done | [#74](https://github.com/tuann72/HackUTD/pull/74) |
 | Message UI | Landing T: remove the black slab, add the right serif and two small pink squares beside the stem | `feat/landing-t-dots` | Tuan + Claude Code | Done | [#76](https://github.com/tuann72/HackUTD/pull/76) |
