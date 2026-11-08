@@ -121,6 +121,18 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
       {m.body && <MessageBody body={m.body} highlights={blocked ? m.verdict?.highlights : null} defang={blocked} />}
       <MessageExtras message={m} defang={blocked} />
 
+      {m.verdict?.review && (
+        <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-300">
+          <span className="font-semibold">Second opinion:</span> {m.verdict.review.reason}
+          {m.verdict.review.bankSource && (
+            <span className="text-zinc-400 dark:text-zinc-500">
+              {" "}
+              (checked {m.verdict.review.checks.length} against {m.verdict.review.bankSource === "mock" ? "mock bank data" : "Nessie"})
+            </span>
+          )}
+        </p>
+      )}
+
       {m.verdict && (
         <footer className="mt-3 flex items-baseline justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
           <span>

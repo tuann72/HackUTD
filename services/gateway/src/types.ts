@@ -29,12 +29,23 @@ export interface Highlight {
   weight: number;
 }
 
+/** Nemotron's second opinion, for scores in the review band. Absent when no review ran. */
+export interface Review {
+  decision: 'block' | 'deliver';
+  reason: string;
+  model: string;
+  checks: Array<{ check: string; keyword: string | null; found: boolean }>;
+  /** Where the bank checks ran. Null when Nemotron asked for none. */
+  bankSource: 'nessie' | 'mock' | null;
+}
+
 export interface Verdict {
   label: 'scam' | 'legit';
   score: number;
   category: string | null;
   model: string;
   highlights: Highlight[];
+  review?: Review;
 }
 
 export interface ApiMessage {

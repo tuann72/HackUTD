@@ -6,6 +6,7 @@ import type { Blocklist, Fingerprinter } from './blocklist.js';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
+import type { Reviewer } from './reviewer.js';
 import { EVENT_HEADER, SIGNATURE_HEADER, STANDARD_ID_HEADER, STANDARD_SIGNATURE_HEADER, STANDARD_TIMESTAMP_HEADER, TIMESTAMP_HEADER, isClassifiable, parsePhotonEvent, verifySpectrumRequest, verifyStandardRequest, type InboundMessage } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
@@ -30,6 +31,8 @@ export interface AppDeps {
     | 'debugToken'
     | 'adminToken'
     | 'senderBlocklist'
+    | 'reviewBandLow'
+    | 'reviewBandHigh'
   >;
   /**
    * Sender blocklist (docs/features/sender-blocklist.md), a parked option. Used only when
@@ -38,6 +41,8 @@ export interface AppDeps {
    */
   blocklist?: Blocklist;
   fingerprinter?: Fingerprinter;
+  /** Nemotron's second opinion for scores in the review band. Absent = the model decides alone. */
+  reviewer?: Reviewer;
   logger?: Logger;
   /** Clock for the signature timestamp check. Tests override it. */
   now?: () => Date;
@@ -66,6 +71,7 @@ export function createApp({
   config,
   blocklist,
   fingerprinter,
+  reviewer,
   logger = consoleLogger,
   now = () => new Date(),
 }: AppDeps): GatewayApp {
@@ -124,7 +130,19 @@ export function createApp({
       logger.warn(`${id} from ${display}: classifier unavailable (${(err as Error).message}); delivered unverified`);
       return;
     }
-    const action = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
+    let action: 'blocked' | 'delivered' = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
+    // Unsure score: ask Nemotron. Any failure keeps the model's decision.
+    if (reviewer && verdict.score >= config.reviewBandLow && verdict.score < config.reviewBandHigh) {
+      try {
+        const review = await reviewer.review(body, verdict);
+        // The label follows the final decision, so the UI never shows a cleared message as a potential scam.
+        verdict = { ...verdict, label: review.decision === 'block' ? 'scam' : 'legit', review };
+        action = review.decision === 'block' ? 'blocked' : 'delivered';
+        logger.info(`${id}: reviewed by ${review.model}: ${review.decision} (${review.checks.length} checks, bank=${review.bankSource ?? 'none'})`);
+      } catch (err) {
+        logger.warn(`${id}: review failed (${(err as Error).message}); keeping the model's decision`);
+      }
+    }
     store.applyDecision(id, action, 'model_verdict', verdict);
     logger.info(`${id} from ${display}: ${action} (score ${verdict.score}, ${verdict.category ?? 'no category'}, ${verdict.model})`);
     // 4. Fingerprint every model block; strikes or a very high score put the sender on the blocklist.

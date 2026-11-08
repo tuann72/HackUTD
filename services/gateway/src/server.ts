@@ -5,6 +5,8 @@ import { MemoryBlocklist, MongoBlocklist, ephemeralSecret, makeFingerprinter, ty
 import { HttpClassifier, StubClassifier, type Classifier } from './classifier.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db.js';
+import { MockBank, NessieBank } from './bank.js';
+import { NemotronReviewer, type Reviewer } from './reviewer.js';
 
 const config = loadConfig();
 // Some machines hand Node a DNS server that doesn't answer SRV lookups, so `mongodb+srv://` fails
@@ -33,7 +35,26 @@ if (config.senderBlocklist) {
 }
 const fingerprinter = blocklist ? makeFingerprinter(config.fingerprintSecret ?? ephemeralSecret()) : undefined;
 
-const app = createApp({ db, classifier, config, blocklist, fingerprinter });
+// A missing key turns the review off rather than stopping the gateway: interception matters more.
+let reviewer: Reviewer | undefined;
+if (config.reviewer && !config.nvidiaApiKey) {
+  console.warn('[gateway] REVIEWER=on but NVIDIA_API_KEY is empty: review is off');
+} else if (config.reviewer && config.nvidiaApiKey) {
+  const fallbackBank = new MockBank();
+  reviewer = new NemotronReviewer({
+    apiKey: config.nvidiaApiKey,
+    model: config.nemotronModel,
+    baseUrl: config.nvidiaBaseUrl,
+    timeoutMs: config.reviewTimeoutMs,
+    fallbackBank,
+    bank:
+      config.nessieApiKey && config.nessieAccountId
+        ? new NessieBank({ baseUrl: config.nessieBaseUrl, apiKey: config.nessieApiKey, accountId: config.nessieAccountId })
+        : fallbackBank,
+  });
+}
+
+const app = createApp({ db, classifier, config, blocklist, fingerprinter, reviewer });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[gateway] listening on http://localhost:${info.port}`);
@@ -41,6 +62,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(
     `[gateway] sender blocklist=${!blocklist ? 'off (each message judged on its own)' : `on, ${config.mongodbUri ? `atlas (${config.mongodbDb})` : 'memory (resets on restart)'}, strikes=${rules.strikes} score>=${rules.highScore} ttl=${config.senderBlockTtlDays}d`} admin=${config.adminToken ? 'ON' : 'off'}`,
   );
+  console.log(`[gateway] review=${reviewer ? `on (${config.nemotronModel}, band ${config.reviewBandLow}-${config.reviewBandHigh})` : 'off'}`);
   if (config.dnsServers.length > 0) console.log(`[gateway] dns=${config.dnsServers.join(',')}`);
   console.log(`[gateway] Photon webhook: POST ${WEBHOOK_PATH} (signature tolerance ${config.signatureToleranceSeconds}s) debug=${config.debug ? 'ON' : 'off'}`);
 });
