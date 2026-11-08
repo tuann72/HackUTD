@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: Gateway on a Vultr VM, web app on Vercel
+
+- **Decision (Tuan):** the gateway runs on a **Vultr VM** (option A in the Twilio MVP plan). Only `apps/web` deploys to **Vercel**, through a repo-root `vercel.json` with one service (`web`) that serves every path. The classifier stays on Vultr as agreed.
+- **Why not all on Vercel:** a suggested multi-service `vercel.json` (web, gateway, classifier) was considered and rejected. The gateway keeps messages in a local SQLite file and classifies after replying to Twilio; neither survives Vercel functions. MiniLM's `torch` and `sentence-transformers` are too large for a Vercel Python function. Keeping the gateway off Vercel also keeps the rule that a web deploy can't break interception.
+- **Consequences:** no Vercel service bindings, since the browser calls the gateway directly at `NEXT_PUBLIC_API_URL`. The gateway needs an **HTTPS** URL (the Vercel page is HTTPS) and the Vercel domain in `CORS_ORIGINS`. Twilio's webhook points at `https://<gateway-host>/twilio/sms`, matching `PUBLIC_WEBHOOK_URL`.
+- **Still TBD:** the VM size and region, the domain, and how HTTPS is terminated on the VM (for example Caddy).
+
 ### 2026-11-07: MVP implementation decisions
 
 - **Decisions (Tuan):** the Twilio MVP is being built now, so the scaffolding hold is lifted for the gateway, simulator and message UI. Gateway storage is **SQLite** (`node:sqlite`), with debug tools to clear it. When the classifier is down, the gateway **fails open**: it delivers the message with `reason: classifier_unavailable`, and the UI shows it as unverified. The message bank and scenarios are **JSONL**. The message UI is the **`/messages`** route in `apps/web`, leaving `/` for the 3D scene.
