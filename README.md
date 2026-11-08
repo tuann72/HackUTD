@@ -33,6 +33,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Landing page at `/` with a Start button; scene + lists move to `/messages` | `feat/web-landing-page` | Tuan + Claude Code | In review | — |
 | Project | Rename the project T-Gate → T-Guard (display name; technical ids unchanged) | `chore/rename-t-guard` | Tuan + Claude Code | Done | [#53](https://github.com/tuann72/HackUTD/pull/53) |
 | Initial 3D scene | Sender label still missing: draw both labels as DOM over the canvas, placed each frame from the blob anchors (no drei `<Html>`) | `fix/scene-sender-label-overlay` | Tuan + Claude Code | Done | [#50](https://github.com/tuann72/HackUTD/pull/50) |
 | Initial 3D scene | Bigger 3D scene band on `/` (taller band, camera reframed) | `feat/web-bigger-scene` | Claude (agent) | Done | [#48](https://github.com/tuann72/HackUTD/pull/48) |

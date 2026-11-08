@@ -6,6 +6,11 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Landing page at `/`, app moves to `/messages`
+
+- **Decision (Tuan):** `/` is a landing page from Tuan's mock: "T-GUARD" in a heavy condensed face (Anton), the tagline "Security that moves with you." (Archivo), and a pink/black color-block composition on the right, plus a **Start** button.
+- **Start** opens the scene and inbox/blocked lists, which moved from `/` to `/messages` (the route the MVP plan first used). `/scene` now redirects to `/messages`; the old `/messages` → `/` redirect is gone.
+
 ### 2026-11-08: Project renamed to T-Guard
 
 - **Decision (Tuan):** the project is called **T-Guard**, not T-Gate. Every user-facing and written mention (web page title and header, UI strings, docs, comments, service descriptions, the Photon webhook destination name) now says T-Guard.
