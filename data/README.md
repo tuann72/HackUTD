@@ -72,7 +72,9 @@ Same rows, plus these columns:
 
 ---
 
-## 4. Potential Threat synthetic data (proposed label 8)
+## 4. Potential Threat synthetic data (label 8)
+
+**Update (2026-11-08):** label 8 is now in `scam_categories.csv` as **Threats & Extortion**, and `classifier/build_splits.py` merges these files into training. The paragraphs below describe the files as they were first added.
 
 Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING RIGHT NOW GIVE ME $900 OR I EXPLODE" or "YOUR WIFFE IS IN DANGER GIVE ME 500$". The 100k files have almost none: kidnap/ransom words appear in 86 rows (mostly Enron spam noise in labels 5 and 7), "or else / I know where you live" in 34 (mostly eBay phishing and ham), no short ALL-CAPS text contains a money amount, and 215 of 239 short ALL-CAPS texts are ham. **Proposal, not agreed:** label 8 is not in `scam_categories.csv` yet, and the 100k files are unchanged. Plan: [`docs/features/potential-threat-data.md`](../docs/features/potential-threat-data.md).
 

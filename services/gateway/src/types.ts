@@ -59,7 +59,7 @@ export interface MessagesResponse {
   messages: ApiMessage[];
 }
 
-/** Scam category names, exactly as in data/scam_categories.csv (labels 1-7). */
+/** Scam category names, exactly as in data/scam_categories.csv (labels 1-8). */
 export const SCAM_CATEGORIES = [
   'Imposter & Phishing',
   'Prizes, Lotteries & Advance-Fee',
@@ -68,5 +68,6 @@ export const SCAM_CATEGORIES = [
   'Health & Pharmacy',
   'Shopping & Product Offers',
   'Internet, Telecom & Media',
+  'Threats & Extortion',
 ] as const;
 export type ScamCategory = (typeof SCAM_CATEGORIES)[number];
