@@ -6,12 +6,19 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
-### 2026-11-07: Gateway hosted on the classifier's Vultr server
+### 2026-11-07: Gateway shares the classifier's Vultr server, HTTPS by Caddy
 
-- **Decision (Timothy):** the gateway runs on the **same Vultr Cloud Compute server as the classifier**, as a third Docker Compose service in `classifier/deploy/`, behind the same Caddy. Classifier at `https://<ip>.sslip.io`, gateway at `https://gateway.<ip>.sslip.io`. The gateway calls the classifier at `http://classifier:8000` on Docker's internal network, with the bearer token. SQLite sits on a named volume (`gateway_data`). Image: `services/gateway/Dockerfile` (Node 24, non-root).
+- **Decision (Timothy):** settles the open items of Tuan's "Gateway on a Vultr VM" decision below. The gateway's VM is **the classifier's Vultr Cloud Compute server**: it runs, as a third Docker Compose service in `classifier/deploy/`, behind the same Caddy. Classifier at `https://<ip>.sslip.io`, gateway at `https://gateway.<ip>.sslip.io`. The gateway calls the classifier at `http://classifier:8000` on Docker's internal network, with the bearer token. SQLite sits on a named volume (`gateway_data`). Image: `services/gateway/Dockerfile` (Node 24, non-root).
 - **Why:** the gateway needs an always-on Node 24 process and a persistent disk for SQLite. That rules out Vercel functions and free tiers that sleep or lose their disk. The team already has the Vultr server and credits, and it adds to the Vultr track. One server means one HTTPS setup and no network hop between the gateway and the classifier.
 - **Trade-off:** one server. If it goes down, both the gateway and the classifier go down. Acceptable for a hackathon demo.
-- **Replaces:** option A vs. B in `docs/features/twilio-mvp.md` (this is A, on a Vultr VM). The web UI's hosting is still TBD.
+- **Settles from the entry below:** the VM (the classifier's server), the domain (sslip.io), and HTTPS (Caddy). Still TBD: VM size and region. Set `CORS_ORIGINS` to the Vercel domain.
+
+### 2026-11-07: Gateway on a Vultr VM, web app on Vercel
+
+- **Decision (Tuan):** the gateway runs on a **Vultr VM** (option A in the Twilio MVP plan). Only `apps/web` deploys to **Vercel**, through a repo-root `vercel.json` with one service (`web`) that serves every path. The classifier stays on Vultr as agreed.
+- **Why not all on Vercel:** a suggested multi-service `vercel.json` (web, gateway, classifier) was considered and rejected. The gateway keeps messages in a local SQLite file and classifies after replying to Twilio; neither survives Vercel functions. MiniLM's `torch` and `sentence-transformers` are too large for a Vercel Python function. Keeping the gateway off Vercel also keeps the rule that a web deploy can't break interception.
+- **Consequences:** no Vercel service bindings, since the browser calls the gateway directly at `NEXT_PUBLIC_API_URL`. The gateway needs an **HTTPS** URL (the Vercel page is HTTPS) and the Vercel domain in `CORS_ORIGINS`. Twilio's webhook points at `https://<gateway-host>/twilio/sms`, matching `PUBLIC_WEBHOOK_URL`.
+- **Still TBD:** the VM size and region, the domain, and how HTTPS is terminated on the VM (for example Caddy).
 
 ### 2026-11-07: MVP implementation decisions
 
@@ -39,6 +46,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Why:** one language across the Twilio side and the web app. Twilio's `twilio` npm package has TypeScript types, `validateRequest` for checking webhook signatures and `getExpectedTwilioSignature` for signing simulator requests. The only realistic alternative was Python (FastAPI), which would split the backend from the web app.
 - **Still TBD:** the gateway framework (later: Hono, see above) and where it's hosted.
 - **Also:** this file was renamed from `DESIGN.md`.
+
+### 2026-11-07: Initial 3D scene is two blobs and message shots (later scope)
+
+- **Decision (Tuan):** when the parked scene is picked up, start with one **pink victim blob** and one **sender blob that shoots messages** at it. **Red** messages are flagged as a **potential scam**. Each message goes through to the victim or gets blocked and pops before it arrives. On-screen wording says "potential scam", never "scam".
+- **Why:** it's the simplest picture that shows T-Gate stopping potential scams while letting other messages through.
+- **Doesn't change:** the scene stays parked until the MVP works. The fuller scene below (crowd of blobs, chat bubbles) stays proposed.
+- **Details:** [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
+- **Update:** built early in #14 at `/scene` with fake messages, before the MVP was finished. Live data is still to come.
 
 ### 2026-11-07: MVP UI is a basic Next.js message list; 3D scene parked
 

@@ -139,7 +139,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 | Question | Recommendation | Status |
 |---|---|---|
-| Where the gateway runs | Same Vultr server as the classifier, behind the same Caddy (`https://gateway.<ip>.sslip.io`). See `classifier/README.md`, Step 4 | **Decided** (Timothy, 2026-11-07) |
+| Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **Decided:** A, gateway on a **Vultr VM**, web app on Vercel (Tuan, 2026-11-07). The VM is the classifier's server, HTTPS by its Caddy at `https://gateway.<ip>.sslip.io` (Timothy; `classifier/README.md`, Step 4) |
 | Storage | **SQLite** (`node:sqlite`), with debug tools to clear it (`POST /debug/reset` when `GATEWAY_DEBUG=1`, and an `npm run db:reset` script) | **Decided** (Tuan, 2026-11-07) |
 | Classifier-down behavior | **Fail open:** deliver with `reason: classifier_unavailable`, shown as "unverified" | **Decided** (Tuan, 2026-11-07) |
 | Block threshold | `BLOCK_THRESHOLD` env var, default 0.5, tuned on `val` later | **TBD** |
@@ -157,7 +157,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Done (Vultr server shared with the classifier; SQLite) | `feat/gateway-vultr-deploy` | Timothy + Claude Code | |
+| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Done (A: Vultr VM; web on Vercel). VM, domain and HTTPS: `feat/gateway-vultr-deploy` (Timothy) | `chore/deploy-vercel-web` | Tuan + Claude Code | [#16](https://github.com/tuann72/HackUTD/pull/16) |
 | 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | In progress (approach done: MiniLM on Vultr; label scheme after the Vultr training run) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 1: foundations
@@ -165,9 +165,9 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 1.1 | Twilio setup and a recorded webhook fixture. **Partly done:** a synthetic fixture and the contract are in `contracts/`; the real number and recording need a person | — | 1.2–1.5 | In progress | `feat/twilio-mvp-contract` | Tuan + Claude Code | [#4](https://github.com/lytx02/HackUTD/pull/4) |
-| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | In review | `feat/twilio-mvp-gateway` | Tuan + Claude Code | [#8](https://github.com/lytx02/HackUTD/pull/8) |
+| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | Done | `feat/twilio-mvp-gateway` | Tuan + Claude Code | [#10](https://github.com/lytx02/HackUTD/pull/10) |
 | 1.3a | `apps/web` scaffold with the 3D-scene packages and the shared `lib/messages` data layer (done first, so the scene can start in parallel) | contract | all | Done | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | [#5](https://github.com/lytx02/HackUTD/pull/5) |
-| 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | In review | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#9](https://github.com/lytx02/HackUTD/pull/9) |
+| 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | Done | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#11](https://github.com/lytx02/HackUTD/pull/11) |
 | 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | Done | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#13](https://github.com/lytx02/HackUTD/pull/13) |
 | 1.5 | Classifier: train, evaluate on `val`/`test`, export. Tracked in [classifier-service.md](classifier-service.md) | 0.2 | 1.1–1.4 | In progress (code done; Vultr training next) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
@@ -176,7 +176,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 2.1 | Simulator CLI: scenario mode, random mode, dry run | 1.1, 1.4 | 2.2, 2.3 | Done | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#13](https://github.com/lytx02/HackUTD/pull/13) |
-| 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | In review | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#9](https://github.com/lytx02/HackUTD/pull/9) |
+| 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | Done | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | [#11](https://github.com/lytx02/HackUTD/pull/11) |
 | 2.3 | Replace the stub classifier with the real model | 1.2, 1.5 | 2.1, 2.2 | Not started | | | |
 
 ### Stage 3: demo
@@ -250,8 +250,9 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ## Progress notes
 
-- **2026-11-07:** Gateway hosting decided (Timothy): the classifier's Vultr server, as a third Compose service behind the same Caddy. Added `services/gateway/Dockerfile`. Tested locally: the image builds, runs as non-root, verifies a signed sample against `PUBLIC_WEBHOOK_URL`, blocks it, and keeps it after a restart. Not yet deployed to Vultr.
+- **2026-11-07:** Gateway VM and HTTPS settled (Timothy), following Tuan's Vultr VM decision: the classifier's Vultr server, as a third Compose service behind the same Caddy. Added `services/gateway/Dockerfile`. Tested locally: the image builds, runs as non-root, verifies a signed sample against `PUBLIC_WEBHOOK_URL`, blocks it, and keeps it after a restart. Not yet deployed to Vultr.
 - **2026-11-07:** Contract (#4) and the `apps/web` scaffold (#5) merged. The 3D scene can branch from `main`. The `/messages` UI (#9) showed the gateway's live results: Inbox 3, Blocked 2.
+- **2026-11-07:** Gateway (#10) and `/messages` UI (#11) merged; tasks 1.2, 1.3 and 2.2 Done. Next: 2.3 (real classifier) and 3.1 (deploy, real-phone test); 1.1 still needs the real Twilio number.
 - **2026-11-07:** Message bank and simulator merged (#13): `data/message_bank/` (91 SMS-style `test` rows + 27 generated, two scenarios) and `services/perpetrator-sim/` (`scenario`, `random`, `send`, `--dry-run`). Bank size and mix are still open; re-check the webhook field list once task 1.1 records a real Twilio request.
 - **2026-11-07:** Local end-to-end check passed: the simulator (#7) played `grandparent.jsonl` against the gateway (#8). All 5 outcomes matched `expected` (3 delivered, 2 blocked as Imposter & Phishing), no raw numbers or SIDs appeared in `/api/messages`, and a wrong auth token got 403. Not yet tried with real Twilio traffic.
 - **2026-11-07:** Implementation started (Tuan). Decided: SQLite with debug reset, fail open, JSONL, UI at `apps/web` `/messages`. The query API contract is in `contracts/`. The gateway, UI and simulator are built in parallel on separate branches stacked on `feat/twilio-mvp-contract`. The classifier is PR #3's work; the gateway calls its `POST /classify` (`{messageId, text}` → `{messageId, label, score, category, model, highlights}`, bearer token). The query API dropped `since`: the UI re-fetches the list, because pending messages change.

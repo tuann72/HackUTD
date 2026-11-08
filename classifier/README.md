@@ -211,14 +211,14 @@ CLASSIFIER_TOKEN=the-token-you-made
 
 ## Step 4: put the gateway online (same server)
 
-The gateway (`services/gateway/`, the Twilio webhook and the query API) runs on the classifier's server, behind the same Caddy (decision: Timothy, 2026-11-07, `CHANGELOG.md`). It reaches the classifier over Docker's internal network, so `CLASSIFIER_URL` is set for you.
+The gateway (`services/gateway/`, the Twilio webhook and the query API) runs on the classifier's server, behind the same Caddy (gateway on a Vultr VM: Tuan; this VM and Caddy: Timothy; both 2026-11-07, `CHANGELOG.md`). The web app is on Vercel (`apps/web/README.md`, "Deploy"). It reaches the classifier over Docker's internal network, so `CLASSIFIER_URL` is set for you.
 
 | Service | Public URL |
 |---|---|
 | Classifier | `https://TGATE_DOMAIN` |
 | Gateway | `https://gateway.TGATE_DOMAIN` (sslip.io resolves any name in front of the IP) |
 
-1. **Add the Twilio values** to `tgate/classifier/deploy/.env` (see `.env.example`): `TWILIO_AUTH_TOKEN` (Twilio console → Account info), and `CORS_ORIGINS` set to the message UI's origin.
+1. **Add the Twilio values** to `tgate/classifier/deploy/.env` (see `.env.example`): `TWILIO_AUTH_TOKEN` (Twilio console → Account info), and `CORS_ORIGINS` set to the Vercel domain (for example `https://<project>.vercel.app`).
 2. **Start it:**
 
    ```bash
@@ -229,7 +229,7 @@ The gateway (`services/gateway/`, the Twilio webhook and the query API) runs on 
 
    No model yet? Add `GATEWAY_CLASSIFIER_URL=` (empty) to `.env` and run `docker compose up -d --build gateway caddy`. The gateway then uses its keyword stub.
 3. **Point Twilio at it:** in the Twilio console, set the victim number's **A message comes in** webhook to `https://gateway.TGATE_DOMAIN/twilio/sms`, method `HTTP POST`. It must match exactly: Twilio signs requests against this URL, and the gateway checks the signature against the same URL (`PUBLIC_WEBHOOK_URL`, set by Compose).
-4. **Point the UI at it:** `NEXT_PUBLIC_API_URL=https://gateway.TGATE_DOMAIN` in `apps/web`.
+4. **Point the UI at it:** set `NEXT_PUBLIC_API_URL=https://gateway.TGATE_DOMAIN` in the Vercel project's environment variables, then redeploy.
 
 Messages are stored in SQLite on the `gateway_data` Docker volume, so they survive rebuilds. Logs: `docker compose logs -f gateway` (numbers are masked).
 
