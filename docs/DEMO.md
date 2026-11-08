@@ -36,7 +36,7 @@ npm run sim -- scenario smoke.jsonl     # sanity check: 3 messages show up on /
 curl -X POST -H "X-Debug-Token: $DEBUG_TOKEN" http://localhost:8787/debug/reset
 ```
 
-Open `/` full-screen: the 3D scene on top, the inbox and blocked lists below.
+Open `/` (the landing page) full-screen and click **Start**, or go straight to `/messages`: the 3D scene on top, the inbox and blocked lists below.
 
 ## The walkthrough
 
@@ -93,7 +93,7 @@ Only do this once the Photon line is connected ([`photon-imessage.md`](features/
 
 ## Pre-demo checklist
 
-- [ ] `npm run sim -- scenario smoke.jsonl` shows 3 messages on `/`, then reset
+- [ ] `npm run sim -- scenario smoke.jsonl` shows 3 messages on `/messages`, then reset
 - [ ] The scene animates and blocked messages pop
 - [ ] `DEBUG_TOKEN` is exported in the shell you'll reset from
 - [ ] (Live moment) A test iMessage to the Photon line shows up

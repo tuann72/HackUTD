@@ -11,6 +11,24 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 | Need metadata (splits, source, synthetic flag, label confidence) | the matching `*_full.csv` |
 | Only the original real messages, no synthetic rows | `unified_spam_dataset.csv` |
 | Threat / coercion / fake-emergency extortion texts (proposed label 8) | `potential_threat_synthetic.csv` (train), `potential_threat_eval.csv` (held-out) |
+| Harmless "free" texts (label 0), so "free" alone doesn't read as scam | `free_ham_synthetic.csv` (train) |
+
+**Which files can be aggregated (combined into one training set)**
+
+`classifier/build_splits.py` does this aggregation: run it, don't concatenate files by hand. Its output (`classifier/splits/train_val.csv`) is the aggregated training file.
+
+| File | Aggregate? | How |
+|---|---|---|
+| `scam_categories_100k_full.csv` | **Yes, the base** | Its `train` and `val` rows go in. Its `test` rows are held out (read only by `classifier/evaluate.py`). |
+| `potential_threat_synthetic.csv` | **Yes** | Label 8 plus ham hard negatives. 15% of each scenario goes to val, the rest to train. |
+| `free_ham_synthetic.csv` | **Yes** | Label 0. Same handling as the threat rows (255 train, 45 val). |
+| `potential_threat_eval.csv` | **No, held out** | `split = threat_eval`. Never train on it; `build_splits.py` drops any training row that matches it. |
+| `scam_categories_100k.csv` | No | The same rows as the `_full` file without metadata. Use one or the other, never both. |
+| `spam_ham_100k.csv`, `spam_ham_100k_full.csv` | No | The same 100k messages with binary labels. Adding them would duplicate every row. Use `is_spam` in the `_full` file instead. |
+| `unified_spam_dataset.csv`, `..._with_source.csv` | No | An older first pass of the real messages already in the 100k files (uncleaned). Reference only. |
+| `message_bank/` | No | Demo input for the simulator, not training data. |
+
+Any new synthetic file that should train has to be read in `build_splits.py` (`main()`), with the same columns plus `scenario`, and listed here.
 
 ---
 
