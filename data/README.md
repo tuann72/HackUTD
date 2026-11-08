@@ -12,6 +12,7 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 | Only the original real messages, no synthetic rows | `unified_spam_dataset.csv` |
 | Threat / coercion / fake-emergency extortion texts (proposed label 8) | `potential_threat_synthetic.csv` (train), `potential_threat_eval.csv` (held-out) |
 | Harmless "free" texts (label 0), so "free" alone doesn't read as scam | already inside `scam_categories_100k*.csv`; `free_ham_synthetic.csv` is the standalone copy |
+| Government-threat, IRS, ID/identification-request and health scam texts (labels 1 and 5) | `gov_health_id_scam_synthetic.csv` (train/val) |
 
 **Which files can be aggregated (combined into one training set)**
 
@@ -21,6 +22,7 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 |---|---|---|
 | `scam_categories_100k_full.csv` | **Yes, the base** | Its `train` and `val` rows go in. Its `test` rows are held out (read only by `classifier/evaluate.py`). |
 | `potential_threat_synthetic.csv` | **Yes** | Label 8 plus ham hard negatives. 15% of each scenario goes to val, the rest to train. |
+| `gov_health_id_scam_synthetic.csv` | **Yes** | 600 scam templates (labels 1 and 5). Handled like the threat rows: 15% of each scenario goes to val, the rest to train. |
 | `free_ham_synthetic.csv` | No, already merged | Its 300 rows are appended to `scam_categories_100k_full.csv` and `scam_categories_100k.csv` (`split = train`, `source = synthetic_free_ham`). Adding the file again would duplicate them. |
 | `potential_threat_eval.csv` | **No, held out** | `split = threat_eval`. Never train on it; `build_splits.py` drops any training row that matches it. |
 | `scam_categories_100k.csv` | No | The same rows as the `_full` file without metadata. Use one or the other, never both. |
@@ -144,6 +146,37 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 **Method:** slot-filled templates (names, family words, times, foods, places, events), then light styling: openers and closers ("hey", "lmk", "love you"), punctuation, emojis, and 14% ALL CAPS so caps plus "free" doesn't read as spam either. No row has a link, a phone number, a prize, a "claim/reply/call now" call to action or a money request. Rows are deduplicated case- and punctuation-insensitively and never repeat a row in `scam_categories_100k.csv` or the threat files.
 
 **Caveats:** template-generated, so easy to recognize; 300 rows is small next to the ~5,800 scam rows with "free", so it may soften the cue without removing it. There's no held-out "free" ham check yet. Retrain to take effect. If the generator changes, replace the 300 `synthetic_free_ham` rows in both 100k files as well.
+
+---
+
+## 6. Government-threat, IRS, ID-request and health scams (labels 1 and 5)
+
+**Why (Tuan, 2026-11-08):** more coverage of four common scams aimed at older adults: government agencies threatening arrest, the IRS demanding back taxes, requests for ID documents, and health scams.
+
+| file | rows | use |
+|---|---|---|
+| `gov_health_id_scam_synthetic.csv` | 600, all scam | Extra training rows, all `split = train` in the file. `classifier/build_splits.py` sends 15% of each scenario to val. |
+| `build_gov_health_id_scam_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_gov_health_id_scam_synthetic.py [out_dir]`. Two runs give byte-identical files. |
+
+**Scenarios** (150 rows each, `scenario` column):
+
+| scenario | label | `ftc_subcategory` | example |
+|---|---|---|---|
+| `government_threat` | 1 Imposter & Phishing | 7 | "US Marshals Service: a warrant has been issued for your arrest. Call 1-713-555-0134 now." (SSA suspension, arrest warrants, missed jury duty, deportation, DMV, seized packages; pay a fine in gift cards or Bitcoin) |
+| `irs` | 1 Imposter & Phishing | 7 | "Internal Revenue Service: your EIN/SSN is linked to tax fraud of $4962. Pay with Bitcoin at the nearest ATM to close the case." (back taxes, liens, garnishment, held refunds, stimulus claims) |
+| `id_request` | 1 Imposter & Phishing | 27 | "Wells Fargo Fraud Dept: reply with your full SSN and bank login to verify your account or it will be locked." (driver's license, passport, SSN, selfie with ID; from fake banks, employers, couriers, benefits offices, crypto exchanges, landlords, carriers) |
+| `health` | 5 Health & Pharmacy | 6 | "Medicare Alert: your lab results are ready, log in with your insurance ID at ..." (Medicare card and benefit scams, fake insurance cancellation, free test kits and braces, miracle cures, no-prescription pills) |
+
+**Columns:** the same as `potential_threat_synthetic.csv`: `is_spam` 1, `label_method` `template`, `label_confidence` 1.0, `source` `synthetic_gov_health_id`, `gen_method` `template`, `style` `sms`, `is_synthetic` True, empty `parent_id`. Ids start with `s` and are a hash of the text.
+
+**Method:** slot-filled templates (agencies, officer names, problems, threats, amounts, payment rails, ID documents paired with senders that would plausibly ask, health hooks), then openers ("URGENT:", "Dear Robert,"), closers ("Reply STOP to opt out", case numbers), 15% ALL CAPS, 10% lowercase and a few warning emojis. Phone numbers are in the reserved 555-01xx range and links are made-up lookalike domains (`irs-refund-claim.net`, `medicare-card-update.com`), so no row points at a real number or site. About a quarter of rows have a link and a third a phone number. Rows are deduplicated case- and punctuation-insensitively and never repeat a row in the 100k file or the threat files. In a `build_splits.py` run, 599 of the 600 survive deduplication (511 train, 88 val).
+
+**Caveats:**
+
+- **Template-generated**, so easy to recognize; judge the effect on the real test split and real messages.
+- **Scam rows only, no hard negatives.** Real IRS, DMV, pharmacy, Medicare or "send your ID for onboarding" texts are not in this file, so words like "IRS", "Medicare" or "ID" may become stronger scam cues. Adding matching ham rows (as section 5 did for "free") is a possible follow-up.
+- **The 555-01xx numbers and fake domains** are a pattern the model could learn instead of the content; real scams use real-looking numbers and domains.
+- **Retrain to take effect.** The served model was not retrained with these rows.
 
 ---
 

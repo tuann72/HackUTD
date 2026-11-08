@@ -12,6 +12,16 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Page:** `T—GUARD®` wordmark header linking to `/`, the scene on paper (was navy) with prototype-style captions, a "000 Threats blocked" / "Delivered" counter row, square cards (blocked ones with a pink edge), pink "Potential scam" stamps, pink keyword highlights, and the Simulate sidebar as outlined label buttons.
 - **Light only:** the prototype has no dark mode, so `dark:` utilities now apply only under a `.dark` class (nothing sets it). The OS dark setting no longer changes the site.
 
+### 2026-11-08: Government-threat, IRS, ID-request and health scam training texts
+
+Tuan asked for more synthetic scam data covering government threat scams, health scams, anything asking for ID, and IRS scams, 150 rows each, all scams. `data/build_gov_health_id_scam_synthetic.py` writes `data/gov_health_id_scam_synthetic.csv` (600 template rows). Labels follow `scam_categories.csv`: government threats, IRS and ID requests are impersonation or phishing, so label 1 (Imposter & Phishing); health scams are label 5 (Health & Pharmacy). They're not label 8 (Threats & Extortion), which covers personal threats and fake emergencies, not an agency threatening arrest. `classifier/build_splits.py` reads the file with the threat templates, so 15% of each scenario goes to val; its manifest key `val_threat_templates` is now `val_templates`. No hard negatives were added (real IRS or pharmacy texts), and the model was not retrained. See `data/README.md`, section 6.
+
+### 2026-11-08: Nemotron second-opinion review (proposal, off by default)
+
+- **What (Timothy + Claude Code):** when the stacked model's score is in the review band (default 0.22 to 0.77), NVIDIA Nemotron picks read-only checks from a fixed list, the gateway runs them against Nessie (Capital One's mock bank) or local mock data, and Nemotron returns block or deliver with a short reason. See `docs/features/nemotron-review.md`.
+- **Safety:** `REVIEWER=off` by default. Any failure or timeout keeps the model's decision. Nemotron gets no tools or URLs, only found flags, counts and short labels. VM gateway only; no database migration.
+- **Still TBD:** team agreement, the NVIDIA track, and whether bank results may go to NVIDIA beyond mock data.
+
 ### 2026-11-08: A slapping hand replaces the Receiver blob
 
 Tuan: replace the right blob in the scene with a hand that slaps, after the T-GUARD offline prototype. The Receiver is now the prototype's pink box with its photographic hand (the two WebP images, about 340 KB) standing in it, cut off at the box top by a clipping plane. A blocked potential scam stops within reach; during the hand's wind-up it drifts to where the palm will be at contact, then it is knocked back toward the sender, spinning and fading. The strikes reuse the prototype's slap-left, backhand and delayed timings (`components/scene/slap.ts`, unit-tested). This replaces the shield flash and the bubble pop; the "Potential scam · Blocked" stamp stays. Not ported: the box lid animation, the notification cards and the synthesized sound. The scene still only animates the gateway's decision.
