@@ -3,6 +3,20 @@
   "version": 1,
   "messages": [
     {
+      "id": "msg_0009",
+      "from": { "participantId": "p_bank", "display": "***-***-0177" },
+      "body": "Final notice: your account will be closed. Call us now",
+      "receivedAt": "2026-11-07T21:14:45.000Z",
+      "action": "blocked",
+      "reason": "sender_blocked",
+      "verdict": null,
+      "kind": "text",
+      "conversation": { "id": "c_bank", "type": "dm" },
+      "attachments": [],
+      "reaction": null,
+      "contact": null
+    },
+    {
       "id": "msg_0008",
       "from": { "participantId": "p_daughter", "display": "***-***-0110" },
       "body": "",

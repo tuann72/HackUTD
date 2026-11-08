@@ -6,11 +6,36 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Block the message, not the sender; sender blocklist parked (off by default)
+
+- **Decision (Tuan):** "we don't aim to block users, just block that instance of a message." This overrides the sender-level blocking in Timothy's plan ([`sender-blocklist.md`](docs/features/sender-blocklist.md)). Each message is judged on its own by the classifier. A scam sender's next legit message is delivered.
+- **What stays:** the blocklist module and its wiring, behind `SENDER_BLOCKLIST` (`off`|`on`, **default `off`**). With it off, there are no blocklist calls, no fingerprint or strike recording and no Atlas connection, even with `MONGODB_URI` set (a log line says it's ignored), and `MONGODB_URI`/`FINGERPRINT_SECRET` aren't validated. `on` keeps the previous behavior as a parked option.
+- **Override:** renamed to `POST /admin/messages/restore` and `npm run message:restore`, still behind `ADMIN_TOKEN`. It restores **only the named message** (reason `override`). It allowlists the sender only when the blocklist is on.
+- **Contract:** `sender_blocked` stays in v1 (valid when on) but isn't emitted by default. `override` is unchanged.
+- **Kept:** the `src/handle.ts` email normalization (it also makes participants consistent).
+- **Superseded:** the "proposals needing Tuan" in the entry below. Proposal 1 (block a blocklisted sender's text-less content) only applies when on. Proposal 3 is reversed: restore one message, not all.
+
+### 2026-11-08: Sender blocklist wired into the gateway flow (proposals need Tuan)
+
+- **Built (`feat/sender-blocklist-gateway-flow`):** sender-blocklist tasks 1.1, 2.1 and 2.2 and photon-imessage task 1.5. After the webhook's `200`, the gateway checks the blocklist first. A blocklisted sender's message is `blocked` with reason `sender_blocked`, without a classifier call. Every model block records sender and text fingerprints, with strikes, very-high-score and TTL rules at the existing defaults. Atlas errors are logged and ignored (fail open). Without `MONGODB_URI`, a `MemoryBlocklist` with a per-process key is used.
+- **Handles:** fingerprints use the same normalization as participants (`src/handle.ts`). Email handles are lowercased, so `Scammer@iCloud.com` and `scammer@icloud.com` are one sender. Before this, `normalizeNumber` reduced every email handle to an empty string, which would have made all email senders one fingerprint.
+- **Contract (additive, v1):** new reasons `sender_blocked` (`verdict: null`) and `override` (a person said "Not a scam"; the verdict is kept). The web app shows "Blocked: known scam sender" and "Restored".
+- **Proposals needing Tuan's confirmation:**
+  1. Text-less content (attachments, reactions, contact cards) from a blocklisted sender is **blocked**, not delivered unchecked.
+  2. The override is an **operator tool**: `POST /admin/senders/allow` with its own `ADMIN_TOKEN`, separate from `DEBUG_TOKEN` so it can run on the public VM with debug off, plus `npm run sender:allow -- <msg id>`. It's not a web button, which keeps the one-way data rule.
+  3. The override restores **all** of the sender's blocked messages, not just the one named.
+- **SQLite:** the reason CHECK constraint changed. A database from before this change is refused at startup (`npm run db:reset`).
+
+### 2026-11-08: Shared-pool Photon number, not a dedicated line
+
+- **Correction (Tuan):** the team isn't on Photon's Business plan. The victim line is the **shared-pool number** the project gets on Free/Pro. No code change: the gateway never filters on `space.phone`, and webhooks only carry our project's conversations.
+- **Consequences:** no real group chats (the UI support stays for the simulator); quotas of 50 new conversations per line per day and 5,000 messages per day (a live-demo risk); and whether arbitrary iPhones can reach the project is undocumented. Test this before the demo.
+
 ### 2026-11-08: Photon track, dedicated line, rich iMessage content, virtual inbox
 
 - **Decisions (Tuan):**
   1. Enter the **Photon track**.
-  2. Use one **dedicated** Photon line, so there's no shared-pool filtering.
+  2. Use one **dedicated** Photon line, so there's no shared-pool filtering. *(Superseded the same day: shared-pool number, see above.)*
   3. **Show attachments, reactions, contact cards and group chats** in the UI.
   4. Keep the victim's inbox **virtual** (the web UI), as with Twilio.
 - **Contract (additive, still v1):** new optional message fields `kind`, `conversation {id, type}`, `attachments [{name, mimeType, size}]`, `reaction {emoji, targetPreview}` and `contact {name, phones}`, plus a new reason, `not_classified`. They're optional so older v1 data stays valid. The gateway always sends them. Contact-card phones are masked, and Photon's attachment GUIDs and `space.id` never leave the gateway.

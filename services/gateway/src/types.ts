@@ -3,7 +3,11 @@
 
 export type Action = 'pending' | 'delivered' | 'blocked';
 /** `not_classified`: delivered without a check because there was no text (attachment, reaction, contact). */
-export type Reason = 'model_verdict' | 'classifier_unavailable' | 'not_classified' | null;
+/**
+ * `sender_blocked`: blocked without asking the model, because the sender is on the blocklist.
+ * `override`: a person marked it "Not a scam" and moved it to the inbox.
+ */
+export type Reason = 'model_verdict' | 'classifier_unavailable' | 'not_classified' | 'sender_blocked' | 'override' | null;
 export type MessageKind = 'text' | 'link' | 'attachment' | 'reaction' | 'contact' | 'album';
 
 export interface Conversation {
