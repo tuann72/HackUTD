@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 export interface GatewayConfig {
   port: number;
   /** Photon webhook signing secret (shown once when the webhook is registered). */
@@ -17,6 +19,8 @@ export interface GatewayConfig {
   /** MongoDB Atlas connection string. Null = in-process blocklist (lost on restart). */
   mongodbUri: string | null;
   mongodbDb: string;
+  /** DNS servers for Node's own lookups (e.g. Atlas `mongodb+srv://`). Empty = the OS default. */
+  dnsServers: string[];
   /** HMAC key for sender and text fingerprints. Null = a random per-process key (only allowed without Atlas). */
   fingerprintSecret: string | null;
   senderBlockStrikes: number;
@@ -65,6 +69,14 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     throw new Error('FINGERPRINT_SECRET must be at least 32 characters.');
   }
 
+  const dnsServers = (str(env, 'DNS_SERVERS') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const s of dnsServers) {
+    if (!isIP(s)) throw new Error(`DNS_SERVERS must be comma-separated IP addresses, got "${s}"`);
+  }
+
   return {
     port: num(env, 'PORT', 8787, (n) => Number.isInteger(n) && n > 0 && n < 65536, 'a TCP port'),
     photonWebhookSecret,
@@ -83,6 +95,7 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     adminToken,
     mongodbUri,
     mongodbDb: str(env, 'MONGODB_DB') ?? 'tgate',
+    dnsServers,
     fingerprintSecret,
     senderBlockStrikes: num(env, 'SENDER_BLOCK_STRIKES', 3, (n) => Number.isInteger(n) && n >= 1, 'an integer of at least 1'),
     senderBlockScore: num(env, 'SENDER_BLOCK_SCORE', 0.95, (n) => n > 0 && n <= 1, 'a number above 0 and at most 1'),

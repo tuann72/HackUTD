@@ -50,6 +50,7 @@ curl -s localhost:8787/api/messages | jq
 | `ADMIN_TOKEN` | empty | Turns on `POST /admin/senders/allow` (the "Not a scam" override), checked against `X-Admin-Token`. At least 16 characters. Empty means the route is off |
 | `MONGODB_URI` | empty | MongoDB Atlas connection string for the sender blocklist. Empty means an in-process blocklist that resets on restart |
 | `MONGODB_DB` | `tgate` | Atlas database name |
+| `DNS_SERVERS` | empty | Comma-separated DNS server IPs for Node's own lookups, for example `1.1.1.1,8.8.8.8`. Set it if Atlas fails with `querySrv ECONNREFUSED`: on some machines Node gets a DNS server that doesn't answer the SRV lookup `mongodb+srv://` needs. Empty means the OS default |
 | `FINGERPRINT_SECRET` | empty | HMAC key for sender and text fingerprints (`openssl rand -hex 32`). Required with `MONGODB_URI`. Empty means a random key per process |
 | `SENDER_BLOCK_STRIKES` | `3` | Model blocks from one sender before it's blocklisted (TBD) |
 | `SENDER_BLOCK_SCORE` | `0.95` | One block at or above this score blocklists the sender at once (TBD) |

@@ -148,4 +148,14 @@ describe('blocklist config', () => {
     expect(() => loadConfig({ ...base, SENDER_BLOCK_SCORE: '1.5' })).toThrow();
     expect(() => loadConfig({ ...base, SENDER_BLOCK_TTL_DAYS: '-1' })).toThrow();
   });
+
+  it('parses DNS_SERVERS and rejects anything that is not an IP', () => {
+    expect(loadConfig(base).dnsServers).toEqual([]);
+    expect(loadConfig({ ...base, DNS_SERVERS: ' 1.1.1.1, 8.8.8.8 ,2606:4700:4700::1111' }).dnsServers).toEqual([
+      '1.1.1.1',
+      '8.8.8.8',
+      '2606:4700:4700::1111',
+    ]);
+    expect(() => loadConfig({ ...base, DNS_SERVERS: '1.1.1.1,dns.google' })).toThrow(/DNS_SERVERS/);
+  });
 });
