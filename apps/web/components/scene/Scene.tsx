@@ -7,6 +7,11 @@ import { MathUtils, PerspectiveCamera, Vector3, type Object3D } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
 import { MessageShot } from "./MessageShot";
 import { SHIELD, SHIELD_FRONT_Z, Shield } from "./Shield";
+import { Hand, type SlapState } from "./Hand";
+import type { SlapName } from "./slap";
+
+/** What stands between the sender and the Receiver: the pink shield or the slapping hand in its box. */
+export type Guard = "shield" | "hand";
 import type { SceneMessage, ShotFeed } from "./feed";
 
 const SENDER_X = -3.2;
@@ -19,6 +24,8 @@ const SHIELD_FACE = new Vector3(SHIELD.x - 0.25, 0.25, SHIELD_FRONT_Z + 0.2);
 /** Delivered shots land on the Receiver bean's face, arcing high enough to clear the shield. */
 const RECEIVER_FACE = new Vector3(3.6, 0.55, -0.4);
 const DELIVERED_ARC = 1.7;
+/** Hand mode: shots aim at the hand, a little in front of it; blocked ones stop short and get slapped. */
+const HAND_CATCH = new Vector3(1.7, 0.1, 0.3);
 /** Minimum gap between shots, so a burst of messages doesn't fire all at once. */
 const SHOT_GAP_MS = 600;
 /**
@@ -43,19 +50,26 @@ const DPR: [number, number] = [1, 1.5];
 interface Shot {
   key: number;
   message: SceneMessage;
+  /** The guard when it was fired, so switching mid-flight doesn't strand it. */
+  guard: Guard;
 }
 
 /**
  * performance.now() of the last message delivered to the Receiver and of the
- * last one blocked by the shield. The beans and shield read these in useFrame
- * to animate; shots mark them.
+ * last one blocked, and the hand's current slap. The beans, shield and hand
+ * read these in useFrame to animate; shots mark them.
  */
 function createHitClock() {
   const at = { victim: { current: 0 }, sender: { current: 0 }, shield: { current: 0 } };
+  const slap = { current: { at: 0, clip: "slap" } as SlapState };
   return {
     at,
+    slap,
     mark(kind: keyof typeof at) {
       at[kind].current = performance.now();
+    },
+    startSlap(clip: SlapName) {
+      slap.current = { at: performance.now(), clip };
     },
   };
 }
@@ -69,12 +83,17 @@ type HitClock = ReturnType<typeof createHitClock>;
  * triggers React's "synchronously unmount a root while React was already
  * rendering" warning.
  */
-function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
+function Shots({ feed, hits, guard }: { feed: ShotFeed; hits: HitClock; guard: Guard }) {
   const [shots, setShots] = useState<Shot[]>([]);
   const queue = useRef<SceneMessage[]>([]);
   // A ref, not an effect local: Strict Mode runs effects twice in dev, and a
   // counter that restarts per run hands out duplicate keys.
   const nextKey = useRef(0);
+  // Read when a shot fires, without restarting the timer when the guard changes.
+  const guardRef = useRef(guard);
+  useEffect(() => {
+    guardRef.current = guard;
+  }, [guard]);
 
   useEffect(() => {
     const unsubscribe = feed.subscribe((message) => {
@@ -85,7 +104,7 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
       const message = queue.current.shift();
       if (!message) return;
       nextKey.current += 1;
-      const shot = { key: nextKey.current, message };
+      const shot = { key: nextKey.current, message, guard: guardRef.current };
       setShots((s) => [...s, shot]);
     }, SHOT_GAP_MS);
     return () => {
@@ -97,19 +116,28 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
   // Stable callbacks so memoized shots already in flight skip re-rendering
   // when a shot is added or removed.
   const onArrive = useCallback(() => hits.mark("victim"), [hits]);
-  const onBlocked = useCallback(() => hits.mark("shield"), [hits]);
+  const onBlocked = useCallback(
+    (clip: SlapName) => {
+      hits.mark("shield");
+      hits.startSlap(clip);
+    },
+    [hits],
+  );
   const onDone = useCallback((key: number) => {
     setShots((s) => s.filter((x) => x.key !== key));
   }, []);
 
-  return shots.map(({ key, message }) => (
+  return shots.map(({ key, message, guard: g }) => (
     <MessageShot
       key={key}
       shotKey={key}
       message={message}
       from={SENDER_EDGE}
-      to={message.blocked ? SHIELD_FACE : RECEIVER_FACE}
-      arc={message.blocked ? undefined : DELIVERED_ARC}
+      // Shield: blocked ones hit its face, delivered ones arc over it to the Receiver.
+      // Hand: both fly at the hand; delivered ones land in it, blocked ones get slapped.
+      to={g === "hand" ? HAND_CATCH : message.blocked ? SHIELD_FACE : RECEIVER_FACE}
+      arc={g === "shield" && !message.blocked ? DELIVERED_ARC : undefined}
+      guard={g}
       onArrive={onArrive}
       onBlocked={onBlocked}
       onDone={onDone}
@@ -185,7 +213,7 @@ function BlobLabel({ text, className, ref }: { text: string; className: string; 
  * arc over it onto the Receiver bean, which bounces.
  * It renders the gateway's decision and never makes one.
  */
-export default function Scene({ feed }: { feed: ShotFeed }) {
+export default function Scene({ feed, guard = "shield" }: { feed: ShotFeed; guard?: Guard }) {
   const [hits] = useState(createHitClock);
   const senderAnchor = useRef<Object3D>(null);
   const victimAnchor = useRef<Object3D>(null);
@@ -198,7 +226,14 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
     <div className="relative h-full w-full bg-paper">
       {/* No `shadows`: nothing receives a shadow map. ContactShadows draws the
           ground shadow on its own. */}
-      <Canvas camera={CAMERA} dpr={DPR}>
+      {/* Local clipping cuts the hand off at the top of its box. */}
+      <Canvas
+        camera={CAMERA}
+        dpr={DPR}
+        onCreated={({ gl }) => {
+          gl.localClippingEnabled = true;
+        }}
+      >
         <FitCamera />
         <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
         <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
@@ -225,10 +260,11 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           phase={0.6}
           labelAnchor={receiverAnchor}
         />
-        <Shield blockedAt={hits.at.shield} labelAnchor={victimAnchor} />
+        {guard === "shield" && <Shield blockedAt={hits.at.shield} labelAnchor={victimAnchor} />}
         {/* The bubble images load once; the beans and shield don't wait on them. */}
         <Suspense fallback={null}>
-          <Shots feed={feed} hits={hits} />
+          {guard === "hand" && <Hand hitAt={hits.at.victim} slap={hits.slap} labelAnchor={victimAnchor} />}
+          <Shots feed={feed} hits={hits} guard={guard} />
         </Suspense>
 
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} resolution={256} />

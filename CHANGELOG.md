@@ -43,6 +43,19 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Implementation:** use a Node.js/TypeScript LiveKit agent worker, consistent with the repository service stack. Subscribe only to the SIP caller track, buffer final transcript text in memory, and call the text classifier after hangup. Do not write audio to persistent storage or print transcript text in logs.
 - **Still TBD:** deployment target, consent/disclosure process, transcript retention duration, result storage/API, and call-level classifier evaluation. No test call or paid usage test was part of the original decision.
 - **References:** [LiveKit STT models](https://docs.livekit.io/agents/models/stt/), [LiveKit Inference privacy and authentication](https://docs.livekit.io/agents/models/inference/), and [LiveKit Inference pricing](https://livekit.com/pricing/inference).
+### 2026-11-08: Wordmark shield as tall as the letters
+
+- **Decision (Tuan):** the shield that stands for the U in T-GUARD is as tall as the capitals around it, on the landing page and wherever the wordmark appears (`/messages` and `/dashboard` headers). `ShieldLetter` sets its height to `1cap` (the font's cap height), so it matches Anton (0.86em) on the landing page and Inter (about 0.73em) in the headers. It was 0.74em, short of Anton's capitals. Browsers without the `cap` unit fall back to 0.8em.
+
+### 2026-11-08: Shield or hand switch; Rapid fire button; two presets removed
+
+- **Decision (Tuan):** bring the hand back as an option. A **Shield | Hand** switch replaces the "On guard" status above the scene (shield is the default, not remembered across visits). Shield mode works as before; hand mode is the earlier slapping hand in its "T-GUARD" box: shots fly at the hand, delivered ones land in it, blocked ones stop short and get slapped. A shot keeps the guard it was fired with, so switching mid-flight is safe. `Hand.tsx`, `slap.ts`, its tests and the hand images are restored.
+- **Simulate:** the iMessage demo and Smoke test buttons are removed (their scenario files stay in the bank). A new **Rapid fire** button sends 50 mixed messages (60% scams) 100 ms apart; the interval floor (`LIMITS.minIntervalMs`) drops from 250 to 100 ms. Random presets now always use their own count, ratio and interval.
+- **Limit to know:** `/api/simulate` allows 60 simulated messages per minute, so one Rapid fire fits; a second one within the same minute stops partway with "Too many simulated messages; wait a minute." The scene animates at most one shot every 600 ms and drops older queued ones, so a burst shows only some of the 50; the lists show them all.
+
+### 2026-11-08: Message text size follows its length
+
+- **Decision (Tuan):** larger text for short messages, smaller for long ones. `bodySizeClass` in `components/messages/MessageBody.tsx` steps by trimmed character count: up to 30 characters 24px, up to 80 20px, up to 160 17px, up to 320 15px (the old size), longer 13px. It applies to every message body in the Inbox and Blocked cards.
 
 ### 2026-11-08: Nemotron always reviews large money asks, new decision prompt
 

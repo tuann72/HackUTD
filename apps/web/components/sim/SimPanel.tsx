@@ -14,9 +14,9 @@ const button =
 const newSeed = () => Math.floor(Math.random() * 2 ** 31);
 
 /**
- * Fixed run settings for the random-burst presets. The panel used to expose
- * these as inputs (count, scam share, interval, sender, seed); Tuan removed
- * them, so every burst uses these and a fresh seed.
+ * Settings passed to every preset. Random presets take their count, scam ratio
+ * and interval from presets.ts; these only supply a random sender each (from: "").
+ * The panel's own inputs for them were removed (Tuan); each run gets a fresh seed.
  */
 const SETTINGS: Omit<RunSettings, "seed"> = { n: 10, scamRatio: 0.6, intervalMs: 1500, from: "" };
 
@@ -84,7 +84,7 @@ export function SimPanel() {
                   <span className="block font-label text-[10px] uppercase tracking-[0.06em] font-bold">{p.label}</span>
                   <span className="mt-1 block text-xs text-muted group-hover:text-paper/70 group-disabled:group-hover:text-muted">
                     {p.kind === "random" && p.n > 1
-                      ? `${preview.length} messages, ${Math.round(SETTINGS.scamRatio * 100)}% scams${secs ? `, about ${secs} s` : ""}`
+                      ? `${preview.length} messages, ${Math.round(p.scamRatio * 100)}% scams, ${p.intervalMs} ms apart${secs ? `, about ${secs} s` : ""}`
                       : p.description}
                   </span>
                   </span>
