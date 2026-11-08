@@ -1,9 +1,3 @@
-# Classifier: https://<ip-with-dashes>.sslip.io
 {$TGATE_DOMAIN} {
 	reverse_proxy classifier:8000
-}
-
-# Gateway (Twilio webhook + query API): https://gateway.<ip-with-dashes>.sslip.io
-gateway.{$TGATE_DOMAIN} {
-	reverse_proxy gateway:8787
 }

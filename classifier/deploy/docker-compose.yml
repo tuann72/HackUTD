@@ -1,36 +1,15 @@
-# Runs ON the Vultr server (not your laptop): the classifier and the gateway behind one Caddy.
+# Runs ON the Vultr inference server (not your laptop).
 #   cd ~/tgate/classifier/deploy && docker compose up -d --build
-# Gateway only, before a model is trained:  docker compose up -d --build gateway caddy
-#   (and set GATEWAY_CLASSIFIER_URL= empty in deploy/.env so it uses the keyword stub).
-# Needs a .env next to this file (see .env.example).
+# Needs a .env next to this file with TGATE_DOMAIN and CLASSIFIER_TOKEN (see .env.example).
 services:
   classifier:
     build: ..                       # classifier/Dockerfile; artifacts/ must exist
     restart: unless-stopped
     environment:
       CLASSIFIER_TOKEN: ${CLASSIFIER_TOKEN:?set CLASSIFIER_TOKEN in deploy/.env}
-    expose: ["8000"]                # only Caddy and the gateway can reach it; not published to the internet
+    expose: ["8000"]                # only Caddy can reach it; not published to the internet
 
-  gateway:
-    build: ../../services/gateway   # services/gateway/Dockerfile
-    restart: unless-stopped
-    init: true                      # pass SIGTERM through so the gateway shuts down cleanly
-    environment:
-      # Not required by Compose, so the classifier can deploy before Twilio is set up. The gateway
-      # itself refuses to start without it (see `docker compose logs gateway`).
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      # Twilio signs against the exact URL set in the Twilio console. Keep the two identical.
-      PUBLIC_WEBHOOK_URL: https://gateway.${TGATE_DOMAIN}/twilio/sms
-      # Inside Docker's network: plain HTTP straight to the classifier container, still with the token.
-      CLASSIFIER_URL: ${GATEWAY_CLASSIFIER_URL-http://classifier:8000}
-      CLASSIFIER_TOKEN: ${CLASSIFIER_TOKEN:-}
-      BLOCK_THRESHOLD: ${BLOCK_THRESHOLD:-0.5}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-    volumes:
-      - gateway_data:/app/data      # SQLite file
-    expose: ["8787"]
-
-  caddy:                            # HTTPS in front, with automatic Let's Encrypt certificates
+  caddy:                            # HTTPS in front, with an automatic Let's Encrypt certificate
     image: caddy:2
     restart: unless-stopped
     ports: ["80:80", "443:443"]
@@ -39,7 +18,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+    depends_on: [classifier]
 
 volumes:
   caddy_data:
-  gateway_data:

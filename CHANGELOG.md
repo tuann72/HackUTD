@@ -6,13 +6,6 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
-### 2026-11-07: Gateway shares the classifier's Vultr server, HTTPS by Caddy
-
-- **Decision (Timothy):** settles the open items of Tuan's "Gateway on a Vultr VM" decision below. The gateway's VM is **the classifier's Vultr Cloud Compute server**: it runs, as a third Docker Compose service in `classifier/deploy/`, behind the same Caddy. Classifier at `https://<ip>.sslip.io`, gateway at `https://gateway.<ip>.sslip.io`. The gateway calls the classifier at `http://classifier:8000` on Docker's internal network, with the bearer token. SQLite sits on a named volume (`gateway_data`). Image: `services/gateway/Dockerfile` (Node 24, non-root).
-- **Why:** the gateway needs an always-on Node 24 process and a persistent disk for SQLite. That rules out Vercel functions and free tiers that sleep or lose their disk. The team already has the Vultr server and credits, and it adds to the Vultr track. One server means one HTTPS setup and no network hop between the gateway and the classifier.
-- **Trade-off:** one server. If it goes down, both the gateway and the classifier go down. Acceptable for a hackathon demo.
-- **Settles from the entry below:** the VM (the classifier's server), the domain (sslip.io), and HTTPS (Caddy). Still TBD: VM size and region. Set `CORS_ORIGINS` to the Vercel domain.
-
 ### 2026-11-07: Gateway on a Vultr VM, web app on Vercel
 
 - **Decision (Tuan):** the gateway runs on a **Vultr VM** (option A in the Twilio MVP plan). Only `apps/web` deploys to **Vercel**, through a repo-root `vercel.json` with one service (`web`) that serves every path. The classifier stays on Vultr as agreed.
