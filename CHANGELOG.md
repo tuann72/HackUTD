@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: `/messages` restyled to match the T-GUARD prototype
+
+- **Decision (Tuan):** make `/messages` match the T-GUARD offline prototype (the source of the scene's hand) and the landing page. Palette from the prototype's `demo/style.css`: paper `#f2f0e9`, ink `#211e20`, hot pink `#ef167d`, rules `#c9c6c0`, cards `#fffdf9`. Anton for big numbers, Courier New for small uppercase labels. These are Tailwind theme tokens in `app/globals.css` (`bg-paper`, `text-ink`, `text-hot`, `border-rule`, `bg-card`, `text-muted`, `font-display`, `font-label`).
+- **Page:** `T—GUARD®` wordmark header linking to `/`, the scene on paper (was navy) with prototype-style captions, a "000 Threats blocked" / "Delivered" counter row, square cards (blocked ones with a pink edge), pink "Potential scam" stamps, pink keyword highlights, and the Simulate sidebar as outlined label buttons.
+- **Light only:** the prototype has no dark mode, so `dark:` utilities now apply only under a `.dark` class (nothing sets it). The OS dark setting no longer changes the site.
+
 ### 2026-11-08: A slapping hand replaces the Receiver blob
 
 Tuan: replace the right blob in the scene with a hand that slaps, after the T-GUARD offline prototype. The Receiver is now the prototype's pink box with its photographic hand (the two WebP images, about 340 KB) standing in it, cut off at the box top by a clipping plane. A blocked potential scam stops within reach; during the hand's wind-up it drifts to where the palm will be at contact, then it is knocked back toward the sender, spinning and fading. The strikes reuse the prototype's slap-left, backhand and delayed timings (`components/scene/slap.ts`, unit-tested). This replaces the shield flash and the bubble pop; the "Potential scam · Blocked" stamp stays. Not ported: the box lid animation, the notification cards and the synthesized sound. The scene still only animates the gateway's decision.

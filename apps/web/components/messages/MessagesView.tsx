@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
+import Link from "next/link";
 import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 import {
   useMessages,
@@ -12,6 +13,9 @@ import { SceneClient } from "@/components/scene/SceneClient";
 import { SimPanel } from "@/components/sim/SimPanel";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
+
+/** Counters read like the prototype's "000". */
+const pad3 = (n: number) => String(n).padStart(3, "0");
 
 function Column({
   title,
@@ -29,14 +33,14 @@ function Column({
   const [open, setOpen] = useState(true);
   const bodyId = useId();
   return (
-    <section aria-label={title} className="flex min-w-0 flex-col gap-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+    <section aria-label={title} className="flex min-w-0 flex-col gap-3 border-t border-rule pt-4">
+      <h2 className="font-label text-[11px] uppercase tracking-[0.08em] text-muted">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((o) => !o)}
-          className="-mx-1 flex items-baseline gap-2 rounded px-1 uppercase hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:hover:text-zinc-200"
+          className="-mx-1 flex items-baseline gap-2 px-1 uppercase hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
         >
           <svg
             aria-hidden
@@ -46,7 +50,7 @@ function Column({
             <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           {title}
-          <span className="tabular-nums text-zinc-400 dark:text-zinc-500">{count}</span>
+          <span className="tabular-nums text-ink">/ {count}</span>
         </button>
       </h2>
       <AnimatePresence initial={false}>
@@ -61,7 +65,7 @@ function Column({
             className="flex flex-col gap-3 overflow-hidden"
           >
             {messages.length === 0 && (
-              <p className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              <p className="border border-dashed border-rule px-4 py-8 text-center font-label text-[11px] uppercase tracking-[0.06em] text-muted">
                 {empty}
               </p>
             )}
@@ -89,7 +93,7 @@ function Column({
 }
 
 /**
- * The home page: the 3D scene on top, then the inbox (delivered, plus pending
+ * The /messages page: the 3D scene on top, then the inbox (delivered, plus pending
  * at top) and blocked lists. One poll feeds both, so the scene animates the
  * same messages the lists show.
  */
@@ -131,50 +135,87 @@ export function MessagesView() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-x-6 gap-y-8 px-4 py-6 sm:py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="min-w-0">
-          <header className="mb-6 flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">T-Guard</h1>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={clear}
-                  disabled={!clearSource || clearing || messages.length === 0}
-                  title="Delete all messages from the gateway. This can't be undone."
-                  className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
-                  {clearing ? "Clearing…" : "Clear chats"}
-                </button>
-              </div>
-            </div>
-            {error && (
-              <p
-                role="status"
-                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
-              >
-                Couldn&apos;t refresh messages: {error}. Retrying…
-              </p>
-            )}
-            {clearError && (
-              <p
-                role="alert"
-                className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
-              >
-                Couldn&apos;t clear messages: {clearError}
-              </p>
-            )}
-          </header>
+      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-x-8 gap-y-8 px-4 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <header className="col-span-full flex h-20 items-center justify-between gap-4 border-b border-rule">
+          <Link
+            href="/"
+            className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          >
+            T—GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
+          </Link>
+          <span className="hidden font-label text-[10px] uppercase tracking-[0.06em] text-muted sm:block">
+            Personal space. Protected.
+          </span>
+          <button
+            type="button"
+            onClick={clear}
+            disabled={!clearSource || clearing || messages.length === 0}
+            title="Delete all messages from the gateway. This can't be undone."
+            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+          >
+            {clearing ? "Clearing…" : "Clear chats"}
+            <span aria-hidden>↺</span>
+          </button>
+        </header>
 
+        <div className="min-w-0">
+          {(error || clearError) && (
+            <div className="mb-4 flex flex-col gap-2">
+              {error && (
+                <p role="status" className="border-l-4 border-hot bg-card px-3 py-2 text-sm text-ink">
+                  Couldn&apos;t refresh messages: {error}. Retrying…
+                </p>
+              )}
+              {clearError && (
+                <p role="alert" className="border-l-4 border-hot-deep bg-card px-3 py-2 text-sm text-ink">
+                  Couldn&apos;t clear messages: {clearError}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-between gap-2 pb-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
+            <span>Live demonstration</span>
+            <span role="status" className="flex items-center gap-1.5 text-ink">
+              <i aria-hidden className={`inline-block size-1.5 rounded-full ${error ? "bg-muted" : "bg-hot"}`} />
+              {mode == null ? "Waking up" : error ? "Reconnecting" : "On guard"}
+            </span>
+          </div>
           <section
-            aria-label="Animation: each message flies to the victim; blocked ones pop before they arrive"
-            className="mb-8 h-[45dvh] min-h-64 overflow-hidden rounded-2xl sm:h-[65dvh] sm:min-h-80"
+            aria-label="Animation: each message flies to the Receiver; blocked ones are slapped away"
+            className="h-[45dvh] min-h-64 overflow-hidden sm:h-[60dvh] sm:min-h-80"
           >
             <SceneClient feed={feed} />
           </section>
+          <div className="flex justify-between gap-2 pt-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
+            <span>01 / The protector</span>
+            <span className="hidden sm:inline">Fictional senders. Real classifier.</span>
+          </div>
+
+          <section
+            aria-label="Totals"
+            className="my-8 flex flex-wrap items-center justify-between gap-6 border-y border-rule py-6"
+          >
+            <div className="flex items-center gap-4">
+              <span className="font-display text-6xl leading-none text-hot tabular-nums">{pad3(blocked.length)}</span>
+              <span className="font-label text-[10px] uppercase leading-relaxed tracking-[0.06em]">
+                Threats blocked
+                <br />
+                <span className="text-muted">You&apos;re in good hands.</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="font-display text-6xl leading-none text-ink tabular-nums">{pad3(deliveredCount)}</span>
+              <span className="font-label text-[10px] uppercase leading-relaxed tracking-[0.06em]">
+                Delivered
+                <br />
+                <span className="text-muted">Let through, untouched.</span>
+              </span>
+            </div>
+          </section>
 
           <LayoutGroup>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-6">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-8">
               <Column
                 title="Inbox"
                 count={deliveredCount}
@@ -192,7 +233,7 @@ export function MessagesView() {
             </div>
           </LayoutGroup>
 
-          <p className="mt-10 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-10 border-t border-rule pt-3 font-label text-[9px] uppercase leading-relaxed tracking-[0.06em] text-muted">
             &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
             blocked messages are disabled.
           </p>
