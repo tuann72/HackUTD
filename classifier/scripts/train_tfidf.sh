@@ -12,6 +12,7 @@ source classifier/.venv-tfidf/bin/activate
 pip install -q --upgrade pip
 pip install -q -r classifier/requirements-train-tfidf.txt
 
+python classifier/build_splits.py
 python classifier/train.py --model tfidf "$@"
 echo
 echo "Done. Model is in classifier/artifacts/. Next: cd classifier/deploy && docker compose up -d --build"

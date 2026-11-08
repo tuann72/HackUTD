@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { diffMessages, type MessageChange } from "./diff";
 import { pickSource, type MessageSource, type SourceMode } from "./source";
 import type { Message } from "./types";
@@ -19,6 +19,8 @@ export interface UseMessagesResult {
   mode: SourceMode | null;
   /** Last fetch error, if the most recent poll failed. Polling keeps going. */
   error: string | null;
+  /** Deletes every message at the source, then empties the list. Null when the source can't clear. */
+  clear: (() => Promise<void>) | null;
 }
 
 /**
@@ -30,6 +32,9 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
   const [mode, setMode] = useState<SourceMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const prev = useRef<Message[]>([]);
+  const srcRef = useRef<MessageSource | null>(null);
+  // Bumped by clear() so a poll that started before the delete can't put the old list back.
+  const generation = useRef(0);
   const onChangesRef = useRef(onChanges);
   useEffect(() => {
     onChangesRef.current = onChanges;
@@ -44,10 +49,12 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
       try {
         if (!src) {
           src = source ?? pickSource(new URLSearchParams(window.location.search).get("source"));
+          srcRef.current = src;
           setMode(src.mode);
         }
+        const gen = generation.current;
         const next = await src.fetch();
-        if (stopped) return;
+        if (stopped || gen !== generation.current) return;
         const changes = diffMessages(prev.current, next);
         prev.current = next;
         setMessages(next);
@@ -66,5 +73,12 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
     };
   }, [intervalMs, source]);
 
-  return { messages, mode, error };
+  const clear = useCallback(async () => {
+    await srcRef.current?.clear?.();
+    generation.current++;
+    prev.current = [];
+    setMessages([]);
+  }, []);
+
+  return { messages, mode, error, clear: mode && mode !== "static" ? clear : null };
 }

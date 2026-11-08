@@ -1,18 +1,24 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
-import { Vector3 } from "three";
+import { MathUtils, PerspectiveCamera, Vector3, type Object3D } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
 import { MessageShot } from "./MessageShot";
+import { SHIELD, SHIELD_FRONT_Z, Shield } from "./Shield";
 import type { SceneMessage, ShotFeed } from "./feed";
 
 const SENDER_X = -3.2;
-const VICTIM_X = 3.2;
-/** Shots leave and land on the blob surfaces, not their centers. */
+/** The Receiver bean stands behind and to the right of T-Guard's shield. */
+const RECEIVER_POSITION: [number, number, number] = [3.95, 0, -0.9];
+/** Shots leave the sender bean's side. */
 const SENDER_EDGE = new Vector3(SENDER_X + BLOB_RADIUS, 0.1, 0);
-const VICTIM_EDGE = new Vector3(VICTIM_X - BLOB_RADIUS, 0.1, 0);
+/** Blocked shots hit the shield's face, a little left of its center. */
+const SHIELD_FACE = new Vector3(SHIELD.x - 0.25, 0.25, SHIELD_FRONT_Z + 0.2);
+/** Delivered shots land on the Receiver bean's face, arcing high enough to clear the shield. */
+const RECEIVER_FACE = new Vector3(3.6, 0.55, -0.4);
+const DELIVERED_ARC = 1.7;
 /** Minimum gap between shots, so a burst of messages doesn't fire all at once. */
 const SHOT_GAP_MS = 600;
 /**
@@ -21,6 +27,16 @@ const SHOT_GAP_MS = 600;
  */
 const MAX_QUEUED = 5;
 const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
+/**
+ * Half the width and height of world space, around the origin the camera
+ * looks at, that must stay in view: the sender bean, T-Guard's shield (x about
+ * 0.9 to 2.9, y about -1 to 1.1), the Receiver bean behind and right of it (x up
+ * to about 4.55), the shot arcs (delivered ones peak near y 2) and "Blocked"
+ * stamp, and the labels (y about -1.75), plus a margin.
+ */
+const FRAME_HALF_W = 5.1;
+const FRAME_HALF_H = 2.1;
+const CAMERA_DISTANCE = Math.hypot(...CAMERA.position);
 /** Capped below 2 so Retina screens don't render 4x the pixels. */
 const DPR: [number, number] = [1, 1.5];
 
@@ -30,8 +46,9 @@ interface Shot {
 }
 
 /**
- * performance.now() of the last hit on the victim and of its last shield
- * flash. Blobs read these in useFrame to animate; shots mark them.
+ * performance.now() of the last message delivered to the Receiver and of the
+ * last one blocked by the shield. The beans and shield read these in useFrame
+ * to animate; shots mark them.
  */
 function createHitClock() {
   const at = { victim: { current: 0 }, sender: { current: 0 }, shield: { current: 0 } };
@@ -91,7 +108,8 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
       shotKey={key}
       message={message}
       from={SENDER_EDGE}
-      to={VICTIM_EDGE}
+      to={message.blocked ? SHIELD_FACE : RECEIVER_FACE}
+      arc={message.blocked ? undefined : DELIVERED_ARC}
       onArrive={onArrive}
       onBlocked={onBlocked}
       onDone={onDone}
@@ -100,46 +118,124 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
 }
 
 /**
- * The scene band on the home page: every message the page receives flies from
- * the sender to the victim; blocked ones pop in front of the victim's shield.
+ * Sets the camera's vertical fov so the frame above just fits the band at any
+ * aspect ratio: a wide band zooms in until the blobs fill its height, and a
+ * narrow (phone) band zooms out so neither blob is cut off at the sides.
+ */
+function FitCamera() {
+  const get = useThree((s) => s.get);
+  const aspect = useThree((s) => s.size.width / Math.max(s.size.height, 1));
+
+  useEffect(() => {
+    // Read from the store, not a hook value: the camera is a three.js object
+    // R3F owns, and the React compiler lint forbids mutating hook results.
+    const { camera } = get();
+    if (!(camera instanceof PerspectiveCamera)) return;
+    const halfH = Math.max(FRAME_HALF_H, FRAME_HALF_W / aspect);
+    camera.fov = MathUtils.radToDeg(2 * Math.atan(halfH / CAMERA_DISTANCE));
+    camera.updateProjectionMatrix();
+  }, [get, aspect]);
+
+  return null;
+}
+
+const projected = new Vector3();
+
+/**
+ * Moves a DOM label to its blob's anchor every frame. Labels are plain
+ * elements over the canvas, not drei <Html>: the Sender's <Html> label never
+ * appeared (twice), while the same code showed the Receiver's.
+ */
+function TrackLabel({
+  anchorRef,
+  labelRef,
+}: {
+  anchorRef: RefObject<Object3D | null>;
+  labelRef: RefObject<HTMLSpanElement | null>;
+}) {
+  useFrame(({ camera, size }) => {
+    const anchor = anchorRef.current;
+    const el = labelRef.current;
+    if (!anchor || !el) return;
+    anchor.getWorldPosition(projected).project(camera);
+    const x = ((projected.x + 1) / 2) * size.width;
+    const y = ((1 - projected.y) / 2) * size.height;
+    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    el.style.visibility = "visible";
+  });
+  return null;
+}
+
+/** A blob's name, positioned by TrackLabels; hidden until the first frame places it. */
+function BlobLabel({ text, className, ref }: { text: string; className: string; ref: RefObject<HTMLSpanElement | null> }) {
+  return (
+    <span
+      ref={ref}
+      style={{ visibility: "hidden" }}
+      className={`pointer-events-none absolute left-0 top-0 z-10 whitespace-nowrap bg-ink px-2 py-1 font-label text-[11px] font-bold uppercase tracking-[0.06em] ${className}`}
+    >
+      {text}
+    </span>
+  );
+}
+
+/**
+ * The scene band on /messages: every message the page receives flies from the
+ * sender bean. Blocked ones bounce off T-Guard's pink shield; delivered ones
+ * arc over it onto the Receiver bean, which bounces.
  * It renders the gateway's decision and never makes one.
  */
 export default function Scene({ feed }: { feed: ShotFeed }) {
   const [hits] = useState(createHitClock);
+  const senderAnchor = useRef<Object3D>(null);
+  const victimAnchor = useRef<Object3D>(null);
+  const senderLabel = useRef<HTMLSpanElement>(null);
+  const victimLabel = useRef<HTMLSpanElement>(null);
+  const receiverAnchor = useRef<Object3D>(null);
+  const receiverLabel = useRef<HTMLSpanElement>(null);
 
   return (
-    <div className="relative h-full w-full bg-[#0b1020]">
+    <div className="relative h-full w-full bg-paper">
       {/* No `shadows`: nothing receives a shadow map. ContactShadows draws the
           ground shadow on its own. */}
       <Canvas camera={CAMERA} dpr={DPR}>
-        <color attach="background" args={["#0b1020"]} />
+        <FitCamera />
+        <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
+        <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
+        <TrackLabel anchorRef={receiverAnchor} labelRef={receiverLabel} />
+        <color attach="background" args={["#f2f0e9"]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 6, 5]} intensity={1.6} />
-        <pointLight position={[-4, 2, 3]} intensity={8} color="#93c5fd" />
+        <pointLight position={[-4, 2, 3]} intensity={6} color="#ffcee6" />
 
-        <Blob position={[SENDER_X, 0, 0]} color="#94a3b8" facing={1} hitAt={hits.at.sender} phase={1.3} />
-        <Blob position={[VICTIM_X, 0, 0]} color="#f472b6" facing={-1} hitAt={hits.at.victim} shieldAt={hits.at.shield} />
-
-        {/* The bubble images load once; nothing else waits on them. */}
+        <Blob
+          position={[SENDER_X, 0, 0]}
+          color="#94a3b8"
+          facing={1}
+          hitAt={hits.at.sender}
+          phase={1.3}
+          labelAnchor={senderAnchor}
+        />
+        {/* The person T-Guard protects, behind the shield. Delivered messages make it bounce. */}
+        <Blob
+          position={RECEIVER_POSITION}
+          color="#f472b6"
+          facing={-1}
+          hitAt={hits.at.victim}
+          phase={0.6}
+          labelAnchor={receiverAnchor}
+        />
+        <Shield blockedAt={hits.at.shield} labelAnchor={victimAnchor} />
+        {/* The bubble images load once; the beans and shield don't wait on them. */}
         <Suspense fallback={null}>
           <Shots feed={feed} hits={hits} />
         </Suspense>
 
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} resolution={256} />
       </Canvas>
-
-      <div className="pointer-events-none absolute right-3 top-3 flex flex-col gap-1 rounded-lg bg-slate-900/70 px-3 py-2 text-xs text-slate-200">
-        <span className="flex items-center gap-2">
-          <i className="inline-block size-2.5 rounded-full bg-red-500" /> Potential scam
-        </span>
-        <span className="flex items-center gap-2">
-          <i className="inline-block size-2.5 rounded-full bg-blue-200" /> Message
-        </span>
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between px-[12%] pb-4 text-sm font-medium text-slate-300">
-        <span>Sender</span>
-        <span className="text-pink-300">Victim (protected)</span>
-      </div>
+      <BlobLabel ref={senderLabel} text="Sender" className="text-paper" />
+      <BlobLabel ref={victimLabel} text="T-Guard" className="text-hot" />
+      <BlobLabel ref={receiverLabel} text="Receiver" className="text-paper" />
     </div>
   );
 }

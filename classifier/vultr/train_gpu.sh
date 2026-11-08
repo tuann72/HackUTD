@@ -62,7 +62,7 @@ log "GPU instance up at $IP"
 
 log "copying classifier/ and training data (~95 MB)"
 (cd "$REPO_ROOT" && rsync -aR -e "ssh ${SSH_OPTS[*]}" --exclude '.venv*' --exclude artifacts --exclude __pycache__ \
-  classifier/ data/scam_categories_100k_full.csv data/scam_categories.csv "root@$IP:tgate/")
+  classifier/ data/scam_categories_100k_full.csv data/scam_categories.csv data/potential_threat_synthetic.csv data/potential_threat_eval.csv "root@$IP:tgate/")
 
 # Install NVIDIA drivers only if the image has none (needs one reboot).
 if ! ssh "${SSH_OPTS[@]}" "root@$IP" nvidia-smi >/dev/null 2>&1; then

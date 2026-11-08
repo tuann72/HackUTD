@@ -1,34 +1,22 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { useMessages, type Message, type MessageChange, type SourceMode } from "@/lib/messages";
+import Link from "next/link";
+import { ShieldLetter } from "@/components/brand/ShieldLetter";
+import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
+import {
+  useMessages,
+  type Message,
+  type MessageChange,
+} from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
-import { categoryClass, categoryLabel } from "./category";
+import { SimPanel } from "@/components/sim/SimPanel";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
 
-const MODE_LABEL: Record<SourceMode, string> = {
-  live: "Live",
-  replay: "Replay (mock)",
-  static: "Static (mock)",
-};
-
-function SourceIndicator({ mode }: { mode: SourceMode | null }) {
-  const live = mode === "live";
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-      <span
-        aria-hidden
-        className={`size-2 rounded-full ${
-          mode == null ? "bg-zinc-300 dark:bg-zinc-600" : live ? "bg-emerald-500" : "bg-sky-500"
-        } ${live ? "animate-pulse motion-reduce:animate-none" : ""}`}
-      />
-      {mode == null ? "Connecting…" : MODE_LABEL[mode]}
-    </span>
-  );
-}
+/** Counters read like the prototype's "000". */
+const pad3 = (n: number) => String(n).padStart(3, "0");
 
 function Column({
   title,
@@ -43,39 +31,70 @@ function Column({
   messages: Message[];
   now: number | null;
 }) {
+  const [open, setOpen] = useState(true);
+  const bodyId = useId();
   return (
-    <section aria-label={title} className="flex min-w-0 flex-col gap-3">
-      <h2 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-        {title}
-        <span className="tabular-nums text-zinc-400 dark:text-zinc-500">{count}</span>
+    <section aria-label={title} className="flex min-w-0 flex-col gap-3 border-t border-rule pt-4">
+      <h2 className="font-label text-[11px] uppercase tracking-[0.08em] text-muted">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => setOpen((o) => !o)}
+          className="-mx-1 flex items-baseline gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+        >
+          <svg
+            aria-hidden
+            viewBox="0 0 16 16"
+            className={`size-3 self-center transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`}
+          >
+            <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {title}
+          <span className="tabular-nums text-ink">/ {count}</span>
+        </button>
       </h2>
-      {messages.length === 0 && (
-        <p className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          {empty}
-        </p>
-      )}
-      <ul className="flex flex-col gap-3">
-        <AnimatePresence initial={false}>
-          {messages.map((m) => (
-            <motion.li
-              key={m.id}
-              layout="position"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              <MessageCard message={m} now={now} />
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={bodyId}
+            key="body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="flex flex-col gap-3 overflow-hidden"
+          >
+            {messages.length === 0 && (
+              <p className="border border-dashed border-rule px-4 py-8 text-center font-label text-[11px] uppercase tracking-[0.06em] text-muted">
+                {empty}
+              </p>
+            )}
+            <ul className="flex flex-col gap-3">
+              <AnimatePresence initial={false}>
+                {messages.map((m) => (
+                  <motion.li
+                    key={m.id}
+                    layout="position"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <MessageCard message={m} now={now} />
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
 
 /**
- * The home page: the 3D scene on top, then the inbox (delivered, plus pending
+ * The /messages page: the 3D scene on top, then the inbox (delivered, plus pending
  * at top) and blocked lists. One poll feeds both, so the scene animates the
  * same messages the lists show.
  */
@@ -88,97 +107,148 @@ export function MessagesView() {
     },
     [feed],
   );
-  const { messages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
+  const { messages, mode, error, clear: clearSource } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
 
-  const { inbox, blocked, deliveredCount, pendingCount, categories } = useMemo(() => {
+  // "Clear chats" deletes every stored message on the gateway (or the Vercel backup), not just this screen.
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const clear = async () => {
+    if (!clearSource) return;
+    if (!window.confirm("Delete all messages? This removes them for everyone and can't be undone.")) return;
+    setClearing(true);
+    setClearError(null);
+    try {
+      await clearSource();
+    } catch (e) {
+      setClearError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const { inbox, blocked, deliveredCount } = useMemo(() => {
     const pending = messages.filter((m) => m.action === "pending");
     const delivered = messages.filter((m) => m.action === "delivered");
     const blocked = messages.filter((m) => m.action === "blocked");
-    const counts = new Map<string, { category: string | null; n: number }>();
-    for (const m of blocked) {
-      const c = m.verdict?.category ?? null;
-      const key = categoryLabel(c);
-      counts.set(key, { category: c, n: (counts.get(key)?.n ?? 0) + 1 });
-    }
-    return {
-      inbox: [...pending, ...delivered],
-      blocked,
-      deliveredCount: delivered.length,
-      pendingCount: pending.length,
-      categories: [...counts.entries()].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0])),
-    };
+    return { inbox: [...pending, ...delivered], blocked, deliveredCount: delivered.length };
   }, [messages]);
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
-        <header className="mb-6 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
-            <SourceIndicator mode={mode} />
+      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-x-8 gap-y-8 px-4 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <header className="col-span-full flex h-20 items-center justify-between gap-4 border-b border-rule">
+          <Link
+            href="/"
+            className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          >
+            T-G<ShieldLetter className="mx-[0.04em]" />ARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
+          </Link>
+          <span className="hidden font-label text-[10px] uppercase tracking-[0.06em] text-muted sm:block">
+            Personal space. Protected.
+          </span>
+          <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          >
+            Dashboard
+            <span aria-hidden>▤</span>
+          </Link>
+          <button
+            type="button"
+            onClick={clear}
+            disabled={!clearSource || clearing || messages.length === 0}
+            title="Delete all messages from the gateway. This can't be undone."
+            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+          >
+            {clearing ? "Clearing…" : "Clear chats"}
+            <span aria-hidden>↺</span>
+          </button>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-md bg-zinc-100 px-2 py-1 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              Inbox <span className="tabular-nums">{deliveredCount}</span>
-            </span>
-            <span className="rounded-md bg-rose-50 px-2 py-1 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-              Blocked <span className="tabular-nums">{blocked.length}</span>
-            </span>
-            {pendingCount > 0 && (
-              <span className="px-1 text-zinc-500 dark:text-zinc-400">
-                Checking <span className="tabular-nums">{pendingCount}</span>
-              </span>
-            )}
-            {categories.map(([label, { category, n }]) => (
-              <span
-                key={label}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClass(category)}`}
-              >
-                {label} <span className="tabular-nums opacity-80">{n}</span>
-              </span>
-            ))}
-          </div>
-          {error && (
-            <p
-              role="status"
-              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
-            >
-              Couldn&apos;t refresh messages: {error}. Retrying…
-            </p>
-          )}
         </header>
 
-        <section
-          aria-label="Animation: each message flies to the victim; blocked ones pop before they arrive"
-          className="mb-8 h-[42dvh] min-h-64 overflow-hidden rounded-2xl"
-        >
-          <SceneClient feed={feed} />
-        </section>
+        <div className="min-w-0">
+          {(error || clearError) && (
+            <div className="mb-4 flex flex-col gap-2">
+              {error && (
+                <p role="status" className="border-l-4 border-hot bg-card px-3 py-2 text-sm text-ink">
+                  Couldn&apos;t refresh messages: {error}. Retrying…
+                </p>
+              )}
+              {clearError && (
+                <p role="alert" className="border-l-4 border-hot-deep bg-card px-3 py-2 text-sm text-ink">
+                  Couldn&apos;t clear messages: {clearError}
+                </p>
+              )}
+            </div>
+          )}
 
-        <LayoutGroup>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-6">
-            <Column
-              title="Inbox"
-              count={deliveredCount}
-              empty={mode == null ? "Loading…" : "No messages delivered yet."}
-              messages={inbox}
-              now={now}
-            />
-            <Column
-              title="Blocked"
-              count={blocked.length}
-              empty={mode == null ? "Loading…" : "Nothing blocked yet."}
-              messages={blocked}
-              now={now}
-            />
+          <div className="flex justify-between gap-2 pb-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
+            <span>Live demonstration</span>
+            <span role="status" className="flex items-center gap-1.5 text-ink">
+              <i aria-hidden className={`inline-block size-1.5 rounded-full ${error ? "bg-muted" : "bg-hot"}`} />
+              {mode == null ? "Waking up" : error ? "Reconnecting" : "On guard"}
+            </span>
           </div>
-        </LayoutGroup>
+          <section
+            aria-label="Animation: each message flies toward the Receiver; blocked ones bounce off the T-Guard shield"
+            className="h-[45dvh] min-h-64 overflow-hidden sm:h-[60dvh] sm:min-h-80"
+          >
+            <SceneClient feed={feed} />
+          </section>
+          <div className="flex justify-between gap-2 pt-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
+            <span>01 / The protector</span>
+            <span className="hidden sm:inline">Fictional senders. Real classifier.</span>
+          </div>
 
-        <p className="mt-10 text-xs text-zinc-500 dark:text-zinc-400">
-          &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
-          blocked messages are disabled.
-        </p>
+          <section
+            aria-label="Totals"
+            className="my-8 flex flex-wrap items-center justify-between gap-6 border-y border-rule py-6"
+          >
+            <div className="flex items-center gap-4">
+              <span className="font-display text-6xl leading-none text-hot tabular-nums">{pad3(blocked.length)}</span>
+              <span className="font-label text-[10px] uppercase leading-relaxed tracking-[0.06em]">
+                Threats blocked
+                <br />
+                <span className="text-muted">You&apos;re in good hands.</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="font-display text-6xl leading-none text-ink tabular-nums">{pad3(deliveredCount)}</span>
+              <span className="font-label text-[10px] uppercase leading-relaxed tracking-[0.06em]">
+                Delivered
+                <br />
+                <span className="text-muted">Let through, untouched.</span>
+              </span>
+            </div>
+          </section>
+
+          <LayoutGroup>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-8">
+              <Column
+                title="Inbox"
+                count={deliveredCount}
+                empty={mode == null ? "Loading…" : "No messages delivered yet."}
+                messages={inbox}
+                now={now}
+              />
+              <Column
+                title="Blocked"
+                count={blocked.length}
+                empty={mode == null ? "Loading…" : "Nothing blocked yet."}
+                messages={blocked}
+                now={now}
+              />
+            </div>
+          </LayoutGroup>
+
+          <p className="mt-10 border-t border-rule pt-3 font-label text-[9px] uppercase leading-relaxed tracking-[0.06em] text-muted">
+            &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
+            blocked messages are disabled.
+          </p>
+        </div>
+        <SimPanel />
       </main>
     </MotionConfig>
   );

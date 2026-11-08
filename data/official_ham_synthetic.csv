@@ -1,0 +1,701 @@
+id,message,label_class,category_name,ftc_subcategory,label_method,label_confidence,is_spam,source,style,is_synthetic,gen_method,parent_id,split,scenario
+saf34114901e0,I have the tax guy at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s8652c76884ce,"filing the taxes monday, need your W2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s368a2a4bd774,ugh tax season again,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s3f42bdb5b01b,finally got my IRS refund!!,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s23d10313d525,"filing the taxes friday, need your W2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s3384ea0032b2,the refund hit my account today,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s33c9eced96f5,tax appointment got moved,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sacf94b23d348,the IRS website is so confusing lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sb0b376494e47,I have the tax guy at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sde717afad342,"got a letter from the IRS, turns out it was just my refund amount",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1d59694f2ec9,"filing the taxes saturday, need your W2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+se0d74fdc36f4,my W2 came in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+se36e8fd34a8d,"we owe a little this year but it's fine, already paid it",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s6c79a6141ad3,grandpa is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s562849c7dba9,did you file your taxes yet,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1ed8dab8872f,can grandpa look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sa8d02a650e2f,can my sister look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s15160aa7a0d2,do you still have last year's tax return?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s0c1d25ca1a65,H&R Block is open late this week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s29d4c8a512de,I have the tax guy at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+seb89515b9986,can the accountant look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s124b52bc5bdd,mom is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s79522d351949,dad is helping me with my taxes thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s072c97cf87af,I mailed the tax forms tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sef8406185457,I mailed the tax forms next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s590d77ac7490,"filing the taxes this afternoon, need your W2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sfedc05fd66d3,I have the tax guy at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sd237e2db22b4,can my boss look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s4c58317f486b,my sister is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sb3905ac21187,i mailed the tax forms saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s69a8805d5ba5,i have the tax guy at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+saf0ee92ab945,I mailed the tax forms monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s6282e161c7c6,my brother is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s5292c41b6a01,auntie is helping me with my taxes tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s440637409815,my neighbor is helping me with my taxes thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s71b89ec1fe79,i have the tax guy at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s293c82099e3e,my boss is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s4dcaa3440b71,grandpa is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sf65a881013a8,can dad look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1de00245b76f,"filing the taxes wednesday, need your W2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s074f06087aff,I mailed the tax forms wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s7f82245829a2,I mailed the tax forms this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sa4ee3a1a8c50,my brother is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s63367ef970fb,can auntie look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sf0e536c90b9f,the accountant is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s0215e75eddc0,the accountant is helping me with my taxes thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1fdf9c067268,grandpa is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s37bba9933a8b,I mailed the tax forms thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sbf213fd61a78,my sister is helping me with my taxes tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s49ed78244113,auntie is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s066328f8ab38,the accountant is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sab7303bc513f,can mom look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s3cfb0189f0a6,can my brother look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sc5f8848a8868,I mailed the tax forms tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sbb1fab95c0ec,the accountant is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sa2bc420252fe,can grandma look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sdc43d38d2e57,grandma is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s7707ff3a1f39,can my neighbor look over my 1040?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sed2047abec30,my boss is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s11d3f37c9970,my brother is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s6b7ad0619883,my boss is helping me with my taxes thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s3139d52f0da0,the accountant is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s98d4b101b231,my neighbor is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s25b401912a5f,my neighbor is helping me with my taxes monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sfd21bdad1110,"filing the taxes tuesday, need your W2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sdea0d542afe7,"filing the taxes tomorrow, need your w2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+scd2b63fa4ece,my boss is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1050e3f86dce,I mailed the tax forms friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sa9ee8901c83c,dad is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sdeb84d9b9f72,my brother is helping me with my taxes tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sb0e50453adbf,grandma is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sbf1b57935938,MY SISTER IS HELPING ME WITH MY TAXES THIS AFTERNOON,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sf010819154ad,"filing the taxes next week, need your w2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1d2255e7cfb5,MY BROTHER IS HELPING ME WITH MY TAXES MONDAY,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s0f9d6974c908,auntie is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s960df5271b35,my neighbor is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sf06f543b658c,my boss is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s77f75611a1dc,"filing the taxes thursday, need your w2",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+se1c854d180e9,my sister is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s0a8c946cb395,my neighbor is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s64564e0b307f,the accountant is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s8a388cdc0d9c,my brother is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s51917695aad6,my boss is helping me with my taxes monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sc1c71efe668a,grandpa is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s884e037b90dd,my boss is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sd0f5ef63886e,dad is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1b271b58a227,mom is helping me with my taxes friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s5ea3a984b75a,dad is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s334645720d1f,auntie is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s721345609815,auntie is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s53d54dceb9a1,the accountant is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sada27f7110d1,my brother is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s98ce98ebb78c,auntie is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s3e2603fa1b4a,grandma is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sc97e7ccd3a29,the accountant is helping me with my taxes tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s9b61ccba21d9,GRANDMA IS HELPING ME WITH MY TAXES TUESDAY,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sade392425879,grandpa is helping me with my taxes thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s34efd9635ded,my sister is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s0e376d484af3,dad is helping me with my taxes monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s49f517aff747,auntie is helping me with my taxes monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s08518207b445,my neighbor is helping me with my taxes tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s07c137af9816,mom is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s793fbf9ae8b4,my boss is helping me with my taxes saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s7339e3ae5b9d,mom is helping me with my taxes this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s6da6729563b6,mom is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+scbb2c25533f6,my neighbor is helping me with my taxes wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+sf2d7f54427ae,my brother is helping me with my taxes tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1aa707d6472a,grandma is helping me with my taxes thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s5936f3f7ed1a,dad is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s9e8026925861,grandma is helping me with my taxes next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,tax_talk
+s1ccae1c09917,"got a parking ticket downtown, paid it online already",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s3f4f110c93ad,going to city hall wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sbe7ebb3e1d59,the police were directing traffic on main st,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s9b093b0c0532,had jury duty at city hall all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s16a068a0db39,can you drive me to the post office wednesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sdf242a651768,going to the post office tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s440b97e3130f,"the court date got moved to next month, the lawyer told us",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s636998015878,city hall closes at 4,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+se2c3b27b29b4,the line at the DMV was insane,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s6fff22c72cf8,the sheriff's office is doing a food drive,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s2d3e681f0714,the accountant works at the courthouse now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sd49badbeb647,the line at the post office was insane,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s0aac35ab9769,"just got back from city hall, took forever",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sc44188fb62cb,the post office closes at 5,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sf8c6fc3f34be,"just got back from the post office, took forever",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+se94704a20823,had jury duty at the DMV all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sba6b4ee42f57,social security check came on time this month,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sf1de3d2ac5f4,grandma works at the courthouse now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s96c1cca97cb2,city hall closes at 4:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s3f069cfa97cd,the line at the courthouse was insane,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sea5b74baa3f8,US Marshals show was good last night lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s862e60941527,going to the passport office tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s855f9b165945,can you drive me to city hall saturday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sa15c8c8844cb,I have an appointment at the post office at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sd2fa3b0d1b80,"just got back from the social security office, took forever",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s9188950ab115,"my jury summons came, ugh",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+seded66e876bf,I have an appointment at the post office at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sae1c4916c721,the line at city hall was insane,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s61638ba51ab1,I have an appointment at the social security office at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s436fe3a5e003,the line at the county clerk was insane,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s81444f7250d5,the post office closes at 4:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s44a6c177672c,grandma works at the DMV now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s2688d3ec7d3d,the courthouse closes at 5,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s25cc4a52eaac,can you drive me to the DMV friday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s1f4259bc6fb1,the passport office closes at 4,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s5a8aed0c4038,my sister works at city hall now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+scd7a518404cd,the courthouse closes at 4,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sd54110ede9f7,I have an appointment at city hall at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s99ebe6d763f8,I have an appointment at the county clerk at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sef56e49cb6d0,the social security office closes at 4:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s933a7a6edc57,can you drive me to the post office next week?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sde9e0f8b9a3c,grandpa works at the social security office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sccbef79973e1,going to the courthouse next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s61bc88add484,auntie works at the courthouse now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s7db1475491d2,the social security office closes at 5,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sa2b21fd3fcf5,had jury duty at the county clerk all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s7237c7f8e022,the line at the social security office was insane,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sf100e3863558,I have an appointment at the post office at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s2b3e82406150,had jury duty at the post office all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s0bd9b081faac,auntie works at the post office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s80e128dd958b,I have an appointment at the county clerk at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s241a6e283b32,THE ACCOUNTANT WORKS AT THE POST OFFICE NOW,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sff69b089ef28,going to city hall tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s35135e3ba633,can you drive me to the courthouse this afternoon?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s5c631d50b3f7,going to the social security office tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s833d26d0c14c,"just got back from the county clerk, took forever",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s29a90b9304bf,my brother works at city hall now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sc42a5371ff25,I have an appointment at the DMV at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s702e204d6cc6,I have an appointment at the county clerk at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s7406c837257b,can you drive me to the DMV saturday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sd545e8137e15,can you drive me to the DMV tuesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s70597d4bc751,I HAVE AN APPOINTMENT AT THE DMV AT 4PM,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s27dcf3d32aba,the courthouse closes at 4:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s4558a7b34183,I have an appointment at the courthouse at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s0f986570a01e,"just got back from the DMV, took forever",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s57b476a51c49,had jury duty at the courthouse all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s4804db51e704,going to the courthouse thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s938f16558048,going to the courthouse tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s3bb79c7dcbf7,I have an appointment at the passport office at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s965ff8080f8c,can you drive me to the social security office saturday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s455fd72ac28d,I have an appointment at the courthouse at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sdb19cc667e4a,can you drive me to the passport office friday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sdf955de6be73,can you drive me to city hall friday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sfbbbfcd897e8,going to the social security office tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s41408f0fd8a9,can you drive me to the county clerk this afternoon?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s0e2a48b36a04,going to the passport office saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sfcb4e5ce3ba8,the post office closes at 4,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s79ccd15aa5c6,I have an appointment at the social security office at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s9a53f232aeee,THE LINE AT THE PASSPORT OFFICE WAS INSANE,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s94605e312977,going to the courthouse this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s10373aad8c24,going to the dmv friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s0b1cee989af9,I have an appointment at the county clerk at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s43e8982bb7d3,grandma works at the social security office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s4c69dd4c5b21,can you drive me to the post office this afternoon?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s5ede8ebb92b4,can you drive me to city hall tomorrow?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sb57811ec53ea,I have an appointment at the county clerk at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sc0b2f6bfd282,can you drive me to the courthouse tomorrow?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+se2e6f9710d39,had jury duty at the social security office all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s4c9e420fd119,I have an appointment at city hall at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sfab63a6c5574,going to the post office next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sdd3678f0fcce,my sister works at the passport office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s02cd72541f6e,can you drive me to the county clerk monday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s2f7e1e6a141d,the passport office closes at 4:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sd53756e1b237,had jury duty at the passport office all day,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s7b2c165189b7,going to the county clerk saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s1dca428fc3eb,can you drive me to the county clerk friday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s23366f295748,auntie works at the passport office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s36e42445d96b,can you drive me to the courthouse next week?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sd008308cdb8a,dad works at the post office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s2c49f52d33ea,my neighbor works at the post office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s9823e75e8107,dad works at the passport office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+se05d008e383a,can you drive me to the passport office tomorrow?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s26778a20ef17,GRANDPA WORKS AT THE POST OFFICE NOW,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s390787c0c039,the county clerk closes at 4:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+saef306f713e4,the social security office closes at 4,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s42178f5524a9,I have an appointment at the social security office at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s92cc8836d9f2,my sister works at the DMV now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sbb69ba5fee91,"JUST GOT BACK FROM THE COURTHOUSE, TOOK FOREVER",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sc70da7790d53,can you drive me to the county clerk next week?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s7e2589807a30,I have an appointment at the social security office at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sc1d82ac3e4fb,grandpa works at city hall now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sc2c1ebe916e4,going to the social security office next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sbc6144803737,going to the social security office monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s6a3c9dca8d50,going to the county clerk tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s89fe17376186,going to the post office friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sf66da00d21da,my brother works at the post office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s762630def28e,can you drive me to the post office saturday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s283e4a457134,going to the courthouse friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sfb9b7d61f986,the passport office closes at 5,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s92b225549801,can you drive me to the social security office thursday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s66a8c8ff62ef,auntie works at the county clerk now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s33853713f1ef,going to the DMV this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s838c448bc644,I have an appointment at the social security office at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s4d2b778822e8,I have an appointment at the passport office at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s4f34134323b2,I have an appointment at the passport office at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sf42dea920145,going to the county clerk friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s823384c99861,"just got back from the passport office, took forever",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+sb77e5919ba42,grandpa works at the county clerk now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+scd0ebaeda550,auntie works at the social security office now,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s1f7e13856858,I HAVE AN APPOINTMENT AT THE COURTHOUSE AT NOON,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,government_chat
+s5ebae854aa48,can you check if auntie has the medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s323b1b4d62e1,my birth certificate expires next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s3ffe11b9c4a3,did you renew your insurance card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd7cab747a58c,don't forget your birth certificate,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sff29b2c9c491,found your license in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s7b71b6bf39bb,grab my insurance card from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s530dd2c4d29e,I left my birth certificate on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s9632c2a03c63,i left my id on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s00c9b7990c50,need to get a new license photo lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s9e1a67f1850d,found your insurance card in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sa6f19769b898,need to get a new medicare card photo lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s8a0294bd577a,I left my social security card on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s4af7564db1b6,found your medicare card in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sc3bc7e9aa881,need to get a new passport photo lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd9278d808d1f,found your birth certificate in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s5eef1f8e5850,BRING YOUR ID TO THE APPOINTMENT,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sb5d8768e82ea,my passport expires thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+saa714beaa2ff,need to get a new ID photo lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sefa5d32cd7ba,did you renew your ID?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s1829ba2322df,bring your social security card to the appointment,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sbadf5ad2c5ce,i left my insurance card on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s72bbc1266246,have you seen my medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sbb947a249e83,I got my new insurance card in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s2c66937867e1,did you renew your license?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s0c2f3997b697,can you check if dad has the medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+saaa28b73dd43,did you renew your passport?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s897c4f2b4c9d,don't forget your ID,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s4642f613fa11,bring your insurance card to the appointment,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd8bb16559fcc,have you seen my passport?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s598a1c927390,grab my passport from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s4347a4fd9cd8,i got my new id in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sb69dbc31638a,found your passport in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s0cb5869abfc2,don't forget your passport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s222da83053cd,did you renew your social security card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd401b2c4495e,they asked for my medicare card at the airport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd5cd6bae65fe,they asked for my ID at the airport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s5eee067db66c,don't forget your insurance card,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s00029dd10adb,bring your passport to the appointment,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s36b6b0a1b807,can you check if my neighbor has the birth certificate?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sa71da4fae53a,grab my license from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sfe57a55deba0,bring your license to the appointment,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s627ca46f9143,bring your birth certificate to the appointment,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sfb1611bcc0a1,have you seen my social security card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s654db9e1b878,can you check if grandma has the ID?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sf8c8bf3d3d5b,I got my new birth certificate in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s7842d850f41d,my passport expires tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sdbeef30c9482,have you seen my ID?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+se13bf08b07c6,THEY ASKED FOR MY LICENSE AT THE AIRPORT,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s23ce2b82b091,i left my passport on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s3c088dbf952c,NEED TO GET A NEW INSURANCE CARD PHOTO LOL,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s49fc1c2d5f1a,my medicare card expires friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s188b34ff0f0a,can you check if mom has the insurance card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s00023ab8dc72,found your ID in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s1e591e1ca73b,have you seen my insurance card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s93795cd39ffe,can you check if the accountant has the social security card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s23dacf63c05f,grab my birth certificate from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+se665f80a6cf0,grab my ID from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sb2a21b68c015,grab my medicare card from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s3aa5b29329cc,need to get a new social security card photo lol,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s23f900c671ab,bring your medicare card to the appointment,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s7244cbda37c1,I got my new social security card in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sccae8c31bc22,grab my social security card from the drawer please,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s9ae5d03e0eb6,my birth certificate expires thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s2eaaa9b6c4d9,can you check if dad has the social security card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s0e3c3689dd76,can you check if grandpa has the license?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s731a339de928,they asked for my birth certificate at the airport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s645c780c9eb4,can you check if my boss has the medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s7ca88acafc0f,my passport expires wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s33f5dc074104,my insurance card expires friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s464d6e441a0b,did you renew your birth certificate?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s7ab7e1f56759,my medicare card expires tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s982c544ab13a,they asked for my insurance card at the airport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s3d5d98b1c191,don't forget your social security card,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd79cf87cd28e,can you check if the accountant has the medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sa1b55674a95f,have you seen my license?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sae05c35e91ff,my id expires tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sd9be2a7a424e,can you check if my sister has the license?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s2fd23a1aec30,my passport expires monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sb6685a0c2f5a,can you check if the accountant has the birth certificate?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sb08edacbf59f,my medicare card expires tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+scfc118b3be43,my insurance card expires wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s7a3c893bc8a2,found your social security card in the car,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s3e6abc4eeca0,i left my medicare card on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s6e922aa1f038,did you renew your medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s8d1565082455,can you check if my boss has the passport?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sac4c5428ea3b,can you check if my sister has the birth certificate?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s1300e2b0f8e0,can you check if my neighbor has the medicare card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s942a8d507bc9,MY SOCIAL SECURITY CARD EXPIRES TUESDAY,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s185f1d0286a5,don't forget your license,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s8b4733fa6b7e,can you check if my neighbor has the passport?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s12b12c1d7218,have you seen my birth certificate?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s4ff3904325df,I got my new medicare card in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s514335c28ff9,can you check if my sister has the ID?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s929610fb5209,can you check if my brother has the insurance card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sc141127bb31f,my social security card expires tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sadb70f324632,my social security card expires thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s6bb999229c0d,MY SOCIAL SECURITY CARD EXPIRES MONDAY,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s2d43c23f1f13,can you check if the accountant has the passport?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s747e37068549,they asked for my passport at the airport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+scfab9e452846,don't forget your medicare card,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s5a7236456375,can you check if my neighbor has the insurance card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s32fddb9507a5,I got my new passport in the mail,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s8fbc5d2c2a5f,they asked for my social security card at the airport,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sc2d6126e4cf3,my insurance card expires saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s78c51c2c3fed,i left my license on the counter,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sdef8051f2d67,can you check if my sister has the passport?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sc252be6acac4,my license expires friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s710d37c29549,can you check if the accountant has the ID?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s05fde5a26f8a,my passport expires saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+s0bf2daf66a17,can you check if auntie has the insurance card?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,id_logistics
+sa47591e74b2e,appointment with the dentist at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s0b1885f021d2,reminder: physical therapy next week at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s2305229c166d,appointment with the doctor at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sec2754370673,feeling better after the checkup,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s9fd758aa74bc,"the nurse called, results are fine",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+se8c0dc2e13b3,reminder: dr. nguyen thursday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sa15585a10e84,my insurance covered most of it,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s484690a2444f,appointment with the cardiologist at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s1881239225ef,"medicare open enrollment starts soon, want to go over it together?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf20e6dca7069,grandma sees the doctor tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4da34a0e19ed,reminder: the clinic tomorrow at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s39b2813a244d,reminder: the doctor wednesday at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sdc2b0584df28,"got my lab results back, all normal",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sc74009747e88,dr. nguyen said everything looks good,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s6715c69cb0d4,mom's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sb34ffa17cab8,appointment with physical therapy at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sb357e69800d5,reminder: the dentist thursday at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sd1f268510f57,the accountant sees Dr. Patel wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s32c6dec9fe16,grandpa sees the clinic next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s636f3d53c12c,appointment with the dentist at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sef9f71da2925,appointment with dr. patel at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s17347496bdbb,grandpa sees the clinic friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s305de46223be,reminder: the doctor monday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4c471860cac8,grandpa's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4d13634eb3ba,can you take me to Dr. Nguyen this afternoon?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s82c8a648575d,the accountant's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s39eb18f556eb,can you take me to the cardiologist this afternoon?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s0b1cbdbb83fd,running late for the doctor,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sa2ee764898bf,can you take me to physical therapy wednesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf49b30443cd9,flu shots at the clinic this week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s6ab553b38b78,AUNTIE SEES DR. PATEL FRIDAY,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sb87dd9e05bb4,appointment with the cardiologist at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s01e6a1909d0e,the eye doctor said everything looks good,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf0be10e29c04,can you take me to the dentist monday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sca0658d06a53,running late for the cardiologist,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s9edc07f43c44,my boss sees dr. nguyen this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4fa0c519edf9,can you take me to Dr. Nguyen wednesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sac64beb7d5f7,appointment with the eye doctor at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s04f364e4b938,can you take me to the cardiologist thursday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s173d11334669,reminder: the doctor tuesday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s82215f007447,reminder: Dr. Patel wednesday at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s9cc8e286ea47,can you take me to physical therapy tuesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4933e2d2b87c,running late for the clinic,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s28249f7ab240,reminder: the cardiologist thursday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s76e5cfb9cc60,reminder: Dr. Patel tuesday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf55cac84a556,the accountant sees the cardiologist next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s3cf0e945cfeb,grandma's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+se2713ec3e424,appointment with dr. nguyen at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s71c629d41b30,my brother sees the dentist thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sc30d0899ec59,reminder: Dr. Patel saturday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s77a7c93ea9f5,can you take me to Dr. Nguyen monday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s43d96252e800,can you take me to physical therapy monday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sc678c7e7afdb,physical therapy said everything looks good,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4199aa9ac522,reminder: the cardiologist friday at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sea35b7c756ab,THE CARDIOLOGIST SAID EVERYTHING LOOKS GOOD,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s2421430bc939,reminder: the cardiologist thursday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s6a403cff07da,can you take me to the doctor wednesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+se12e27d8f72b,the dentist said everything looks good,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+seb46ee5048a8,running late for the eye doctor,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s5512cabd3d45,the accountant sees the eye doctor saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sa2306a093d43,can you take me to the eye doctor saturday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s981a4a7cc4ae,the accountant sees Dr. Nguyen saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s3399f12ba9aa,can you take me to the cardiologist tomorrow?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s8aa8b5b2cf97,my neighbor sees the doctor this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s1faeeb8a4e1a,can you take me to dr. patel tuesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sc8f844eddb8f,can you take me to the dentist thursday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s8f4dd1e12543,can you take me to the doctor thursday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sb4821f32481c,my boss sees the clinic next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s8130a6221f7c,APPOINTMENT WITH PHYSICAL THERAPY AT 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s85c7ec8c3abb,appointment with Dr. Nguyen at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sebd3ac6586ac,RUNNING LATE FOR THE DENTIST,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s106982215faf,reminder: the cardiologist friday at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s9a4e30cbc8fb,CAN YOU TAKE ME TO THE DOCTOR FRIDAY?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sa87ce2248940,my neighbor's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s94a592437064,reminder: the clinic friday at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s151fc6f7084b,reminder: Dr. Patel monday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s1e6a54b82a2e,can you take me to dr. nguyen thursday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s9874d12f63ff,the accountant sees the eye doctor monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf453a3815b6e,auntie's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s0b91f21576ae,appointment with physical therapy at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sd72ab53b04f5,reminder: the dentist saturday at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s0084b47b4c44,appointment with the cardiologist at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s65519870480c,reminder: the dentist saturday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+see0bd3ff64aa,THE ACCOUNTANT SEES THE DOCTOR TOMORROW,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sed8a91df5453,reminder: the eye doctor thursday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s22e8a3cc6288,grandpa sees the dentist tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s8af1a63ea5fd,reminder: the doctor next week at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sbda863206bfa,dad sees the cardiologist monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s2b3ef473fe68,can you take me to physical therapy thursday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sfa72fb26e539,can you take me to the doctor tuesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sbf635c5786e7,dad's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+saa7d2b3a58bb,can you take me to the clinic saturday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s1c14c27f840a,running late for Dr. Nguyen,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s8a21d9e11316,can you take me to the doctor tomorrow?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sd9d362eda9f4,dr. patel said everything looks good,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+see2dd5c57d31,reminder: the doctor this afternoon at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sa0d0b6edf430,reminder: the eye doctor wednesday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s86ab171b1f68,my sister sees Dr. Patel wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s0b61fe10a4cb,appointment with the eye doctor at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s878b26ab22c9,dad sees the eye doctor this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf9e3115a1f59,appointment with the dentist at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s2922ef7dadab,my brother's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s00daedba040b,CAN YOU TAKE ME TO DR. NGUYEN SATURDAY?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s796d551702d8,reminder: physical therapy monday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s5b3de6189e06,appointment with Dr. Patel at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+se44e78fdc095,reminder: physical therapy tomorrow at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s3f72f46243bf,can you take me to the clinic next week?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4b73120c820a,reminder: the eye doctor this afternoon at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf309db063f55,reminder: Dr. Nguyen monday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sfb84c3a24dba,reminder: the doctor friday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sc48c5c41baca,my sister's medicare covers the visit,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf05e350eea63,can you take me to the dentist this afternoon?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s8e5e8d6ee588,reminder: the dentist this afternoon at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s0d026134d08d,running late for dr. patel,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sea123c5e27f4,MY SISTER SEES THE DOCTOR THIS AFTERNOON,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s4fedc1285a3b,auntie sees the eye doctor tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s7ab2311e2f1b,my neighbor sees the eye doctor tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sb7973d716e62,reminder: the eye doctor this afternoon at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sdde3afb46660,appointment with the dentist at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sf9a0995c6a1b,appointment with the doctor at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s5e1700391f63,reminder: Dr. Nguyen saturday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s7ccfb915da1b,my brother sees Dr. Patel next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sc55940bb7916,can you take me to the dentist tuesday?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s232482a71649,reminder: the cardiologist next week at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+seb6bb2f50699,the clinic said everything looks good,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s97bd4e3d0496,reminder: the dentist wednesday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sb21c7bbcbd85,can you take me to the doctor next week?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s74ffadc90f4d,can you take me to the dentist tomorrow?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+s6f135b6ac9ec,auntie sees physical therapy wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+sa7c9abf19ad2,reminder: the doctor thursday at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,health_chat
+seb0ce19e53ce,Your package from Kroger pharmacy has shipped and arrives next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s7bfb3599c2d7,"Walgreens closes early thursday, need your eye drops?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se1ef53958bda,REMINDER FROM WALGREENS: YOUR INSULIN IS DUE FOR A REFILL,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s68db5b22abf0,the walmart pharmacy: your insulin is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s4cfc0f440f69,reminder from cvs: your insulin is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s433ae4183427,reminder from rite aid: your inhaler is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s42fed94c605d,Walgreens: your antibiotics is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sf71eabd3361f,"my refill ran out, calling Walgreens",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sdb556f147211,picked up your blood pressure meds from CVS,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s3fc0254a2e6f,"stopping at rite aid on the way home, need anything",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s72baaf83834a,"CVS closes early tuesday, need your insulin?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s1dfe240b2d94,"stopping at the pharmacy on the way home, need anything",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s8e75db807cf3,picked up your allergy medicine from the Walmart pharmacy,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s99c6963b336c,Reminder from Kroger pharmacy: your prescription is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s35fd8191c8c7,picked up your prescription from Kroger pharmacy,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s126c1d69a570,"my antibiotics ran out, calling Kroger pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se2cf065f75a8,"the pharmacy is out of my blood pressure meds, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s2eaa99f7001e,"Kroger pharmacy is out of my eye drops, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sb6253a43a6fe,Rite Aid says the prescription will be ready tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sb406ef482333,Your package from CVS has shipped and arrives wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sc581e626a249,"CVS is out of my allergy medicine, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s15b7325a371f,cvs says the refill will be ready friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sd90153b45b33,"the pharmacy is out of my antibiotics, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s5a445637882e,Your package from CVS has shipped and arrives tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s19fb52b2da33,your prescription is ready at the walmart pharmacy. thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s2c2d7d0813c7,picked up your antibiotics from the Walmart pharmacy,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s52175ca00a21,Your package from Kroger pharmacy has shipped and arrives this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s63b07bf06ec0,"my allergy medicine ran out, calling the walmart pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sa533bbff4223,"the pharmacy is out of my refill, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sd9859cf6f3f1,"my insulin ran out, calling Kroger pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sc0b9f13783df,can you grab my refill at the pharmacy?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s1c1d2bc1a4b7,the pharmacy says the inhaler will be ready monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sc19a8fbd63c0,can you grab my allergy medicine at Rite Aid?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s5a662732d815,your allergy medicine is ready at cvs. thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sab8150916b8c,"kroger pharmacy closes early monday, need your insulin?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s64c0eea8f1b0,Rite Aid: your eye drops is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s013aa8633342,"stopping at CVS on the way home, need anything",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sef904cf2375c,reminder from the pharmacy: your prescription is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s0cca8b99f522,"Walgreens closes early tomorrow, need your antibiotics?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sc7f205cb38a5,Kroger pharmacy says the refill will be ready this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+scee35bb3bfb9,Reminder from Walgreens: your antibiotics is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s4ae9039f17d0,"the Walmart pharmacy is out of my prescription, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sfdc9b51f275b,can you grab my eye drops at Rite Aid?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sc601961a5586,"stopping at Walgreens on the way home, need anything",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sbf331d1005d5,Reminder from Kroger pharmacy: your eye drops is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s4da3222e13e0,the Walmart pharmacy: your inhaler is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s1c3312cc2a95,Reminder from the Walmart pharmacy: your antibiotics is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s05bb4f826205,can you grab my antibiotics at CVS?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s9a5f6da6e906,"Kroger pharmacy closes early friday, need your allergy medicine?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s6b6486f8679b,Your prescription is ready at Rite Aid. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s23ffe442821e,"my allergy medicine ran out, calling Walgreens",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s769a528f546d,Rite Aid says the blood pressure meds will be ready friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sf2c9ea247463,Your eye drops is ready at Kroger pharmacy. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s902fb077278b,can you grab my eye drops at Kroger pharmacy?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s21ab6d4bebab,Reminder from the Walmart pharmacy: your inhaler is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s922acae1943f,"my inhaler ran out, calling the Walmart pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s3a6815bd69e5,your allergy medicine is ready at walgreens. thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se86b88f866eb,Walgreens says the prescription will be ready friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sf9e9c7ebe8dc,"the Walmart pharmacy is out of my insulin, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s11dba362db7e,Your allergy medicine is ready at the pharmacy. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s55dabc20fd8a,Your inhaler is ready at Walgreens. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s1a5143acf958,Walgreens says the prescription will be ready thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s359ad0609aec,"my blood pressure meds ran out, calling the walmart pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sa30ac18d05f0,Your package from CVS has shipped and arrives thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sab1587a56869,the pharmacy: your inhaler is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s0e9a113f86f9,"the Walmart pharmacy closes early friday, need your prescription?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s86d0ebe86952,CVS: your insulin is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sfbd5f237c327,Reminder from Kroger pharmacy: your refill is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s6ef66dda4100,Your eye drops is ready at Walgreens. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se444a5189d34,"my blood pressure meds ran out, calling CVS",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sa2057a47946a,Reminder from Rite Aid: your allergy medicine is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s022cba7e81d8,kroger pharmacy: your refill is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s2abe21a4c86d,Your eye drops is ready at CVS. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s39aaf79247ac,"Rite Aid closes early monday, need your inhaler?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s5ccff3c2ff0a,Reminder from Kroger pharmacy: your antibiotics is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se55851f2920c,Your blood pressure meds is ready at Walgreens. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s839aa8f1cd25,the pharmacy: your insulin is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s52c37fd3a204,can you grab my insulin at the pharmacy?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s81573cb899ce,Kroger pharmacy says the eye drops will be ready tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s1d5e98a4d739,"stopping at Kroger pharmacy on the way home, need anything",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s055884c9ba47,kroger pharmacy: your antibiotics is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s3271cf37325a,"Rite Aid closes early thursday, need your allergy medicine?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s7371d917520e,picked up your eye drops from the Walmart pharmacy,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sde2202d84baa,walgreens says the allergy medicine will be ready next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sf6a9f4b9237b,your package from the pharmacy has shipped and arrives wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s118638ef685d,PICKED UP YOUR INHALER FROM CVS,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sb506ed99793b,Your package from Rite Aid has shipped and arrives wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s55d842ea565c,your package from walgreens has shipped and arrives saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sacf39465ac17,"my insulin ran out, calling Rite Aid",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se724086aae3f,can you grab my antibiotics at the pharmacy?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se10bae3f02f8,Your insulin is ready at Walgreens. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s22f598861feb,can you grab my inhaler at the pharmacy?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+scab28cc51e06,"CVS closes early saturday, need your insulin?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s4e9644f6a2f8,Your blood pressure meds is ready at the pharmacy. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s31f74f332bf3,picked up your prescription from Rite Aid,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s1e411f766405,"my insulin ran out, calling Walgreens",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s9d0b501111e5,Your package from Walgreens has shipped and arrives this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s2a00623de905,"my refill ran out, calling the pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s46e49a8dfea5,Your prescription is ready at the pharmacy. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s51b8ea7bbec5,Your blood pressure meds is ready at the Walmart pharmacy. Thank you.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s43c207c04d61,"CVS is out of my insulin, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s28809a961465,Kroger pharmacy says the allergy medicine will be ready this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sdd8b39ae64b7,"MY BLOOD PRESSURE MEDS RAN OUT, CALLING WALGREENS",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s948c770f8984,your package from the walmart pharmacy has shipped and arrives friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s85f19dff9968,"Rite Aid closes early tomorrow, need your allergy medicine?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sa45ddb7b8458,can you grab my insulin at Rite Aid?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s7d580ef0ae84,"Rite Aid is out of my antibiotics, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sb7499ee50a8d,"stopping at the Walmart pharmacy on the way home, need anything",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+se54a2744a5b2,"Walgreens closes early tomorrow, need your refill?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sfff9d89761f3,the Walmart pharmacy says the insulin will be ready this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sae820eaab400,can you grab my inhaler at CVS?,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+scff9af7e0f7a,your package from walgreens has shipped and arrives thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s918f40dc1b1e,"the Walmart pharmacy closes early tuesday, need your insulin?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sa77fabb08982,reminder from cvs: your allergy medicine is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s436b4b5746e4,picked up your blood pressure meds from the walmart pharmacy,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s00143338d2fa,walgreens says the refill will be ready saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s2e1d25431708,Your package from Walgreens has shipped and arrives monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s7e8534c5f97f,picked up your prescription from the Walmart pharmacy,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sb80d8de210d4,"the Walmart pharmacy closes early thursday, need your eye drops?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s62427987f9a1,"Rite Aid is out of my allergy medicine, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+scb1f7f5eb3e2,"CVS closes early this afternoon, need your inhaler?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s59747f971f0a,Reminder from the pharmacy: your insulin is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sda175da20843,the Walmart pharmacy: your refill is ready,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s82634030ee02,Rite Aid says the allergy medicine will be ready monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s9c93a41094bb,Reminder from Rite Aid: your blood pressure meds is due for a refill,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s303d153eb2a5,YOUR PRESCRIPTION IS READY AT WALGREENS. THANK YOU.,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sdad5247a7b07,"Rite Aid closes early next week, need your allergy medicine?",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s4e2128b6699d,kroger pharmacy says the insulin will be ready tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s3c9b4070ecb7,"the Walmart pharmacy is out of my refill, trying another one",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+sb72a67181cc4,"my prescription ran out, calling the pharmacy",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,pharmacy_notice
+s047c4cad41c5,physical therapy: please arrive 15 minutes early this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s3354936c9c37,Your library books are due wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s83c6d6ba7676,"Your car is ready, the shop closes at 6",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sf73e62f28088,Trash pickup moves to friday this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sb75f40c4e75d,Your library books are due friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s3d476a4399de,Trash pickup moves to wednesday this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sd393dc631f82,Reminder: you have an appointment with Dr. Nguyen friday at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s0ab63d57c5c5,school closes early tomorrow because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s982489ba0829,school closes early saturday because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+saab1cc479340,Your library books are due tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s9b508825db37,Reminder: you have an appointment with the clinic thursday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s1db9e78eeece,Your appointment with the dentist is confirmed for tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+se8dfa00bcc1d,Your order is out for delivery and arrives this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s8741b51944bc,your library books are due monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sa88f20b7265b,"Your car is ready, the shop closes at 5",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+se161ba168fe7,Trash pickup moves to monday this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+scda909adc599,Your appointment with Dr. Patel is confirmed for this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+se32eedc01d24,Your library books are due next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sc36b742e5e2b,Reminder: you have an appointment with the cardiologist this afternoon at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sf10e0a20e3f2,"Your table is ready, please come to the host stand",0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s511421d340cd,reminder: you have an appointment with the clinic tuesday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s42650b6ef637,Your order is out for delivery and arrives monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sbcf8f4da0827,your library books are due thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s264c44e44ddd,Your appointment with the dentist is confirmed for friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s56f4d5807ea5,Trash pickup moves to next week this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+scd8b32594d3a,Reminder: you have an appointment with the eye doctor monday at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sf3255ce1495f,Reminder: you have an appointment with the eye doctor friday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s01a35d6a163c,Your appointment with the clinic is confirmed for saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s9e08b2d978e8,School closes early monday because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s4d975d5977d2,school closes early wednesday because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+se84192b1a980,Your order is out for delivery and arrives friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s3d4cf56031b7,REMINDER: YOU HAVE AN APPOINTMENT WITH DR. PATEL THURSDAY AT 9AM,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s51825797d05f,School closes early friday because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s7b0f092d7f9d,Your order is out for delivery and arrives thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s97930d84277c,Dr. Patel: please arrive 15 minutes early saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s890b96d154d1,Trash pickup moves to saturday this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sd486a1c903ee,Your appointment with the clinic is confirmed for thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sae0aadabe379,dr. nguyen: please arrive 15 minutes early saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s344baac73846,trash pickup moves to tomorrow this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s6388e88ed2f0,Your appointment with Dr. Patel is confirmed for tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+scfdd0ccecd24,reminder: you have an appointment with the clinic this afternoon at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s9aaf7b7b5f81,physical therapy: please arrive 15 minutes early monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s80cd65fba2b4,Your order is out for delivery and arrives wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s844a48fd90fe,School closes early next week because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s00488b4c754b,REMINDER: YOU HAVE AN APPOINTMENT WITH DR. PATEL THIS AFTERNOON AT 4PM,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s649df911de8c,Your appointment with the cardiologist is confirmed for this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s7351c90eb78a,Your appointment with the dentist is confirmed for tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sd8fa1bb80b7e,your order is out for delivery and arrives tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s9cf4fb94fa26,your order is out for delivery and arrives saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s77cb5ff05e62,Trash pickup moves to this afternoon this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+scd072a5cc67b,Your library books are due saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s7f64b7fdd323,Your order is out for delivery and arrives tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sef30967778c4,the eye doctor: please arrive 15 minutes early next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s14f7e907cefe,Your appointment with the cardiologist is confirmed for friday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s4837f0e6804f,Trash pickup moves to tuesday this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sc0a15f82714b,reminder: you have an appointment with physical therapy tomorrow at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sc5e52b14e623,Reminder: you have an appointment with the doctor tomorrow at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s8863ef6e355b,Your library books are due this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s46bae02a4776,Reminder: you have an appointment with the clinic wednesday at 9am,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sf6fc6cba9cc4,Your appointment with physical therapy is confirmed for tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s57002116b6bb,Dr. Patel: please arrive 15 minutes early next week,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sae8708c6b867,Your appointment with the dentist is confirmed for saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s38cc82f6d873,the eye doctor: please arrive 15 minutes early monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sbfaa10704b99,the doctor: please arrive 15 minutes early tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s1b89a4f6f8de,School closes early thursday because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+se67b4511ab42,Your appointment with the eye doctor is confirmed for tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s226fed995d48,the cardiologist: please arrive 15 minutes early monday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sdbf92c9faa0d,trash pickup moves to thursday this week because of the holiday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sce44a9e6abd2,Reminder: you have an appointment with the dentist saturday at 2pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s766c39079ea1,Your appointment with physical therapy is confirmed for this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s122b962e02e9,Reminder: you have an appointment with Dr. Patel tuesday at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s997e5368bbf7,Reminder: you have an appointment with Dr. Nguyen next week at 4pm,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sfab8f983d328,Your appointment with the cardiologist is confirmed for tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s0d12fcabe326,Your appointment with Dr. Nguyen is confirmed for saturday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sd94c08911566,Reminder: you have an appointment with physical therapy saturday at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s25bf38049f8d,the doctor: please arrive 15 minutes early this afternoon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sb744b42d46ba,Reminder: you have an appointment with the dentist tomorrow at noon,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sf07180467008,REMINDER: YOU HAVE AN APPOINTMENT WITH DR. NGUYEN MONDAY AT 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s7e96bd3257b9,the doctor: please arrive 15 minutes early thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sd520aeea8639,Reminder: you have an appointment with the cardiologist next week at 10:30,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s2cb77a4341d8,Your appointment with the eye doctor is confirmed for wednesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+safa203d13067,your appointment with the cardiologist is confirmed for thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s0acb24ff69ce,Your appointment with the clinic is confirmed for tuesday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sb62ab2d895b4,Reminder: you have an appointment with Dr. Nguyen friday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s8915e9c65ecf,the clinic: please arrive 15 minutes early thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sea051cd3b8c0,School closes early this afternoon because of the weather,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s5ae682061554,REMINDER: YOU HAVE AN APPOINTMENT WITH DR. PATEL FRIDAY AT 2PM,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+sf32dbac5e7e1,Reminder: you have an appointment with the clinic saturday at 3:15,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s2d156c22ee71,Dr. Nguyen: please arrive 15 minutes early thursday,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice
+s19f7c5da569e,Your library books are due tomorrow,0,Ham,0,ham,1.0,0,synthetic_official_ham,sms,True,template,,train,appointment_notice

@@ -1,4 +1,4 @@
-# T-Gate interception gateway
+# T-Guard interception gateway
 
 The gateway is the victim line's "carrier". Photon (Spectrum), or the perpetrator simulator, POSTs every inbound **iMessage** for the victim line to `POST /webhooks/photon`. The gateway verifies the signature, dedupes, stores the message, answers `200 ok` right away, then classifies the message in the background and either **delivers** it to the virtual inbox or **blocks** it. The web app reads the result from `GET /api/messages`.
 
@@ -37,13 +37,14 @@ curl -s localhost:8787/api/messages | jq
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `8787` | Listen port |
-| `PHOTON_WEBHOOK_SECRET` | required | The webhook's signing secret, shown once when it's registered. Verifies `X-Spectrum-Signature`. Local dev uses the placeholder `dev-photon-webhook-secret-change-me`, which the simulator also uses. Keep the real one in `.env` only |
+| `PHOTON_WEBHOOK_SECRET` | required | The webhook's signing secret, shown once when it's registered. Verifies `X-Spectrum-Signature` (Stable) or `webhook-signature` (Photon 2.0 / Beta, a `whsec_` secret). Local dev uses the placeholder `dev-photon-webhook-secret-change-me`, which the simulator also uses. Keep the real one in `.env` only |
 | `SIGNATURE_TOLERANCE_SECONDS` | `300` | Reject deliveries whose `X-Spectrum-Timestamp` is further than this from now (replay protection, Photon's recommended value) |
 | `DB_PATH` | `./data/gateway.sqlite` | SQLite file (gitignored). `:memory:` works too. A file left over from the Twilio schema is refused at startup: delete it (`npm run db:reset`) |
 | `CLASSIFIER_URL` | empty | Empty = built-in keyword stub (`stub@0`). Set = call `POST ${CLASSIFIER_URL}/classify` |
 | `CLASSIFIER_TOKEN` | empty | Sent as `Authorization: Bearer ...` when set |
 | `CLASSIFIER_TIMEOUT_MS` | `2500` | Abort the classifier call after this long |
-| `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold` (TBD, to be tuned on `val`) |
+| `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold`. The VM uses `0.7` |
+| `MONEY_WARN_AMOUNT` | `500` | Add `verdict.warning` to a delivered message asking the reader for at least this many dollars. Never blocks. `0` turns it off |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to `GET /api/*` |
 | `GATEWAY_DEBUG` | `0` | `1` registers `POST /debug/reset`. Startup fails if `DEBUG_TOKEN` is empty |
 | `DEBUG_TOKEN` | empty | Required `X-Debug-Token` value for debug routes |
@@ -77,7 +78,11 @@ Raw handles and Photon message and space ids live only in the SQLite file. They 
 
 ### `GET /api/messages?limit=N`
 
-Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET only.
+Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET and DELETE.
+
+### `DELETE /api/messages`
+
+Deletes every stored message, conversation and participant (the same as `POST /debug/reset`) and returns `{ok, cleared}`. The web app's "Clear chats" button calls it (Tuan, 2026-11-08). **No token:** anyone who can reach the gateway can wipe the inbox.
 
 ### `GET /healthz`
 
@@ -111,15 +116,9 @@ curl -X POST -H "X-Debug-Token: $DEBUG_TOKEN" localhost:8787/debug/reset
 ## Connecting a real Photon iMessage line
 
 1. Run the gateway somewhere Photon can reach over **public HTTPS**. Photon refuses `http`, private and loopback addresses, and redirects. For the Vultr VM, follow [`DEPLOY.md`](DEPLOY.md).
-2. Register the webhook (dashboard at app.photon.codes, the "Webhook" tab, or the API):
+2. Register the webhook with `npm run photon:webhook -- register https://149-28-243-66.sslip.io/webhooks/photon --write-env` ([`DEPLOY.md`](DEPLOY.md) step 6). A `pho_prj_` project id selects Photon 2.0 / Beta, which is what the team uses. `PHOTON_PROJECT_SECRET` is then a `pho_ask_` or `pho_sk_` API key.
 
-   ```bash
-   curl -X POST "https://spectrum.photon.codes/projects/$PHOTON_PROJECT_ID/webhooks/" \
-     -u "$PHOTON_PROJECT_ID:$PHOTON_PROJECT_SECRET" -H "Content-Type: application/json" \
-     -d '{"webhookUrl":"https://<host>/webhooks/photon"}'
-   ```
-
-3. Put the returned `data.signingSecret` in `PHOTON_WEBHOOK_SECRET` and restart. The project id and secret are only for registering. The gateway doesn't need them.
+3. `--write-env` puts the signing secret in `PHOTON_WEBHOOK_SECRET`. Restart the gateway. The project id and key are only for registering. The gateway doesn't need them.
 
 The URL isn't part of the signature, so proxies and tunnels need no extra config (there's no `PUBLIC_WEBHOOK_URL` anymore). A tunnel (cloudflared, ngrok) is needed **only** when a real iMessage should reach a gateway on a laptop. The simulator and `npm run send:sample` POST to `localhost` directly.
 

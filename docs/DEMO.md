@@ -1,6 +1,6 @@
-# T-Gate demo script
+# T-Guard demo script
 
-A 2–3 minute walkthrough for judges. **T-Gate** is a scam firewall for iMessage. Every message to a protected line goes through T-Gate first, and T-Gate either delivers it to the victim's inbox or blocks it as a **potential scam** before the victim ever sees it.
+A 2–3 minute walkthrough for judges. **T-Guard** is a scam firewall for iMessage. Every message to a protected line goes through T-Guard first, and T-Guard either delivers it to the victim's inbox or blocks it as a **potential scam** before the victim ever sees it.
 
 Tracks: **Safe Signal (T-Mobile)** for the problem, **Photon** for iMessage delivery (Spectrum webhooks), and **Vultr** for the classifier, which is trained and served there.
 
@@ -36,7 +36,7 @@ npm run sim -- scenario smoke.jsonl     # sanity check: 3 messages show up on /
 curl -X POST -H "X-Debug-Token: $DEBUG_TOKEN" http://localhost:8787/debug/reset
 ```
 
-Open `/` full-screen: the 3D scene on top, the inbox and blocked lists below.
+Open `/` (the landing page) full-screen and click **Start**, or go straight to `/messages`: the 3D scene on top, the inbox and blocked lists below.
 
 ## The walkthrough
 
@@ -48,7 +48,7 @@ npm run sim -- scenario imessage-demo
 
 | Time | On screen | Say |
 |---|---|---|
-| 0:00 | Empty page | "Scammers target older adults by text, posing as a grandson, the bank or the IRS, and they push people to act fast. T-Gate sits between the sender and the victim's iMessage inbox, like a carrier, and checks every message first." |
+| 0:00 | Empty page | "Scammers target older adults by text, posing as a grandson, the bank or the IRS, and they push people to act fast. T-Guard sits between the sender and the victim's iMessage inbox, like a carrier, and checks every message first." |
 | ~0:00 | "Hi Mom! Are we still on for dinner Sunday?" lands in the **inbox** | "Normal messages go straight through." |
 | ~0:07 | A **group chat** album: lake photos, with a "Group chat" badge and photo chips | "It handles real iMessage, including group chats, albums and photos." |
 | ~0:14 | A ❤️ **reaction**, marked "Not checked" | "Reactions and attachments have no text to judge, so they're delivered and clearly labeled as not checked. No false sense of safety." |
@@ -60,7 +60,7 @@ npm run sim -- scenario imessage-demo
 | ~1:04 | "Your account is locked… verify your PIN", blocked | "Then the follow-up asks for a PIN. It's blocked." |
 | ~1:12 | "See you Sunday, love you!", delivered | "The family conversation is untouched. Only the potential scams were held back." |
 
-### The live moment (real iPhone → Photon → T-Gate)
+### The live moment (real iPhone → Photon → T-Guard)
 
 Only do this once the Photon line is connected ([`photon-imessage.md`](features/photon-imessage.md), task 1.2).
 
@@ -93,7 +93,7 @@ Only do this once the Photon line is connected ([`photon-imessage.md`](features/
 
 ## Pre-demo checklist
 
-- [ ] `npm run sim -- scenario smoke.jsonl` shows 3 messages on `/`, then reset
+- [ ] `npm run sim -- scenario smoke.jsonl` shows 3 messages on `/messages`, then reset
 - [ ] The scene animates and blocked messages pop
 - [ ] `DEBUG_TOKEN` is exported in the shell you'll reset from
 - [ ] (Live moment) A test iMessage to the Photon line shows up

@@ -10,12 +10,33 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 | Classify **spam vs ham** (binary) | `spam_ham_100k.csv` |
 | Need metadata (splits, source, synthetic flag, label confidence) | the matching `*_full.csv` |
 | Only the original real messages, no synthetic rows | `unified_spam_dataset.csv` |
+| Threat / coercion / fake-emergency extortion texts (proposed label 8) | `potential_threat_synthetic.csv` (train), `potential_threat_eval.csv` (held-out) |
+| Harmless "free" texts (label 0), so "free" alone doesn't read as scam | already inside `scam_categories_100k*.csv`; `free_ham_synthetic.csv` is the standalone copy |
+| Government-threat, IRS, ID/identification-request and health scam texts (labels 1 and 5) | `gov_health_id_scam_synthetic.csv` (train/val) |
+
+**Which files can be aggregated (combined into one training set)**
+
+`classifier/build_splits.py` does this aggregation: run it, don't concatenate files by hand. Its output (`classifier/splits/train_val.csv`) is the aggregated training file.
+
+| File | Aggregate? | How |
+|---|---|---|
+| `scam_categories_100k_full.csv` | **Yes, the base** | Its `train` and `val` rows go in. Its `test` rows are held out (read only by `classifier/evaluate.py`). |
+| `potential_threat_synthetic.csv` | **Yes** | Label 8 plus ham hard negatives. 15% of each scenario goes to val, the rest to train. |
+| `gov_health_id_scam_synthetic.csv` | **Yes** | 600 scam templates (labels 1 and 5). Handled like the threat rows: 15% of each scenario goes to val, the rest to train. |
+| `free_ham_synthetic.csv` | No, already merged | Its 300 rows are appended to `scam_categories_100k_full.csv` and `scam_categories_100k.csv` (`split = train`, `source = synthetic_free_ham`). Adding the file again would duplicate them. |
+| `potential_threat_eval.csv` | **No, held out** | `split = threat_eval`. Never train on it; `build_splits.py` drops any training row that matches it. |
+| `scam_categories_100k.csv` | No | The same rows as the `_full` file without metadata. Use one or the other, never both. |
+| `spam_ham_100k.csv`, `spam_ham_100k_full.csv` | No | The same 100k messages with binary labels. Adding them would duplicate every row. Use `is_spam` in the `_full` file instead. |
+| `unified_spam_dataset.csv`, `..._with_source.csv` | No | An older first pass of the real messages already in the 100k files (uncleaned). Reference only. |
+| `message_bank/` | No | Demo input for the simulator, not training data. |
+
+Any new synthetic file that should train has to be read in `build_splits.py` (`main()`), with the same columns plus `scenario`, and listed here.
 
 ---
 
 ## 1. `scam_categories_100k.csv` (main dataset, multi-class)
 
-100,000 rows, 2 columns: `message`, `label`.
+100,300 rows (the original 100,000 plus the 300 harmless "free" texts from [section 5](#5-harmless-free-texts-label-0)), 2 columns: `message`, `label`.
 
 The labels are based on the FTC Consumer Sentinel report categories ([category definitions PDF](https://www.ftc.gov/system/files/attachments/data-sets/category_definitions.pdf), Jan 2024). The FTC's 28 fraud and "other" categories are merged into 7 scam groups, and 0 is used for ham:
 
@@ -68,6 +89,106 @@ Same rows, plus these columns:
 ## 3. `unified_spam_dataset.csv` (real data only, first pass)
 
 32,416 real messages (15,584 spam, 16,832 ham) with exact duplicates removed. It has no near-duplicate removal, no text cleaning and no synthetic rows. Columns: `message`, `label` (1/0), `spam_type` (fraud/solicitation/ham). `unified_spam_dataset_with_source.csv` adds a `source` column. This file is kept for reference. Use the cleaned 100k files for training.
+
+---
+
+## 4. Potential Threat synthetic data (label 8)
+
+**Update (2026-11-08):** label 8 is now in `scam_categories.csv` as **Threats & Extortion**, and `classifier/build_splits.py` merges these files into training. The paragraphs below describe the files as they were first added.
+
+Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING RIGHT NOW GIVE ME $900 OR I EXPLODE" or "YOUR WIFFE IS IN DANGER GIVE ME 500$". The 100k files have almost none: kidnap/ransom words appear in 86 rows (mostly Enron spam noise in labels 5 and 7), "or else / I know where you live" in 34 (mostly eBay phishing and ham), no short ALL-CAPS text contains a money amount, and 215 of 239 short ALL-CAPS texts are ham. **Proposal, not agreed:** label 8 is not in `scam_categories.csv` yet, and the 100k files are unchanged. Plan: [`docs/features/potential-threat-data.md`](../docs/features/potential-threat-data.md).
+
+| file | rows | use |
+|---|---|---|
+| `potential_threat_synthetic.csv` | 4,100: 2,650 label 8, 1,450 label 0 | Extra **training** rows. All `split = train`. |
+| `potential_threat_eval.csv` | 100: 58 label 8, 42 label 0 | Held-out check for the new class. `split = threat_eval`, so `train.py` ignores it. **Never train on it.** It includes Tuan's two examples. |
+| `build_threat_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_threat_synthetic.py [out_dir]`. Two runs give byte-identical files. |
+
+**Columns:** the same as `scam_categories_100k_full.csv`, plus `scenario`. Values: `label_class` 8 (`category_name` "Potential Threat", `is_spam` 1, `ftc_subcategory` -1, `label_method` `template`) or 0 (`Ham`, `is_spam` 0, `label_method` `ham`); `style` `sms`; `is_synthetic` True; `parent_id` empty; `label_confidence` 1.0. Training rows have `source` `synthetic_threat`, `gen_method` `template`; eval rows have `source` `synthetic_threat_eval`, `gen_method` `handwritten`, `label_method` `manual`. Ids start with `s` and are a hash of the text.
+
+**Scenarios** (`scenario` column):
+
+| label 8 | rows | | label 0 (hard negatives) | rows |
+|---|---|---|---|---|
+| `family_emergency` ("mom its me, they will kill me") | 450 | | `urgent_family` ("MOM CALL ME ASAP", "dad im at the hospital, broke my arm, can you pick me up") | 500 |
+| `loved_one_danger` ("YOUR WIFE IS IN DANGER") | 450 | | `casual_money` ("can you venmo me $20 for pizza lol", rent, bills) | 450 |
+| `kidnap_ransom` | 400 | | `harmless_slang` ("im dying lol", "this traffic is killing me") | 300 |
+| `physical_threat` ("pay or we break your legs") | 400 | | `caps_excitement` ("MOM I GOT THE JOB") | 200 |
+| `blackmail` (non-explicit: photos, chats, "your secret") | 350 | | | |
+| `hitman_stalker` ("I know where you live") | 300 | | | |
+| `self_harm_coercion` ("GIVE ME $900 OR I EXPLODE") | 300 | | | |
+
+**Method:** slot-filled templates (relatives, loved ones, names, amounts as `$900` / `900$` / `900 dollars` / `$2,500` / `2.5k`, payment rails: gift cards, Zelle, Cash App, Venmo, Bitcoin/USDT, Western Union, wire, MoneyGram; urgency and "don't call the police" phrases), then the **same** noise for both labels: ALL CAPS / lowercase / as written, SMS slang, typos (letter doubling as in "WIFFE", dropped or swapped letters, common misspellings), punctuation and emojis. Hard negatives get the same caps and typo rates so caps alone can't predict the label: label 8 is 34% ALL CAPS, label 0 is 38%. Rows are deduplicated case- and punctuation-insensitively, never repeat an eval row, and none match a row in the 100k files.
+
+**Caveats:**
+
+- **Template-generated.** Like the other template rows (AUC ≈ 0.997 for telling them from real data), these are easy to recognize and may teach surface patterns (the template phrases, the emoji pools) rather than the idea of a threat. Judge the class on `potential_threat_eval.csv` and on real messages, not on the training rows.
+- **Money is a strong cue.** 98% of label 8 rows and 32% of label 0 rows contain an amount. A threat without a money demand ("i know where you live") is mostly not covered.
+- **The eval file is small and written by the same author** as the templates (an AI agent, in a different hand-written style), so it overstates real-world accuracy. Real threat messages would be a better test.
+- **Self-harm coercion:** rows in that scenario all demand money. A real person in distress who also asks for money could be flagged. Blocking such a message is a worse error than delivering it, so the gateway may want to warn instead of block for this class (TBD).
+- **Not in any 100k file and not read by `train.py` yet.** Training on it needs `train.py` changes; see the plan.
+
+---
+
+## 5. Harmless "free" texts (label 0)
+
+**Why (Tuan, 2026-11-08):** the model was overfitting on the word "free" and flagging everyday texts such as "Feel free to do this" or "Free pizza". In `scam_categories_100k_full.csv`, "free" appears in about 5,800 scam rows and only about 2,100 ham rows.
+
+| file | rows | use |
+|---|---|---|
+| `free_ham_synthetic.csv` | 300, all label 0 | Standalone copy. **The same 300 rows are appended to the end of `scam_categories_100k_full.csv` and `scam_categories_100k.csv`** (`split = train`), so they train with the base file. `spam_ham_100k*` and `unified_spam_dataset*` are unchanged. |
+| `build_free_ham_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_free_ham_synthetic.py [out_dir]`. Two runs give byte-identical files. |
+
+**Columns:** the same as `potential_threat_synthetic.csv`: `label_class` 0, `category_name` Ham, `is_spam` 0, `label_method` `ham`, `source` `synthetic_free_ham`, `gen_method` `template`, `style` `sms`, `is_synthetic` True.
+
+**Scenarios:** `feel_free` (80, "feel free to call me anytime"), `free_time` (70, "are you free tonight?"), `free_food_event` (60, "free pizza in the break room"), `free_everyday` (50, "parking is free after 6", "shipping was free"), `free_idiom` (40, "gluten free", "hands free", "free throw").
+
+**Method:** slot-filled templates (names, family words, times, foods, places, events), then light styling: openers and closers ("hey", "lmk", "love you"), punctuation, emojis, and 14% ALL CAPS so caps plus "free" doesn't read as spam either. No row has a link, a phone number, a prize, a "claim/reply/call now" call to action or a money request. Rows are deduplicated case- and punctuation-insensitively and never repeat a row in `scam_categories_100k.csv` or the threat files.
+
+**Caveats:** template-generated, so easy to recognize; 300 rows is small next to the ~5,800 scam rows with "free", so it may soften the cue without removing it. There's no held-out "free" ham check yet. Retrain to take effect. If the generator changes, replace the 300 `synthetic_free_ham` rows in both 100k files as well.
+
+---
+
+## 6. Government-threat, IRS, ID-request and health scams (labels 1 and 5)
+
+**Why (Tuan, 2026-11-08):** more coverage of four common scams aimed at older adults: government agencies threatening arrest, the IRS demanding back taxes, requests for ID documents, and health scams.
+
+| file | rows | use |
+|---|---|---|
+| `gov_health_id_scam_synthetic.csv` | 600, all scam | Extra training rows, all `split = train` in the file. `classifier/build_splits.py` sends 15% of each scenario to val. |
+| `build_gov_health_id_scam_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_gov_health_id_scam_synthetic.py [out_dir]`. Two runs give byte-identical files. |
+
+**Scenarios** (150 rows each, `scenario` column):
+
+| scenario | label | `ftc_subcategory` | example |
+|---|---|---|---|
+| `government_threat` | 1 Imposter & Phishing | 7 | "US Marshals Service: a warrant has been issued for your arrest. Call 1-713-555-0134 now." (SSA suspension, arrest warrants, missed jury duty, deportation, DMV, seized packages; pay a fine in gift cards or Bitcoin) |
+| `irs` | 1 Imposter & Phishing | 7 | "Internal Revenue Service: your EIN/SSN is linked to tax fraud of $4962. Pay with Bitcoin at the nearest ATM to close the case." (back taxes, liens, garnishment, held refunds, stimulus claims) |
+| `id_request` | 1 Imposter & Phishing | 27 | "Wells Fargo Fraud Dept: reply with your full SSN and bank login to verify your account or it will be locked." (driver's license, passport, SSN, selfie with ID; from fake banks, employers, couriers, benefits offices, crypto exchanges, landlords, carriers) |
+| `health` | 5 Health & Pharmacy | 6 | "Medicare Alert: your lab results are ready, log in with your insurance ID at ..." (Medicare card and benefit scams, fake insurance cancellation, free test kits and braces, miracle cures, no-prescription pills) |
+
+**Columns:** the same as `potential_threat_synthetic.csv`: `is_spam` 1, `label_method` `template`, `label_confidence` 1.0, `source` `synthetic_gov_health_id`, `gen_method` `template`, `style` `sms`, `is_synthetic` True, empty `parent_id`. Ids start with `s` and are a hash of the text.
+
+**Method:** slot-filled templates (agencies, officer names, problems, threats, amounts, payment rails, ID documents paired with senders that would plausibly ask, health hooks), then openers ("URGENT:", "Dear Robert,"), closers ("Reply STOP to opt out", case numbers), 15% ALL CAPS, 10% lowercase and a few warning emojis. Phone numbers are in the reserved 555-01xx range and links are made-up lookalike domains (`irs-refund-claim.net`, `medicare-card-update.com`), so no row points at a real number or site. About a quarter of rows have a link and a third a phone number. Rows are deduplicated case- and punctuation-insensitively and never repeat a row in the 100k file or the threat files. In a `build_splits.py` run, 599 of the 600 survive deduplication (511 train, 88 val).
+
+**Caveats:**
+
+- **Template-generated**, so easy to recognize; judge the effect on the real test split and real messages.
+- **Scam rows only, no hard negatives.** Real IRS, DMV, pharmacy, Medicare or "send your ID for onboarding" texts are not in this file, so words like "IRS", "Medicare" or "ID" may become stronger scam cues. Adding matching ham rows (as section 5 did for "free") is a possible follow-up.
+- **The 555-01xx numbers and fake domains** are a pattern the model could learn instead of the content; real scams use real-looking numbers and domains.
+- **Retrain to take effect.** The served model was not retrained with these rows.
+
+---
+
+## 7. Calm money requests (`money_request_synthetic.csv`)
+
+1,302 template rows from `build_money_request_synthetic.py` (seeded, stdlib only): label 1 for polite large asks, the "new number" scam, strangers asking for money and government threats; label 0 for small asks, shared costs and talk about large amounts. `classifier/build_splits.py` merges them and sends 15% of each scenario to val. Amounts normalize to the same text, so about a third are dropped as duplicates. Same caveat as the other templates: judge on real messages, not on these.
+
+---
+
+## 8. Harmless official-sounding texts (`official_ham_synthetic.csv`)
+
+700 label-0 template rows from `build_official_ham_synthetic.py` (seeded, stdlib only): taxes, government offices, IDs, doctors, pharmacy and appointment notices, with no threat, payment demand, link or request for ID numbers. They are the harmless counterparts of `gov_health_id_scam_synthetic.csv`. `classifier/build_splits.py` merges them and sends 15% of each scenario to val; 687 survive dedupe. Same caveat as the other templates: judge on real messages, not on these.
 
 ---
 

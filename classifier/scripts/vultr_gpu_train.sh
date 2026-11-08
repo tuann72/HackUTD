@@ -14,6 +14,7 @@ source classifier/.venv/bin/activate
 pip install --upgrade pip
 pip install -r classifier/requirements-train.txt
 
+python classifier/build_splits.py
 python classifier/train.py --device cuda "$@"
 
 echo

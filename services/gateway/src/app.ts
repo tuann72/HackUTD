@@ -6,7 +6,9 @@ import type { Blocklist, Fingerprinter } from './blocklist.js';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
-import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, isClassifiable, parseSpectrumEvent, verifySpectrumRequest, type InboundMessage } from './photon.js';
+import { asksForLargeSum } from './money-rule.js';
+import type { Reviewer } from './reviewer.js';
+import { EVENT_HEADER, SIGNATURE_HEADER, STANDARD_ID_HEADER, STANDARD_SIGNATURE_HEADER, STANDARD_TIMESTAMP_HEADER, TIMESTAMP_HEADER, isClassifiable, parsePhotonEvent, verifySpectrumRequest, verifyStandardRequest, type InboundMessage } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
 /** Path Photon delivers inbound iMessage webhooks to. */
@@ -25,11 +27,14 @@ export interface AppDeps {
     | 'photonWebhookSecret'
     | 'signatureToleranceSeconds'
     | 'blockThreshold'
+    | 'moneyWarnAmount'
     | 'corsOrigins'
     | 'debug'
     | 'debugToken'
     | 'adminToken'
     | 'senderBlocklist'
+    | 'reviewBandLow'
+    | 'reviewBandHigh'
   >;
   /**
    * Sender blocklist (docs/features/sender-blocklist.md), a parked option. Used only when
@@ -38,6 +43,8 @@ export interface AppDeps {
    */
   blocklist?: Blocklist;
   fingerprinter?: Fingerprinter;
+  /** Nemotron's second opinion for scores in the review band. Absent = the model decides alone. */
+  reviewer?: Reviewer;
   logger?: Logger;
   /** Clock for the signature timestamp check. Tests override it. */
   now?: () => Date;
@@ -66,6 +73,7 @@ export function createApp({
   config,
   blocklist,
   fingerprinter,
+  reviewer,
   logger = consoleLogger,
   now = () => new Date(),
 }: AppDeps): GatewayApp {
@@ -124,9 +132,25 @@ export function createApp({
       logger.warn(`${id} from ${display}: classifier unavailable (${(err as Error).message}); delivered unverified`);
       return;
     }
-    const action = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
+    let action: 'blocked' | 'delivered' = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
+    // Unsure score, or a large money ask the model can't weigh: ask Nemotron. Any failure keeps the model's decision.
+    const unsure = verdict.score >= config.reviewBandLow;
+    if (reviewer && verdict.score < config.reviewBandHigh && (unsure || asksForLargeSum(body, config.moneyWarnAmount))) {
+      try {
+        const review = await reviewer.review(body, verdict);
+        // The label follows the final decision, so the UI never shows a cleared message as a potential scam.
+        verdict = { ...verdict, label: review.decision === 'block' ? 'scam' : 'legit', review };
+        action = review.decision === 'block' ? 'blocked' : 'delivered';
+        logger.info(`${id}: reviewed by ${review.model}: ${review.decision} (${review.checks.length} checks, bank=${review.bankSource ?? 'none'})`);
+      } catch (err) {
+        logger.warn(`${id}: review failed (${(err as Error).message}); keeping the model's decision`);
+      }
+    }
+    if (action === 'delivered' && asksForLargeSum(body, config.moneyWarnAmount)) {
+      verdict = { ...verdict, warning: 'large_money_request' };
+    }
     store.applyDecision(id, action, 'model_verdict', verdict);
-    logger.info(`${id} from ${display}: ${action} (score ${verdict.score}, ${verdict.category ?? 'no category'}, ${verdict.model})`);
+    logger.info(`${id} from ${display}: ${action} (score ${verdict.score}, ${verdict.category ?? 'no category'}, ${verdict.model})${verdict.warning ? `, warning: ${verdict.warning}` : ''}`);
     // 4. Fingerprint every model block; strikes or a very high score put the sender on the blocklist.
     if (action === 'blocked') await recordScam(id, senderFp, body, verdict);
   }
@@ -145,14 +169,25 @@ export function createApp({
   app.post(WEBHOOK_PATH, async (c) => {
     // Verify over the raw bytes, before any JSON parsing (Photon signs the exact body).
     const raw = await c.req.text();
-    const check = verifySpectrumRequest({
+    const signed = {
       secret: config.photonWebhookSecret,
-      signature: c.req.header(SIGNATURE_HEADER),
-      timestamp: c.req.header(TIMESTAMP_HEADER),
       rawBody: raw,
       nowSeconds: Math.floor(now().getTime() / 1000),
       toleranceSeconds: config.signatureToleranceSeconds,
-    });
+    };
+    // Photon 2.0 / Beta uses Standard Webhooks headers, Stable uses X-Spectrum-*. Both check the same secret.
+    const check = c.req.header(STANDARD_SIGNATURE_HEADER)
+      ? verifyStandardRequest({
+          ...signed,
+          id: c.req.header(STANDARD_ID_HEADER),
+          signature: c.req.header(STANDARD_SIGNATURE_HEADER),
+          timestamp: c.req.header(STANDARD_TIMESTAMP_HEADER),
+        })
+      : verifySpectrumRequest({
+          ...signed,
+          signature: c.req.header(SIGNATURE_HEADER),
+          timestamp: c.req.header(TIMESTAMP_HEADER),
+        });
     if (!check.ok) {
       logger.warn(`rejected webhook: ${check.error}`);
       return c.text(check.error, check.status);
@@ -164,7 +199,7 @@ export function createApp({
     } catch {
       return c.text('body is not JSON', 400);
     }
-    const parsed = parseSpectrumEvent(json);
+    const parsed = parsePhotonEvent(json);
     if (parsed.kind === 'invalid') {
       logger.warn(`rejected webhook: ${parsed.error}`);
       return c.text(parsed.error, 400);
@@ -188,7 +223,7 @@ export function createApp({
 
   app.use(
     '/api/*',
-    cors({ origin: config.corsOrigins, allowMethods: ['GET'], maxAge: 600 }),
+    cors({ origin: config.corsOrigins, allowMethods: ['GET', 'DELETE'], maxAge: 600 }),
   );
 
   app.get('/api/messages', (c) => {
@@ -202,6 +237,16 @@ export function createApp({
     const res: MessagesResponse = { schema: 't-gate.query-api', version: 1, messages: store.listMessages(limit) };
     c.header('Cache-Control', 'no-store');
     return c.json(res);
+  });
+
+  // The web UI's "Clear chats" button (Tuan, 2026-11-08). Deletes every stored message, unauthenticated:
+  // anyone who can reach the gateway can wipe the inbox. Fine for the hackathon demo.
+  app.delete('/api/messages', (c) => {
+    const cleared = store.count();
+    store.reset();
+    logger.warn(`clear chats: deleted ${cleared} messages`);
+    c.header('Cache-Control', 'no-store');
+    return c.json({ ok: true, cleared });
   });
 
   // Developer tool, not part of the contract. The web app must never call it.

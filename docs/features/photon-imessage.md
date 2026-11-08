@@ -59,6 +59,8 @@ The iMessage `sender.id` is usually E.164, but iMessage handles can also be **em
 
 ## Webhook setup
 
+**The team's project is on Photon 2.0 / Beta, so use [`DEPLOY.md`](../../services/gateway/DEPLOY.md) step 6.** It registers `https://149-28-243-66.sslip.io/webhooks/photon` through Beta's destinations API. Beta signs with Standard Webhooks and sends `message.received` events, and the VM gateway and the Vercel route handle them the same way. The steps below are for Stable only.
+
 Photon only delivers to **public HTTPS** URLs. It rejects `http`, private and loopback addresses, and redirects. So real iMessages need either the Vultr-deployed gateway behind HTTPS or a tunnel in local dev. The simulator still posts straight to `localhost`.
 
 ```bash

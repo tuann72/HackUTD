@@ -13,6 +13,7 @@ The only thing the gateway and the web app share (see `AGENTS.md`, "Decoupling r
 - Query: `limit` (1–200, default 100).
 - Returns `{ "schema": "t-gate.query-api", "version": 1, "messages": [...] }`, newest first.
 - The UI re-fetches the whole list each poll, because a message's `action` changes from `pending` once it's classified.
+- `DELETE /api/messages` deletes every message and returns `{ "ok": true, "cleared": <n> }`. It's the web UI's "Clear chats" button and the only write the web app makes (Tuan, 2026-11-08). Unauthenticated.
 
 Each message:
 
@@ -30,6 +31,8 @@ Each message:
 | `attachments` | `[{ name, mimeType, size }]`, metadata only (never a file or URL). Optional, `[]` when none |
 | `reaction` | `{ emoji, targetPreview }` for `kind: "reaction"`, else `null`. `targetPreview` is up to ~80 characters of the message reacted to |
 | `contact` | `{ name, phones }` for a shared contact card, else `null`. `phones` are masked like `from.display` |
+
+`verdict.review` (optional, added 2026-11-08) is `{ decision, reason, model, checks, bankSource }`, Nemotron's second opinion when the score was in the review band. When present, `action` and `verdict.label` follow its decision, and `verdict.score` stays the classifier's.
 
 `kind`, `conversation`, `attachments`, `reaction` and `contact` were added to v1 on 2026-11-08 as optional fields, so older v1 data stays valid. The gateway always sends them. For non-text kinds, `body` is `""`. The UI renders from `kind` and the extras, never from guessing at `body`.
 
