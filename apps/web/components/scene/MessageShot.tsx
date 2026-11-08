@@ -1,10 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { motion } from "motion/react";
-import { Vector3, type Group, type Mesh, type MeshStandardMaterial } from "three";
+import {
+  MeshBasicMaterial,
+  SphereGeometry,
+  type Group,
+  type Mesh,
+  type MeshStandardMaterial,
+  type Vector3,
+} from "three";
 import type { FakeMessage } from "./fakeMessages";
 
 const FLIGHT_SECONDS = 1.8;
@@ -20,21 +27,48 @@ const COLORS = {
   normal: "#bfdbfe",
 } as const;
 
+// One copy of each geometry and spark material for every shot, instead of
+// building and uploading 9 spheres per shot. R3F doesn't dispose objects
+// passed as props, so these outlive each shot. The orb keeps its own material
+// because its opacity animates per shot.
+const ORB_GEOMETRY = new SphereGeometry(0.22, 20, 20);
+const SPARK_GEOMETRY = new SphereGeometry(0.06, 8, 8);
+const SPARK_MATERIALS = {
+  potentialScam: new MeshBasicMaterial({ color: COLORS.potentialScam }),
+  normal: new MeshBasicMaterial({ color: COLORS.normal }),
+};
+const SPARK_INDEXES = Array.from({ length: SPARKS }, (_, i) => i);
+
 interface MessageShotProps {
+  /** The shot's React key, passed back to `onDone`. */
+  shotKey: number;
   message: FakeMessage;
   from: Vector3;
   to: Vector3;
   /** Called once when a delivered message reaches the target. */
-  onArrive: () => void;
+  onArrive: (message: FakeMessage) => void;
   /** Called once when a blocked message stops. */
-  onBlocked: () => void;
+  onBlocked: (message: FakeMessage) => void;
   /** Called once when the shot is finished and can be removed. */
-  onDone: () => void;
+  onDone: (shotKey: number) => void;
 }
 
 type Phase = "fly" | "stamp" | "pop" | "done";
 
-export function MessageShot({ message, from, to, onArrive, onBlocked, onDone }: MessageShotProps) {
+/**
+ * Memoized: with stable callbacks from the parent, shots already in flight
+ * skip re-rendering (and re-rendering their <Html> roots) when another shot is
+ * added or removed.
+ */
+export const MessageShot = memo(function MessageShot({
+  shotKey,
+  message,
+  from,
+  to,
+  onArrive,
+  onBlocked,
+  onDone,
+}: MessageShotProps) {
   const group = useRef<Group>(null);
   const orb = useRef<Mesh>(null);
   const sparks = useRef<(Mesh | null)[]>([]);
@@ -62,11 +96,11 @@ export function MessageShot({ message, from, to, onArrive, onBlocked, onDone }: 
         if (blocked) {
           phase.current = "stamp";
           setStamped(true);
-          onBlocked();
+          onBlocked(message);
         } else {
           phase.current = "done";
-          onArrive();
-          onDone();
+          onArrive(message);
+          onDone(shotKey);
         }
       }
       return;
@@ -102,15 +136,14 @@ export function MessageShot({ message, from, to, onArrive, onBlocked, onDone }: 
       });
       if (k >= 1) {
         phase.current = "done";
-        onDone();
+        onDone(shotKey);
       }
     }
   });
 
   return (
     <group ref={group} position={from}>
-      <mesh ref={orb}>
-        <sphereGeometry args={[0.22, 24, 24]} />
+      <mesh ref={orb} geometry={ORB_GEOMETRY}>
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -118,11 +151,16 @@ export function MessageShot({ message, from, to, onArrive, onBlocked, onDone }: 
           transparent
         />
       </mesh>
-      {Array.from({ length: SPARKS }, (_, i) => (
-        <mesh key={i} ref={(m) => { sparks.current[i] = m; }} visible={false}>
-          <sphereGeometry args={[0.06, 8, 8]} />
-          <meshBasicMaterial color={color} />
-        </mesh>
+      {SPARK_INDEXES.map((i) => (
+        <mesh
+          key={i}
+          ref={(m) => {
+            sparks.current[i] = m;
+          }}
+          geometry={SPARK_GEOMETRY}
+          material={message.potentialScam ? SPARK_MATERIALS.potentialScam : SPARK_MATERIALS.normal}
+          visible={false}
+        />
       ))}
       <Html position={[0, -0.45, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <div
@@ -147,4 +185,4 @@ export function MessageShot({ message, from, to, onArrive, onBlocked, onDone }: 
       )}
     </group>
   );
-}
+});
