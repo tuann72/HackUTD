@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Sender blocklist and scam fingerprints in MongoDB Atlas
+
+- **Decision (Timothy):** Vultr is the judge: the classifier on Vultr scores each message and the gateway blocks it at `BLOCK_THRESHOLD`, as before. New: each blocked message records a **fingerprint** in **MongoDB Atlas**, and proven scam senders go on a **blocklist** so their later messages are blocked without the model (reason `sender_blocked`). Plan: [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md).
+- **Fingerprint:** HMAC-SHA256 with a gateway-only secret, of the sender's E.164 number and of the normalized message text, plus score, category, model, strikes and timestamps. Atlas never sees raw numbers or text, which keeps the "no raw numbers outside the gateway" rule.
+- **Protecting innocent senders:** the classifier misjudges roughly 1–1.5% of legitimate messages, and scammers spoof real numbers. So a sender is blocklisted only after several scam messages (default 3) or one very high score (default 0.95); blocks expire (default 7 days); and a "Not a scam" override allowlists the sender. Defaults are **TBD**.
+- **Storage:** SQLite stays the inbox and blocked log (Tuan's decision). Atlas holds only fingerprints and the blocklist, and fails open: if it's unreachable, messages are classified as usual.
+- **Still TBD:** where the override lives (the web app may not write to the gateway), the contract change (`sender_blocked`), the defaults, Atlas tier/region.
+
 ### 2026-11-07: Scene and message list on one page; 2D bubble image
 
 - **Decision (Tuan):** combine the initial scene and the message list into **one page at `/`**: the scene band on top, the inbox and blocked lists below. `/messages` and `/scene` redirect to `/` (temporary redirects, in case the routes split again).
