@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Two more captions removed
+
+- **Decision (Tuan):** remove the Simulate sidebar's line "Sends signed, simulated iMessages from fictional numbers to <gateway host>." and the "Masked by the gateway" note on the dashboard's Most active numbers panel. Nothing else changes: simulated senders are still fictional `+1555` numbers and the numbers shown are still masked by the gateway.
+
 ### 2026-11-08: Rapid fire uses its own 200-sentence dataset
 
 - **Decision (Tuan):** a Rapid fire dataset of 200 complete sentences, 40% scam and 60% legitimate, and Rapid fire draws from it. No note about it in the UI.
