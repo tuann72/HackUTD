@@ -52,6 +52,12 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 - **Files:** `CHANGELOG.md` (metrics), artifacts stored outside git (location TBD: Vultr Object Storage or the image registry).
 - **Done when:** metrics for both label schemes are recorded, a label scheme is chosen, and the GPU instance is destroyed.
 
+### 1.3 TF-IDF + LR model
+
+- **What:** `train.py --model tfidf` (TF-IDF word 1–2-grams, vocabulary fit on train only, LR with balanced class weights). The service picks the model kind from `model.json` and computes coefficient-based highlights. `scripts/train_tfidf.sh` trains on any Linux box without a GPU. README, "Option B".
+- **Files:** `classifier/train.py`, `classifier/service/app.py`, `classifier/Dockerfile`, `classifier/scripts/train_tfidf.sh`, `classifier/requirements-train-tfidf.txt`, `classifier/README.md`.
+- **Done when:** a TF-IDF model trains on the full data with its metrics printed, `tests/test_service.py` passes against it, and highlights point at the right characters.
+
 ### 3.1 Deploy
 
 - **What:** follow `classifier/README.md`, step 3.

@@ -51,6 +51,7 @@ Planned after the MVP works, not part of the MVP:
 - **Training:** on a **Vultr Cloud GPU** instance, destroyed after each run. Code and runbook: [`classifier/`](classifier/README.md). Plan: [`docs/features/classifier-service.md`](docs/features/classifier-service.md).
 - **Inference:** a Python FastAPI service in a Docker image on **Vultr Cloud Compute** (CPU). The gateway calls `POST /classify` over HTTPS with a bearer token.
 - **Highlights:** by occlusion (drop each word, re-score), not coefficients. See component 8 below.
+- **TF-IDF + LR is also implemented** (`train.py --model tfidf`) as the comparison baseline and a fallback. It trains on a CPU in minutes, and the same service serves it with exact coefficient-based highlights. Whichever model is in `classifier/artifacts/` is the one served. MiniLM stays the planned model unless the team decides otherwise after comparing both on the real test split.
 - **Still TBD:** label scheme (8-class is the `train.py` default because it gives the block category, binary is the alternative), thresholds, Vultr instance sizes, region, registry and HTTPS setup.
 
 **Training data (agreed, Tuan):** train on [`data/scam_categories_100k_full.csv`](data/README.md#scam_categories_100k_fullcsv), the most aggregated labeled file. It has the 8-class `label_class`, the binary `is_spam`, and the `split`/`style`/`is_synthetic`/`label_confidence` metadata, so it supports either label scheme. Evaluate only on the real `val`/`test` splits. The message bank is separate demo input, not training data.

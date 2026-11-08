@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: TF-IDF + LR implemented alongside MiniLM
+
+- **Change (Tuan):** `classifier/train.py --model tfidf` trains TF-IDF (word unigrams and bigrams) + logistic regression on the same data and splits as MiniLM. The same service serves it (`model.json` `kind` is `tfidf-lr`) behind the same `/classify` contract.
+- **Not a change of plan:** MiniLM on Vultr is still the planned model. TF-IDF is the baseline to compare against and a fallback if MiniLM falls short or is too slow.
+- **Why:** comparing the two needs both trained and scored the same way. TF-IDF needs no GPU (it can train on the inference server), and its highlights are exact: each word's TF-IDF value × its weight toward the predicted scam class vs Ham, with bigram contributions split between their two words. See [Keyword highlighting](#keyword-highlighting).
+- **Extra:** TF-IDF training also writes `keywords.json`, the top 15 "words to watch" per scam category.
+- **Still TBD:** which model ships, and the label scheme. Both are decided after both models' full runs.
+
 ### 2026-11-07: Hono for the gateway
 
 - **Decision (Tuan):** the gateway is a TypeScript service built with [Hono](https://hono.dev).

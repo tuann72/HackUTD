@@ -4,6 +4,10 @@ POST /classify  {"messageId": "...", "text": "..."}
              -> {"label", "score", "category", "model", "highlights"}
 GET  /healthz
 
+Serves whichever model `train.py` wrote to the artifacts dir (model.json "kind"):
+    minilm-lr  MiniLM embeddings + LR; highlights by occlusion (drop a word, re-score)
+    tfidf-lr   TF-IDF + LR; highlights straight from the coefficients (exact, no re-scoring)
+
 Returns a verdict only. Block/deliver policy and thresholds live in the gateway.
 Auth: `Authorization: Bearer $CLASSIFIER_TOKEN`. The service refuses to start without a token
 unless CLASSIFIER_ALLOW_NO_AUTH=1 (local development only).
@@ -21,21 +25,47 @@ import joblib
 import numpy as np
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer
 
 ARTIFACTS = Path(os.environ.get("CLASSIFIER_ARTIFACTS", Path(__file__).resolve().parent.parent / "artifacts"))
 TOKEN = os.environ.get("CLASSIFIER_TOKEN", "")
 if not TOKEN and os.environ.get("CLASSIFIER_ALLOW_NO_AUTH") != "1":
     raise SystemExit("Set CLASSIFIER_TOKEN (or CLASSIFIER_ALLOW_NO_AUTH=1 for local development).")
 MAX_HIGHLIGHT_WORDS = 60  # occlusion cost grows with word count; long texts only score the first N words
-TOP_HIGHLIGHTS = 5
+TOP_HIGHLIGHTS = 5  # distinct words to highlight
+MAX_SPANS = 10  # a top word that repeats is highlighted at most this many times in total
 STOPWORDS = set("a an the is are was were be to of in on at for and or but your you my me i we it this that with from by as our us".split())
+TOKEN_PATTERN = re.compile(r"(?u)\b\w\w+\b")  # must match make_tfidf() in train.py
 
 meta = json.loads((ARTIFACTS / "model.json").read_text())
+KIND = meta.get("kind", "minilm-lr")  # artifacts from before "kind" existed are MiniLM
 head = joblib.load(ARTIFACTS / "head.joblib")
-encoder = SentenceTransformer(meta["encoder"], device=os.environ.get("CLASSIFIER_DEVICE", "cpu"))
 label_names: list[str] = meta["label_names"]
-ham_col = list(head.classes_).index(0)
+classes = [int(c) for c in head.classes_]
+ham_col = classes.index(0)
+
+if KIND == "minilm-lr":
+    from sentence_transformers import SentenceTransformer
+
+    encoder = SentenceTransformer(meta["encoder"], device=os.environ.get("CLASSIFIER_DEVICE", "cpu"))
+
+    def featurize(texts: list[str]):
+        return encoder.encode(texts, batch_size=64, normalize_embeddings=True, convert_to_numpy=True)
+
+elif KIND == "tfidf-lr":
+    vectorizer = joblib.load(ARTIFACTS / "vectorizer.joblib")
+    vocab: dict[str, int] = vectorizer.vocabulary_
+
+    def featurize(texts: list[str]):
+        return vectorizer.transform(texts)
+
+    # For each scam class k: weights whose dot product with the TF-IDF row is log-odds(k vs Ham).
+    if len(classes) == 2:
+        scam_weights = {classes[1]: head.coef_[0]}
+    else:
+        scam_weights = {c: head.coef_[i] - head.coef_[ham_col] for i, c in enumerate(classes) if c != 0}
+
+else:
+    raise SystemExit(f"Unknown model kind {KIND!r} in {ARTIFACTS / 'model.json'}")
 
 app = FastAPI(title="T-Gate classifier", version=meta["model"])
 
@@ -70,10 +100,9 @@ def require_token(authorization: str = Header(default="")) -> None:
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
-def scam_scores(texts: list[str]) -> np.ndarray:
-    """Return class probabilities for each text."""
-    emb = encoder.encode(texts, batch_size=64, normalize_embeddings=True, convert_to_numpy=True)
-    return head.predict_proba(emb)
+def class_probs(texts: list[str]) -> np.ndarray:
+    """Return class probabilities for each text (columns follow head.classes_)."""
+    return head.predict_proba(featurize(texts))
 
 
 def logit(p):
@@ -82,7 +111,7 @@ def logit(p):
 
 
 def occlusion_highlights(text: str, base_scam: float) -> list[Highlight]:
-    """Drop each word, re-score, and keep the words whose removal lowers P(scam) most.
+    """MiniLM: drop each word, re-score, and keep the words whose removal lowers P(scam) most.
 
     These are associations, not proof (labels were partly keyword-rule-derived).
     """
@@ -91,7 +120,7 @@ def occlusion_highlights(text: str, base_scam: float) -> list[Highlight]:
     if len(words) < 2:
         return []
     variants = [text[: m.start()] + text[m.end():] for m in words]
-    probs = scam_scores(variants)
+    probs = class_probs(variants)
     # Compare log-odds, not probabilities, so drops stay visible when P(scam) is near 1.
     drops = logit(base_scam) - logit(1.0 - probs[:, ham_col])
     order = np.argsort(-drops)[:TOP_HIGHLIGHTS]
@@ -110,6 +139,40 @@ def occlusion_highlights(text: str, base_scam: float) -> list[Highlight]:
     return sorted(out, key=lambda h: h.start)
 
 
+def tfidf_highlights(text: str, scam_class: int) -> list[Highlight]:
+    """TF-IDF: each term's contribution is its TF-IDF value x its weight toward the predicted
+    scam class (vs Ham). A word gets its own unigram's contribution plus half of each bigram
+    it's part of. These are associations, not proof (labels were partly keyword-rule-derived).
+    """
+    row = featurize([text])
+    contrib = dict(zip(row.indices, row.data * scam_weights[scam_class][row.indices]))
+    words = list(TOKEN_PATTERN.finditer(text))
+    lowered = [m.group().lower() for m in words]
+
+    def term(t: str) -> float:
+        i = vocab.get(t)
+        return float(contrib.get(i, 0.0)) if i is not None else 0.0
+
+    best: dict[str, float] = {}  # lowercased word -> its strongest score at any position
+    for i, w in enumerate(lowered):
+        if w in STOPWORDS:
+            continue
+        s = term(w)
+        if i > 0:
+            s += 0.5 * term(f"{lowered[i - 1]} {w}")
+        if i + 1 < len(lowered):
+            s += 0.5 * term(f"{w} {lowered[i + 1]}")
+        best[w] = max(best.get(w, s), s)
+
+    top_words = [w for w, s in sorted(best.items(), key=lambda kv: -kv[1])[:TOP_HIGHLIGHTS] if s > 0]
+    if not top_words:
+        return []
+    top = best[top_words[0]]
+    out = [Highlight(start=m.start(), end=m.end(), text=m.group(), weight=round(best[w] / top, 3))
+           for m, w in zip(words, lowered) if w in top_words][:MAX_SPANS]
+    return out
+
+
 @app.get("/healthz")
 def healthz() -> dict:
     return {"ok": True, "model": meta["model"]}
@@ -117,19 +180,23 @@ def healthz() -> dict:
 
 @app.post("/classify", response_model=ClassifyOut, dependencies=[Depends(require_token)])
 def classify(body: ClassifyIn) -> ClassifyOut:
-    probs = scam_scores([body.text])[0]
+    probs = class_probs([body.text])[0]
     scam = float(1.0 - probs[ham_col])
     is_scam = scam >= 0.5
-    category = None
-    if is_scam and meta["labels"] == "category":
-        scam_cols = [i for i, c in enumerate(head.classes_) if c != 0]
-        best = max(scam_cols, key=lambda i: probs[i])
-        category = label_names[int(head.classes_[best])]
+    # Most likely scam class (for binary models that's just class 1).
+    scam_cols = [i for i, c in enumerate(classes) if c != 0]
+    scam_class = classes[max(scam_cols, key=lambda i: probs[i])]
+    category = label_names[scam_class] if is_scam and meta["labels"] == "category" else None
+
+    highlights: list[Highlight] = []
+    if is_scam:
+        highlights = (tfidf_highlights(body.text, scam_class) if KIND == "tfidf-lr"
+                      else occlusion_highlights(body.text, scam))
     return ClassifyOut(
         messageId=body.messageId,
         label="scam" if is_scam else "legit",
         score=round(scam, 4),
         category=category,
         model=meta["model"],
-        highlights=occlusion_highlights(body.text, scam) if is_scam else [],
+        highlights=highlights,
     )

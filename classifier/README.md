@@ -9,6 +9,8 @@ This folder is T-Gate's scam detector. Give it a text message, and it tells you 
 
 It uses a small language model called **MiniLM**. We **train** it on a rented Vultr GPU, then **run** it on a cheap Vultr server, so the gateway can ask it about every text the victim number receives. Nothing heavy runs on your laptop.
 
+There's also a second, simpler model, **TF-IDF + logistic regression**. It counts which words appear, needs no GPU, and trains in a couple of minutes. MiniLM is the plan; TF-IDF is the baseline to beat (it scored F1 ≈ 0.98 on the old spam/ham test) and a fallback. Both run in the same service with the same API, so the gateway can't tell which one is behind it. To use TF-IDF, see [Option B](#option-b-the-tf-idf-model-no-gpu).
+
 ```
  your laptop ──copy code + data──▶ Vultr GPU server (rent ~30 min, then delete)
      ▲                                  │ trains the model (~5 min)
@@ -27,7 +29,7 @@ It uses a small language model called **MiniLM**. We **train** it on a rented Vu
 | 2 | Rent a small CPU server and put the classifier online | ~20 min | a few dollars a month of credits |
 | 3 | Test it, and give the URL and token to whoever builds the gateway | 5 min | free |
 
-Prices vary, so check what `vultr-cli plans list` shows before you create anything.
+Prices vary, so check what `vultr-cli plans list` shows before you create anything. **Using TF-IDF instead?** Skip step 1 entirely and follow [Option B](#option-b-the-tf-idf-model-no-gpu).
 
 > **Want an AI agent to do this for you?** Skip to [Let an AI agent set it up](#let-an-ai-agent-set-it-up). It has a ready-to-paste prompt.
 
@@ -201,6 +203,35 @@ CLASSIFIER_URL=https://45-76-1-2.sslip.io
 CLASSIFIER_TOKEN=the-token-you-made
 ```
 
+## Option B: the TF-IDF model (no GPU)
+
+TF-IDF trains on an ordinary CPU, so you can train it **on the inference server itself**. No GPU rental, and nothing to copy back.
+
+1. Do **step 0**, then **steps 2.1 and 2.2** (create the CPU server and install Docker).
+2. Copy the code **and** the training data to the server:
+
+   ```bash
+   rsync -avR --exclude .venv --exclude .venv-tfidf --exclude artifacts \
+     classifier/ data/scam_categories_100k_full.csv data/scam_categories.csv \
+     root@SERVER_IP:tgate/
+   ```
+
+3. Train on the server (about 1–3 minutes after the packages install):
+
+   ```bash
+   ssh root@SERVER_IP
+   cd tgate
+   bash classifier/scripts/train_tfidf.sh          # 8 scam categories (or add --labels binary)
+   ```
+
+   It prints the same report as MiniLM, so you can compare the two `scam-vs-ham F1` and `SMS-only` numbers directly.
+
+4. Continue with **step 2.4** (`.env`, then `docker compose up -d --build`) and **step 3**. `/healthz` should now say `"model":"tfidf-lr-category@0.1"`.
+
+It also writes `artifacts/keywords.json`, the top 15 "words to watch" for each scam category, which the blocked-scams panel could show.
+
+**Switching models later:** whichever model was trained last is the one in `artifacts/`. To switch, train the other one (step 1 for MiniLM, step B3 for TF-IDF; copy MiniLM's `artifacts/` to the server as in step 2.3), then run `docker compose up -d --build` again. If you want to keep the current model, save a copy of `artifacts/` first.
+
 ## Day-to-day
 
 - **Retrain** (new data or settings): redo step 1, then copy the new `artifacts/` to the server (step 2.3) and run `docker compose up -d --build` in `tgate/classifier/deploy`.
@@ -225,7 +256,8 @@ CLASSIFIER_TOKEN=the-token-you-made
 You can hand this to Claude Code, Codex or a similar agent running in this repo. Do steps 0.1–0.3 yourself first, so your API key stays in your terminal and never goes into the chat. Then paste:
 
 ```text
-Set up the T-Gate classifier on Vultr by following classifier/README.md, steps 0.4 to 3.
+Set up the T-Gate classifier on Vultr by following classifier/README.md, steps 0.4 to 3
+(for the TF-IDF model instead, follow "Option B").
 VULTR_API_KEY is already exported in my shell; never print it, echo it, or write it to a file.
 
 Rules:
@@ -246,11 +278,11 @@ Rules:
 
 ## How it works (short version)
 
-- **Training (`train.py`):** MiniLM turns each message into 384 numbers that capture its meaning. A simple logistic-regression model learns which patterns mean which scam type. It trains on [`data/scam_categories_100k_full.csv`](../data/README.md) and is scored only on the real `val` and `test` messages, never on synthetic ones. MiniLM reads the first ~256 tokens (about 1,000 characters), so long emails are cut off. SMS always fits.
+- **Training (`train.py`):** with `--model minilm` (the default), MiniLM turns each message into 384 numbers that capture its meaning. With `--model tfidf`, each message becomes a score for every word and word pair it contains (TF-IDF), and words common across all messages count for less. Either way, a simple logistic-regression model learns which patterns mean which scam type. It trains on [`data/scam_categories_100k_full.csv`](../data/README.md) and is scored only on the real `val` and `test` messages, never on synthetic ones. MiniLM reads the first ~256 tokens (about 1,000 characters), so long emails are cut off. SMS always fits. TF-IDF reads the whole message.
 - **Labels:** `--labels category` (the default) predicts one of 8 classes: Ham plus 7 scam groups, which gives the block log its "why". `--labels binary` predicts scam or not. Which one we ship is still TBD.
 - **The service (`service/app.py`):**
   - `score` is the chance the message is a scam (0 to 1). `label` is `scam` when `score ≥ 0.5`, but the **gateway** decides what to block using its own thresholds.
-  - `highlights` come from removing each word and seeing how much the scam score drops. They're hints, not proof. The training labels were partly made by keyword rules, so highlights can echo those rules.
+  - `highlights`: for MiniLM, the service removes each word and sees how much the scam score drops. For TF-IDF, it reads each word's contribution straight from the model (word score × learned weight), which is exact and faster. They're hints, not proof. The training labels were partly made by keyword rules, so highlights can echo those rules.
   - It only ever receives message text and an opaque id, never phone numbers.
 - **Security:** every `/classify` call needs `Authorization: Bearer <token>`, and the service refuses to start without a token. HTTPS comes from Caddy. The container runs as a non-root user.
 
@@ -259,9 +291,11 @@ Rules:
 ```
 classifier/
   README.md                  you are here
-  train.py                   training script (runs on the Vultr GPU)
-  requirements-train.txt     training packages
-  scripts/vultr_gpu_train.sh one-command training on the GPU server
+  train.py                   training script: --model minilm (GPU) or --model tfidf (CPU)
+  requirements-train.txt     training packages (MiniLM)
+  requirements-train-tfidf.txt  training packages (TF-IDF only; no PyTorch)
+  scripts/vultr_gpu_train.sh one-command MiniLM training on the GPU server
+  scripts/train_tfidf.sh     one-command TF-IDF training on any Linux server
   service/app.py             the web service: POST /classify, GET /healthz
   service/requirements.txt   service packages
   Dockerfile                 packages the service, MiniLM and the model into one image
@@ -278,6 +312,7 @@ This runs on your own computer and downloads about 2 GB of packages plus the 90 
 python3 -m venv classifier/.venv && source classifier/.venv/bin/activate
 pip install -r classifier/requirements-train.txt -r classifier/requirements-dev.txt
 python classifier/train.py --limit 5000                         # quick sample training (~2 min on a Mac)
+python classifier/train.py --model tfidf                        # TF-IDF on the full data (CPU, minutes)
 cd classifier && pytest tests                                   # needs artifacts/
 CLASSIFIER_ALLOW_NO_AUTH=1 uvicorn service.app:app --port 8000  # local only; never deploy without a token
 ```
