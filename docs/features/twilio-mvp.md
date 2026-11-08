@@ -139,7 +139,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 | Question | Recommendation | Status |
 |---|---|---|
-| Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **TBD** |
+| Where the gateway runs | Same Vultr server as the classifier, behind the same Caddy (`https://gateway.<ip>.sslip.io`). See `classifier/README.md`, Step 4 | **Decided** (Timothy, 2026-11-07) |
 | Storage | **SQLite** (`node:sqlite`), with debug tools to clear it (`POST /debug/reset` when `GATEWAY_DEBUG=1`, and an `npm run db:reset` script) | **Decided** (Tuan, 2026-11-07) |
 | Classifier-down behavior | **Fail open:** deliver with `reason: classifier_unavailable`, shown as "unverified" | **Decided** (Tuan, 2026-11-07) |
 | Block threshold | `BLOCK_THRESHOLD` env var, default 0.5, tuned on `val` later | **TBD** |
@@ -157,7 +157,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
+| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Done (Vultr server shared with the classifier; SQLite) | `feat/gateway-vultr-deploy` | Timothy + Claude Code | |
 | 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | In progress (approach done: MiniLM on Vultr; label scheme after the Vultr training run) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 1: foundations
@@ -193,6 +193,15 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 - **Files:** `.env.example`, `contracts/fixtures/twilio-inbound-sms.json` (path TBD).
 - **Done when:** the fixture is committed and its field list is documented.
 - **Note:** recording the fixture needs a public URL for a moment: a tunnel, or a request-bin style service.
+
+#### Twilio account setup (no account yet, 2026-11-07)
+
+1. **Create the trial account** at twilio.com/try-twilio: email, then your own phone (it becomes the first verified number). No credit card needed. The trial lasts 30 days.
+2. **Get the victim number:** Console → Phone Numbers → Buy a number. Pick a US local number with **SMS** capability. Trial credit covers it.
+3. **Copy the Auth Token** (Console → Account info). It goes only in `classifier/deploy/.env` on the server, or `services/gateway/.env` locally, as `TWILIO_AUTH_TOKEN`. Never commit it or paste it in chat. Teammates who need the console get a Twilio user invite, not the password.
+4. **Verify teammates' phones** (Console → Phone Numbers → Verified Caller IDs). On trial, outbound texts and calls only reach verified numbers, up to 5.
+5. **Set the webhook:** the victim number → Messaging → **A message comes in** → `https://gateway.<ip>.sslip.io/twilio/sms`, `HTTP POST`. Before the server exists, use a laptop gateway plus a tunnel (`winget install Cloudflare.cloudflared`, then `cloudflared tunnel --url http://localhost:8787`), and set `PUBLIC_WEBHOOK_URL` in `services/gateway/.env` to the tunnel URL + `/twilio/sms`. Every new tunnel URL means updating both.
+6. **The check:** text the number from a **verified** phone, then from an **unverified** one. Each should show up in `GET /api/messages`. A `403` in the gateway log means the console URL and `PUBLIC_WEBHOOK_URL` don't match. Record whether the unverified text arrived in [Open questions](#open-questions).
 
 ### 1.2 Gateway
 
@@ -241,6 +250,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ## Progress notes
 
+- **2026-11-07:** Gateway hosting decided (Timothy): the classifier's Vultr server, as a third Compose service behind the same Caddy. Added `services/gateway/Dockerfile`. Tested locally: the image builds, runs as non-root, verifies a signed sample against `PUBLIC_WEBHOOK_URL`, blocks it, and keeps it after a restart. Not yet deployed to Vultr.
 - **2026-11-07:** Contract (#4) and the `apps/web` scaffold (#5) merged. The 3D scene can branch from `main`. The `/messages` UI (#9) showed the gateway's live results: Inbox 3, Blocked 2.
 - **2026-11-07:** Message bank and simulator merged (#13): `data/message_bank/` (91 SMS-style `test` rows + 27 generated, two scenarios) and `services/perpetrator-sim/` (`scenario`, `random`, `send`, `--dry-run`). Bank size and mix are still open; re-check the webhook field list once task 1.1 records a real Twilio request.
 - **2026-11-07:** Local end-to-end check passed: the simulator (#7) played `grandparent.jsonl` against the gateway (#8). All 5 outcomes matched `expected` (3 delivered, 2 blocked as Imposter & Phishing), no raw numbers or SIDs appeared in `/api/messages`, and a wrong auth token got 403. Not yet tried with real Twilio traffic.

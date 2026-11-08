@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: Gateway hosted on the classifier's Vultr server
+
+- **Decision (Timothy):** the gateway runs on the **same Vultr Cloud Compute server as the classifier**, as a third Docker Compose service in `classifier/deploy/`, behind the same Caddy. Classifier at `https://<ip>.sslip.io`, gateway at `https://gateway.<ip>.sslip.io`. The gateway calls the classifier at `http://classifier:8000` on Docker's internal network, with the bearer token. SQLite sits on a named volume (`gateway_data`). Image: `services/gateway/Dockerfile` (Node 24, non-root).
+- **Why:** the gateway needs an always-on Node 24 process and a persistent disk for SQLite. That rules out Vercel functions and free tiers that sleep or lose their disk. The team already has the Vultr server and credits, and it adds to the Vultr track. One server means one HTTPS setup and no network hop between the gateway and the classifier.
+- **Trade-off:** one server. If it goes down, both the gateway and the classifier go down. Acceptable for a hackathon demo.
+- **Replaces:** option A vs. B in `docs/features/twilio-mvp.md` (this is A, on a Vultr VM). The web UI's hosting is still TBD.
+
 ### 2026-11-07: MVP implementation decisions
 
 - **Decisions (Tuan):** the Twilio MVP is being built now, so the scaffolding hold is lifted for the gateway, simulator and message UI. Gateway storage is **SQLite** (`node:sqlite`), with debug tools to clear it. When the classifier is down, the gateway **fails open**: it delivers the message with `reason: classifier_unavailable`, and the UI shows it as unverified. The message bank and scenarios are **JSONL**. The message UI is the **`/messages`** route in `apps/web`, leaving `/` for the 3D scene.

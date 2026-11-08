@@ -23,7 +23,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. The full plan is in [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md).
 
 - **MVP UI (Tuan, 2026-11-07):** a **basic Next.js page** that lists messages as delivered (inbox) or blocked. It polls the gateway's read-only query API (`GET /api/messages`); there's no event stream or WebSocket in the MVP. The **3D scene is parked** for later, along with the scam notice and blocked-scams panel. Don't build them for the MVP.
-- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. Recommendation: deploy the gateway early. Hosting is TBD.
+- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. Recommendation: deploy the gateway early. **Hosting (Timothy, 2026-11-07):** the gateway runs on the classifier's Vultr server, behind the same Caddy, at `https://gateway.<ip>.sslip.io` (`classifier/README.md`, Step 4).
 - **MVP decisions (Tuan, 2026-11-07):** SQLite storage with debug tools to clear it; **fail open** when the classifier is down (deliver, marked unverified); JSONL message bank; each package standalone (own `package.json`, no workspaces). The gateway and UI share only [`contracts/`](contracts/README.md).
 
 - The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `CHANGELOG.md`, "One Twilio number, simulated perpetrator".)
@@ -67,7 +67,7 @@ Planned after the MVP works, not part of the MVP:
 - **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Twilio webhook and query API, built with **Hono**), the perpetrator simulator and the web app.
 - **Python:** the model training and inference service.
 - **Web app (Tuan's decision):** Next.js with **React Three Fiber** for the 3D scene and **Motion** (`motion/react`) for DOM animation (bubbles, panel, toasts). Don't use the deprecated `framer-motion-3d`, which doesn't support React 19. Animate 3D objects in R3F (`useFrame` with damping).
-- **Gateway hosting:** recommended as a **separate TypeScript service** on an always-on host, not Next.js route handlers on Vercel. Vercel can't hold the event stream or local storage, and a web deploy must never be able to break interception. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
+- **Gateway hosting (decided, Timothy, 2026-11-07):** a **separate TypeScript service** on the classifier's Vultr server, not Next.js route handlers on Vercel. Vercel can't hold the event stream or local storage, and a web deploy must never be able to break interception. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
 
 **Components** (each separately runnable):
 
@@ -97,7 +97,7 @@ Everything above except the two firm requirements is a proposal. Open items stay
 ## Open questions — do not guess
 
 - **Message type:** the MVP assumes text messages to the victim number. Whether voice calls are in scope for the Twilio MVP is TBD.
-- **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
+- **Twilio architecture:** TypeScript with Hono is agreed for the gateway. The demo gateway is hosted on the classifier's Vultr server (Timothy, 2026-11-07). A tunnel is only for testing a laptop gateway with a real phone. The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** the CLI supports all three (scripted `scenario` files, `random` bank draws, typed `send`). Which mix the demo uses is TBD.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
 - **Classifier:** MiniLM on Vultr is agreed (see above). Still open: label scheme (binary spam/ham or the 8-class scam categories), thresholds, whether fine-tuning is needed, and evaluation measures.

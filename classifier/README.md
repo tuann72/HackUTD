@@ -157,7 +157,7 @@ This server stays on during the hackathon. It doesn't need a GPU.
 3. **Copy the code and the trained model over:**
 
    ```bash
-   rsync -avR --exclude .venv classifier/ root@SERVER_IP:tgate/
+   rsync -avR --exclude .venv --exclude node_modules --exclude 'services/gateway/data' \n     classifier/ services/gateway/ root@SERVER_IP:tgate/
    ```
 
 4. **Configure it and start it:**
@@ -177,7 +177,13 @@ This server stays on during the hackathon. It doesn't need a GPU.
 
    ```bash
    docker compose up -d --build                  # first build takes ~5 min
-   docker compose ps                             # both services should say "running"
+   docker compose ps                             # classifier and caddy should say "running"
+   ```
+
+   The gateway runs on this same server (see [Step 4](#step-4-put-the-gateway-online-same-server)). Until `TWILIO_AUTH_TOKEN` is set it keeps restarting, which is expected. To start only the classifier for now:
+
+   ```bash
+   docker compose up -d --build classifier caddy
    ```
 
 ## Step 3: check that it works
@@ -202,6 +208,30 @@ Without the token you get `401 unauthorized`, which is correct.
 CLASSIFIER_URL=https://45-76-1-2.sslip.io
 CLASSIFIER_TOKEN=the-token-you-made
 ```
+
+## Step 4: put the gateway online (same server)
+
+The gateway (`services/gateway/`, the Twilio webhook and the query API) runs on the classifier's server, behind the same Caddy (decision: Timothy, 2026-11-07, `CHANGELOG.md`). It reaches the classifier over Docker's internal network, so `CLASSIFIER_URL` is set for you.
+
+| Service | Public URL |
+|---|---|
+| Classifier | `https://TGATE_DOMAIN` |
+| Gateway | `https://gateway.TGATE_DOMAIN` (sslip.io resolves any name in front of the IP) |
+
+1. **Add the Twilio values** to `tgate/classifier/deploy/.env` (see `.env.example`): `TWILIO_AUTH_TOKEN` (Twilio console → Account info), and `CORS_ORIGINS` set to the message UI's origin.
+2. **Start it:**
+
+   ```bash
+   cd tgate/classifier/deploy
+   docker compose up -d --build                  # all three: classifier, gateway, caddy
+   curl https://gateway.45-76-1-2.sslip.io/healthz   # {"ok":true}
+   ```
+
+   No model yet? Add `GATEWAY_CLASSIFIER_URL=` (empty) to `.env` and run `docker compose up -d --build gateway caddy`. The gateway then uses its keyword stub.
+3. **Point Twilio at it:** in the Twilio console, set the victim number's **A message comes in** webhook to `https://gateway.TGATE_DOMAIN/twilio/sms`, method `HTTP POST`. It must match exactly: Twilio signs requests against this URL, and the gateway checks the signature against the same URL (`PUBLIC_WEBHOOK_URL`, set by Compose).
+4. **Point the UI at it:** `NEXT_PUBLIC_API_URL=https://gateway.TGATE_DOMAIN` in `apps/web`.
+
+Messages are stored in SQLite on the `gateway_data` Docker volume, so they survive rebuilds. Logs: `docker compose logs -f gateway` (numbers are masked).
 
 ## Option B: the TF-IDF model (no GPU)
 
@@ -300,6 +330,7 @@ classifier/
   service/requirements.txt   service packages
   Dockerfile                 packages the service, MiniLM and the model into one image
   deploy/                    docker-compose.yml + Caddyfile + .env.example for the CPU server
+                             (also runs the gateway, from services/gateway/Dockerfile)
   tests/test_service.py      checks auth, a scam, a normal message and a long email
   artifacts/                 the trained model (created by training; gitignored)
 ```
