@@ -25,6 +25,9 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| _None yet_ | | | | | |
+| Twilio MVP | 1.1 Query API contract, synthetic Twilio fixture, MVP decisions | `feat/twilio-mvp-contract` | Tuan + Claude Code | In progress | TBD |
+| Twilio MVP | 1.2 Gateway (Hono, SQLite) | `feat/twilio-mvp-gateway` | Tuan + Claude Code | In progress | TBD |
+| Twilio MVP | 1.3 + 2.2 Message UI (`apps/web`, `/messages`) | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | In progress | TBD |
+| Twilio MVP | 1.4 + 2.1 Message bank and perpetrator simulator | `feat/twilio-mvp-simulator` | Tuan + Claude Code | In progress | TBD |
 
 Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).

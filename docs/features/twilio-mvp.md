@@ -2,7 +2,7 @@
 
 - **Slug:** `twilio-mvp`
 - **Phase:** MVP
-- **Status:** Not started
+- **Status:** In progress
 - **Owner:** TBD
 
 ## Goal
@@ -67,7 +67,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 ### Query API (read-only)
 
-`GET /api/messages?since=<id>` returns messages newest first:
+`GET /api/messages?limit=<n>` returns messages newest first. The exact shape is in [`contracts/`](../../contracts/README.md), the only thing the gateway and UI share:
 
 ```json
 {
@@ -134,10 +134,13 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 | Question | Recommendation | Status |
 |---|---|---|
 | Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **TBD** |
-| Storage | In memory or SQLite | **TBD** |
-| Block threshold and classifier-down behavior (fail open or fail closed) | Decide after classifier evaluation | **TBD** |
-| Classifier approach and label scheme | TF-IDF + LR is leading; see `AGENTS.md` | **TBD** |
-| Message bank size, mix and file format | Scenario files plus a small bank of SMS-style rows | **TBD** |
+| Storage | **SQLite** (`node:sqlite`), with debug tools to clear it (`POST /debug/reset` when `GATEWAY_DEBUG=1`, and an `npm run db:reset` script) | **Decided** (Tuan, 2026-11-07) |
+| Classifier-down behavior | **Fail open:** deliver with `reason: classifier_unavailable`, shown as "unverified" | **Decided** (Tuan, 2026-11-07) |
+| Block threshold | `BLOCK_THRESHOLD` env var, default 0.5, tuned on `val` later | **TBD** |
+| Classifier approach and label scheme | MiniLM on Vultr, in [PR #3](https://github.com/lytx02/HackUTD/pull/3) (separate plan: `classifier-service.md` once merged) | In PR #3 |
+| Message bank file format | **JSONL** | **Decided** (Tuan, 2026-11-07) |
+| Message bank size and mix | Scenario files plus a small bank of SMS-style rows | **TBD** |
+| Where the message UI lives | **`apps/web`, route `/messages`**, so the 3D scene ([PR #2](https://github.com/lytx02/HackUTD/pull/2)) can take `/` later | **Decided** (Tuan, 2026-11-07) |
 | Does the trial number accept texts from unverified phones? | Test it in task 1.1 | **TBD** |
 
 ## Tasks
@@ -155,18 +158,18 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Twilio setup and a recorded webhook fixture | — | 1.2–1.5 | Not started | | | |
-| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API | 0.1 | 1.1, 1.3–1.5 | Not started | | | |
-| 1.3 | Message UI: Next.js page reading fixtures | — | 1.1, 1.2, 1.4, 1.5 | Not started | | | |
-| 1.4 | Message bank and demo scenario files | — | 1.1–1.3, 1.5 | Not started | | | |
-| 1.5 | Classifier: train, evaluate on `val`/`test`, export | 0.2 | 1.1–1.4 | Not started | | | |
+| 1.1 | Twilio setup and a recorded webhook fixture. **Partly done:** a synthetic fixture and the contract are in `contracts/`; the real number and recording need a person | — | 1.2–1.5 | In progress | `feat/twilio-mvp-contract` | Tuan + Claude Code | |
+| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | In progress | `feat/twilio-mvp-gateway` | Tuan + Claude Code | |
+| 1.3 | Message UI: Next.js page reading fixtures (with 2.2) | contract | 1.1, 1.2, 1.4, 1.5 | In progress | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | |
+| 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | In progress | `feat/twilio-mvp-simulator` | Tuan + Claude Code | |
+| 1.5 | Classifier: train, evaluate on `val`/`test`, export | 0.2 | 1.1–1.4 | In progress | `feat/classifier-minilm-vultr` | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 2: integration
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Simulator CLI: scenario mode, random mode, dry run | 1.1, 1.4 | 2.2, 2.3 | Not started | | | |
-| 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | Not started | | | |
+| 2.1 | Simulator CLI: scenario mode, random mode, dry run | 1.1, 1.4 | 2.2, 2.3 | In progress | `feat/twilio-mvp-simulator` | Tuan + Claude Code | |
+| 2.2 | Connect the UI to the live query API | 1.2, 1.3 | 2.1, 2.3 | In progress | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | |
 | 2.3 | Replace the stub classifier with the real model | 1.2, 1.5 | 2.1, 2.2 | Not started | | | |
 
 ### Stage 3: demo
@@ -231,6 +234,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ## Progress notes
 
+- **2026-11-07:** Implementation started (Tuan). Decided: SQLite with debug reset, fail open, JSONL, UI at `apps/web` `/messages`. The query API contract is in `contracts/`. The gateway, UI and simulator are built in parallel on separate branches stacked on `feat/twilio-mvp-contract`. The classifier is PR #3's work; the gateway calls its `POST /classify` (`{messageId, text}` → `{messageId, label, score, category, model, highlights}`, bearer token). The query API dropped `since`: the UI re-fetches the list, because pending messages change.
 - **2026-11-07:** Hono chosen as the gateway framework (Tuan).
 - **2026-11-07:** TypeScript confirmed for the gateway and simulator (Tuan). Framework and hosting still TBD.
 - **2026-11-07:** Plan rewritten around a concrete MVP (Tuan): the MVP UI is a basic Next.js page that polls a read-only query API; the 3D scene is parked for later. Added how messages reach the gateway and when a tunnel is needed, the gateway steps, the query API, simulator scenario mode and a task list split by folder for parallel work.

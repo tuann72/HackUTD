@@ -14,7 +14,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 - **Problem:** Scam calls and messages pressure people, especially older adults, into rash decisions that cause financial, personal, or emotional harm.
 - **Concept:** Detect likely scam activity, warn the recipient, and potentially help respond on their behalf while keeping the recipient in control.
 - **Hackathon track:** **Safe Signal (T-Mobile)** only, for now (Tuan, 2026-11-07). Photon, listed in the SRS, is dropped.
-- **Current project state:** Planning. There is no app code yet, and scaffolding is on hold. The only content beyond docs is a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
+- **Current project state:** Building the Twilio MVP (Tuan lifted the scaffolding hold for it on 2026-11-07): the query API contract in [`contracts/`](contracts/README.md), and the gateway (`services/gateway/`), simulator (`services/perpetrator-sim/`) and message UI (`apps/web/`, route `/messages`) on their own branches. Beyond that, the repo has a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
 
 ## Current scope (agreed)
 
@@ -24,6 +24,7 @@ The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. 
 
 - **MVP UI (Tuan, 2026-11-07):** a **basic Next.js page** that lists messages as delivered (inbox) or blocked. It polls the gateway's read-only query API (`GET /api/messages`); there's no event stream or WebSocket in the MVP. The **3D scene is parked** for later, along with the scam notice and blocked-scams panel. Don't build them for the MVP.
 - **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. Recommendation: deploy the gateway early. Hosting is TBD.
+- **MVP decisions (Tuan, 2026-11-07):** SQLite storage with debug tools to clear it; **fail open** when the classifier is down (deliver, marked unverified); JSONL message bank; each package standalone (own `package.json`, no workspaces). The gateway and UI share only [`contracts/`](contracts/README.md).
 
 - The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `CHANGELOG.md`, "One Twilio number, simulated perpetrator".)
 - **The perpetrator is simulated with API calls**, not a second Twilio number. A perpetrator simulator sends HTTP requests to the gateway's webhook in exactly the format Twilio uses for an inbound SMS to the victim number (`From`, `To`, `Body`, `MessageSid`, …), signed with a valid `X-Twilio-Signature`. The gateway handles simulated and real messages the same way.
@@ -58,7 +59,7 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 ## Proposed architecture: interception gateway and demo scene (not agreed)
 
-**Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** For the MVP, only the gateway, simulator, classifier interface and a read-only query API are in play; the event stream, scene, notice and panel below are later scope (see [MVP](#mvp-twilio-scam-message-simulation)). No code exists for it, and scaffolding is on hold. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`CHANGELOG.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](CHANGELOG.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
+**Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** For the MVP, only the gateway, simulator, classifier interface and a read-only query API are in play; the event stream, scene, notice and panel below are later scope (see [MVP](#mvp-twilio-scam-message-simulation)). Only the MVP pieces are being built. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`CHANGELOG.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](CHANGELOG.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
 
 **How interception works:** Twilio sends every SMS addressed to the victim number to our webhook. No phone sits behind that number. The victim's inbox is virtual and owned by the gateway, so the gateway acts as the victim's carrier. It classifies each message, then **delivers** it to the inbox or **blocks** it (quarantine log). Blocking needs no outbound SMS, so Twilio trial and A2P 10DLC limits don't apply to it.
 
