@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: "Clear chats" deletes messages instead of hiding them
+
+- **What (Tuan + Claude Code):** the web UI's "Clear chats" button now deletes every stored message, after a confirm dialog. Before, it only hid them in that browser (a localStorage cutoff, [#38](https://github.com/tuann72/HackUTD/pull/38)), and that code is removed along with "Show N cleared". Both backends serve `DELETE /api/messages`: the VM gateway (SQLite, the same wipe as `POST /debug/reset`, CORS now allows DELETE) and the Vercel backup (`deleteMany` on the Atlas `inbox` collection). The page calls whichever one `NEXT_PUBLIC_API_URL` points at. In replay mode, clearing empties the mock list and the replay keeps going.
+- **Why:** Tuan asked for the button to clear the data, not just hide it.
+- **Trade-offs, accepted by Tuan:** this is the first write from the web app to the gateway, an exception to the one-way decoupling rule (`AGENTS.md`). It has **no authentication**, so anyone who opens the public page can wipe the inbox, judges included. A token prompt was offered and declined.
+
 ### 2026-11-08: Potential Threat synthetic dataset (proposal)
 
 - **Problem (Tuan):** the classifier handles threat and coercion texts badly, for example "MOM IM DYING RIGHT NOW GIVE ME $900 OR I EXPLODE" and "YOUR WIFFE IS IN DANGER GIVE ME 500$".

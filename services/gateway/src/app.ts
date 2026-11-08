@@ -199,7 +199,7 @@ export function createApp({
 
   app.use(
     '/api/*',
-    cors({ origin: config.corsOrigins, allowMethods: ['GET'], maxAge: 600 }),
+    cors({ origin: config.corsOrigins, allowMethods: ['GET', 'DELETE'], maxAge: 600 }),
   );
 
   app.get('/api/messages', (c) => {
@@ -213,6 +213,16 @@ export function createApp({
     const res: MessagesResponse = { schema: 't-gate.query-api', version: 1, messages: store.listMessages(limit) };
     c.header('Cache-Control', 'no-store');
     return c.json(res);
+  });
+
+  // The web UI's "Clear chats" button (Tuan, 2026-11-08). Deletes every stored message, unauthenticated:
+  // anyone who can reach the gateway can wipe the inbox. Fine for the hackathon demo.
+  app.delete('/api/messages', (c) => {
+    const cleared = store.count();
+    store.reset();
+    logger.warn(`clear chats: deleted ${cleared} messages`);
+    c.header('Cache-Control', 'no-store');
+    return c.json({ ok: true, cleared });
   });
 
   // Developer tool, not part of the contract. The web app must never call it.
