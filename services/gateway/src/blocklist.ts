@@ -195,7 +195,7 @@ export class MongoBlocklist implements Blocklist {
       appName: 't-gate-gateway',
       serverSelectionTimeoutMS: timeoutMs,
       connectTimeoutMS: timeoutMs,
-      timeoutMS: timeoutMs,
+      socketTimeoutMS: timeoutMs * 2,
     });
     const db = this.client.db(dbName);
     this.senders = db.collection<SenderDoc>('senders');

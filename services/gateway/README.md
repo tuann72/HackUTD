@@ -51,6 +51,7 @@ curl -s localhost:8787/api/messages | jq
 | `SENDER_BLOCKLIST` | `off` | **`off` (default, Tuan 2026-11-08): block the message, not the sender.** No blocklist calls, no fingerprints and no Atlas connection, and the settings below are ignored. `on` is the parked option: block known scam senders without the model |
 | `MONGODB_URI` | empty | With `SENDER_BLOCKLIST=on` only: the Atlas connection string. Empty means an in-process blocklist that resets on restart. Ignored (with a log line) when off |
 | `MONGODB_DB` | `tgate` | Atlas database name |
+| `DNS_SERVERS` | empty | With `SENDER_BLOCKLIST=on` only: comma-separated DNS server IPs for Node's own lookups, for example `1.1.1.1,8.8.8.8`. Set it if Atlas fails with `querySrv ECONNREFUSED`: on some machines Node gets a DNS server that doesn't answer the SRV lookup `mongodb+srv://` needs. Empty means the OS default |
 | `FINGERPRINT_SECRET` | empty | With `SENDER_BLOCKLIST=on` only: HMAC key for sender and text fingerprints (`openssl rand -hex 32`). Required with `MONGODB_URI`. Empty means a random key per process |
 | `SENDER_BLOCK_STRIKES` | `3` | Model blocks from one sender before it's blocklisted (TBD) |
 | `SENDER_BLOCK_SCORE` | `0.95` | One block at or above this score blocklists the sender at once (TBD) |
