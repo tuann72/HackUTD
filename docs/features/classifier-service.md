@@ -30,20 +30,20 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 | 1.1 | `train.py`: MiniLM embeddings + LR head, eval on real val/test, write artifacts | — | 1.2 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 | 1.2 | Inference service (FastAPI), bearer auth, occlusion highlights, Dockerfile | — | 1.1 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 | 1.3 | TF-IDF + LR model (`train.py --model tfidf`), served by the same service with coefficient-based highlights; the comparison baseline and a fallback | 1.1, 1.2 | 2.1 | Done (code merged; full-data run pending, see 2.1) | `feat/classifier-tfidf-lr` | Tuan + Claude Code | [#6](https://github.com/lytx02/HackUTD/pull/6) |
-| 1.4 | Artifact-free tests (tiny synthetic TF-IDF model, mocked MiniLM encoder) and laptop-side Vultr scripts for 2.1 and 3.1 (written, not run) | 1.1–1.3 | 2.1 | In progress | `chore/classifier-vultr-ready` | Tuan + Claude Code | TBD |
+| 1.4 | Artifact-free tests (tiny synthetic TF-IDF model, mocked MiniLM encoder) and laptop-side Vultr scripts for 2.1 and 3.1 (written, not run) | 1.1–1.3 | 2.1 | In review | `chore/classifier-vultr-ready` | Tuan + Claude Code | [#28](https://github.com/tuann72/HackUTD/pull/28) |
 
 ### Stage 2: train on Vultr
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Full training run on a Vultr Cloud GPU (8-class and binary); record metrics vs. the TF-IDF baseline in `CHANGELOG.md`; destroy the instance | 1.1 | — | Not started | | | |
+| 2.1 | Full training run on a Vultr Cloud GPU (8-class and binary); record metrics vs. the TF-IDF baseline in `CHANGELOG.md`; destroy the instance. One command: `classifier/vultr/train_gpu.sh` (task 1.4). Needs `VULTR_API_KEY`, a region and a GPU plan from Tuan | 1.1 | — | Not started | | | |
 | 2.2 | (Only if 2.1 falls short) fine-tune MiniLM on the Vultr GPU | 2.1 | — | Not started | | | |
 
 ### Stage 3: serve on Vultr
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Build and push the image; run it on Vultr Cloud Compute with HTTPS and a secret token; share the URL with the gateway owner | 1.2, 2.1 | — | Not started | | | |
+| 3.1 | Build and run the image on Vultr Cloud Compute with a secret token; share the URL with the gateway owner. One command: `classifier/vultr/deploy_inference.sh` (task 1.4). **TBD:** `MODE=shared` (on the gateway VM, loopback only) or `separate` (own server, HTTPS via sslip.io); see the classifier README | 1.2, 2.1 | — | Not started | | | |
 
 ## Task details
 

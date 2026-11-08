@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Classifier tests without artifacts; one-command Vultr scripts (proposal for hosting)
+
+- **Done:** `classifier/tests/test_offline.py` runs with no trained model, GPU, PyTorch or download. It trains a tiny TF-IDF model on synthetic rows, fakes the MiniLM encoder for occlusion, and checks the service against the gateway's `parseVerdict` expectations. `classifier/vultr/train_gpu.sh` and `deploy_inference.sh` automate README steps 1–2 through the Vultr API. They're **not yet run against a real account**.
+- **Training:** the GPU instance is created and deleted by one script, with a `trap` so it's also deleted on failure or Ctrl-C. It asks before creating anything that costs money.
+- **Proposal, not decided:** where the classifier runs. `MODE=shared` puts it on the gateway's VM, bound to `127.0.0.1:8000`, and the gateway calls it over loopback with the token. That's one server and no public classifier URL, but it needs ≥ 2 GB RAM. It adapts Timothy's unmerged one-server commit `d28ebd5` to the systemd gateway on `main`. `MODE=separate` keeps the existing own-server Compose and Caddy setup. Over loopback, the gateway reaches the classifier over plain HTTP on the same host, not HTTPS. Tuan to pick.
+- **Inputs needed:** `VULTR_API_KEY` (in the shell only), region, GPU plan (`train_gpu.sh --list`), budget, and the hosting `MODE`.
+
 ### 2026-11-08: Sender blocklist and scam fingerprints in MongoDB Atlas
 
 - **Decision (Timothy):** Vultr is the judge: the classifier on Vultr scores each message and the gateway blocks it at `BLOCK_THRESHOLD`, as before. New: each blocked message records a **fingerprint** in **MongoDB Atlas**, and proven scam senders go on a **blocklist** so their later messages are blocked without the model (reason `sender_blocked`). Plan: [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md).
