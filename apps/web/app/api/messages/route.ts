@@ -15,3 +15,13 @@ export async function GET(request: Request) {
     return storeUnavailable("api/messages", err);
   }
 }
+
+// The page's "Clear chats" button (Tuan, 2026-11-08): deletes every stored message. Unauthenticated by choice.
+export async function DELETE() {
+  try {
+    const cleared = await (await getStore()).clear();
+    return Response.json({ ok: true, cleared }, { headers: { "Cache-Control": "no-store" } });
+  } catch (err) {
+    return storeUnavailable("api/messages", err);
+  }
+}
