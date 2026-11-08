@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { PRESETS, LIMITS } from "@/lib/sim/presets";
+import { PRESETS } from "@/lib/sim/presets";
 import { presetSteps, runDurationMs, SENDER_POOL, type RunSettings } from "@/lib/sim/plan";
 import { useSimRunner } from "./useSimRunner";
 
@@ -13,25 +13,28 @@ const button =
 const newSeed = () => Math.floor(Math.random() * 2 ** 31);
 
 /**
+ * Fixed run settings for the random-burst presets. The panel used to expose
+ * these as inputs (count, scam share, interval, sender, seed); Tuan removed
+ * them, so every burst uses these and a fresh seed.
+ */
+const SETTINGS: Omit<RunSettings, "seed"> = { n: 10, scamRatio: 0.6, intervalMs: 1500, from: "" };
+
+/**
  * Sidebar that runs perpetrator simulations from the page: preset buttons
- * (lib/sim/presets.ts), run settings, and a custom message. Each step goes
+ * (lib/sim/presets.ts) and a custom message. Each step goes
  * through POST /api/simulate, which signs it and sends it to the gateway, so
  * results show up in the scene and lists like real iMessages.
  */
 export function SimPanel() {
   const { status, run, log, start, stop, clearLog } = useSimRunner();
   const [open, setOpen] = useState(true);
-  const [settings, setSettings] = useState<Omit<RunSettings, "seed">>({ n: 10, scamRatio: 0.6, intervalMs: 1500, from: "" });
-  const [seedText, setSeedText] = useState("");
   const [text, setText] = useState("");
   const [customFrom, setCustomFrom] = useState(SENDER_POOL[0]!);
   const bodyId = useId();
-  const ids = { n: useId(), ratio: useId(), interval: useId(), from: useId(), seed: useId(), text: useId(), customFrom: useId() };
+  const ids = { text: useId(), customFrom: useId() };
 
   const enabled = status?.enabled === true;
   const busy = run !== null;
-  const set = <K extends keyof typeof settings>(k: K, v: (typeof settings)[K]) => setSettings((s) => ({ ...s, [k]: v }));
-  const seed = () => (seedText.trim() && Number.isFinite(Number(seedText)) ? Number(seedText) : newSeed());
 
   return (
     <aside aria-label="Simulations" className="flex flex-col gap-3 lg:sticky lg:top-6">
@@ -66,20 +69,20 @@ export function SimPanel() {
 
           <div className="flex flex-col gap-2">
             {PRESETS.map((p) => {
-              const preview = presetSteps(p, { ...settings, seed: 1 });
+              const preview = presetSteps(p, { ...SETTINGS, seed: 1 });
               const secs = Math.round(runDurationMs(preview) / 1000);
               return (
                 <button
                   key={p.id}
                   type="button"
                   disabled={!enabled || busy}
-                  onClick={() => start(p.label, presetSteps(p, { ...settings, seed: seed() }))}
+                  onClick={() => start(p.label, presetSteps(p, { ...SETTINGS, seed: newSeed() }))}
                   className={button}
                 >
                   <span className="block font-medium">{p.label}</span>
                   <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                     {p.kind === "random" && p.n > 1
-                      ? `${preview.length} messages, ${Math.round(settings.scamRatio * 100)}% scams${secs ? `, about ${secs} s` : ""}`
+                      ? `${preview.length} messages, ${Math.round(SETTINGS.scamRatio * 100)}% scams${secs ? `, about ${secs} s` : ""}`
                       : p.description}
                   </span>
                 </button>
@@ -97,39 +100,6 @@ export function SimPanel() {
               </button>
             </div>
           )}
-
-          <fieldset className="flex flex-col gap-2 text-xs" disabled={busy}>
-            <legend className="mb-1 font-semibold text-zinc-600 dark:text-zinc-300">Burst settings</legend>
-            <label htmlFor={ids.n} className="flex items-center justify-between gap-2">
-              Messages
-              <input id={ids.n} type="number" min={1} max={LIMITS.maxN} value={settings.n} onChange={(e) => set("n", Math.min(LIMITS.maxN, Math.max(1, Number(e.target.value) || 1)))} className={`${field} w-20`} />
-            </label>
-            <label htmlFor={ids.ratio} className="flex flex-col gap-1">
-              <span className="flex justify-between">
-                Scam share <span className="tabular-nums">{Math.round(settings.scamRatio * 100)}%</span>
-              </span>
-              <input id={ids.ratio} type="range" min={0} max={100} step={5} value={Math.round(settings.scamRatio * 100)} onChange={(e) => set("scamRatio", Number(e.target.value) / 100)} />
-            </label>
-            <label htmlFor={ids.interval} className="flex items-center justify-between gap-2">
-              Interval (ms)
-              <input id={ids.interval} type="number" min={LIMITS.minIntervalMs} max={LIMITS.maxIntervalMs} step={250} value={settings.intervalMs} onChange={(e) => set("intervalMs", Number(e.target.value) || LIMITS.minIntervalMs)} className={`${field} w-24`} />
-            </label>
-            <label htmlFor={ids.from} className="flex items-center justify-between gap-2">
-              Sender
-              <select id={ids.from} value={settings.from} onChange={(e) => set("from", e.target.value)} className={`${field} w-36`}>
-                <option value="">Random each</option>
-                {SENDER_POOL.slice(0, 12).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label htmlFor={ids.seed} className="flex items-center justify-between gap-2">
-              Seed
-              <input id={ids.seed} inputMode="numeric" placeholder="random" value={seedText} onChange={(e) => setSeedText(e.target.value.replace(/\D/g, ""))} className={`${field} w-24`} />
-            </label>
-          </fieldset>
 
           <form
             className="flex flex-col gap-2 text-xs"
