@@ -34,7 +34,7 @@ Simulator ──signed POST───────────────┤
 
 | Piece | What it is | Language |
 |---|---|---|
-| Gateway | Small HTTP service: the Twilio webhook plus a read-only query API | TypeScript (framework TBD; Hono suggested) |
+| Gateway | Small HTTP service: the Twilio webhook plus a read-only query API | TypeScript + [Hono](https://hono.dev) |
 | Classifier | A stub at first, behind a classifier interface; the real model plugs in later | Stub in TS; real model in Python |
 | Simulator | CLI that sends signed, Twilio-format POSTs from a scenario file | TypeScript |
 | Message UI | One Next.js page that polls the query API | TypeScript (Next.js) |
@@ -134,7 +134,6 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 | Question | Recommendation | Status |
 |---|---|---|
 | Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **TBD** |
-| Gateway framework | Hono | **TBD** |
 | Storage | In memory or SQLite | **TBD** |
 | Block threshold and classifier-down behavior (fail open or fail closed) | Decide after classifier evaluation | **TBD** |
 | Classifier approach and label scheme | TF-IDF + LR is leading; see `AGENTS.md` | **TBD** |
@@ -149,7 +148,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Choose gateway hosting (A or B), framework and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
+| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
 | 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | Not started | | | |
 
 ### Stage 1: foundations
@@ -232,6 +231,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ## Progress notes
 
+- **2026-11-07:** Hono chosen as the gateway framework (Tuan).
 - **2026-11-07:** TypeScript confirmed for the gateway and simulator (Tuan). Framework and hosting still TBD.
 - **2026-11-07:** Plan rewritten around a concrete MVP (Tuan): the MVP UI is a basic Next.js page that polls a read-only query API; the 3D scene is parked for later. Added how messages reach the gateway and when a tunnel is needed, the gateway steps, the query API, simulator scenario mode and a task list split by folder for parallel work.
 - **2026-11-07:** Switched to one Twilio number. The perpetrator is simulated with signed webhook calls, fed by a message bank.

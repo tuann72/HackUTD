@@ -63,7 +63,7 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 **How interception works:** Twilio sends every SMS addressed to the victim number to our webhook. No phone sits behind that number. The victim's inbox is virtual and owned by the gateway, so the gateway acts as the victim's carrier. It classifies each message, then **delivers** it to the inbox or **blocks** it (quarantine log). Blocking needs no outbound SMS, so Twilio trial and A2P 10DLC limits don't apply to it.
 
 **Stack:**
-- **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Twilio webhook and query API), the perpetrator simulator and the web app.
+- **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Twilio webhook and query API, built with **Hono**), the perpetrator simulator and the web app.
 - **Python:** the model training and inference service.
 - **Web app (Tuan's decision):** Next.js with **React Three Fiber** for the 3D scene and **Motion** (`motion/react`) for DOM animation (bubbles, panel, toasts). Don't use the deprecated `framer-motion-3d`, which doesn't support React 19. Animate 3D objects in R3F (`useFrame` with damping).
 - **Gateway hosting:** recommended as a **separate TypeScript service** on an always-on host, not Next.js route handlers on Vercel. Vercel can't hold the event stream or local storage, and a web deploy must never be able to break interception. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
@@ -91,12 +91,12 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 **Scene (firm requirement from Tuan: keep it simple):** blob people (R3F meshes) wander and bob. When one sends a message, a chat bubble (HTML via drei `<Html>`, animated with Motion) appears above its head. Delivered messages float to the victim. A scam bubble turns red with a "Blocked" stamp and pops before it reaches the victim. New public senders spawn as new blobs (later scope).
 
-Everything above except the two firm requirements is a proposal. Open items stay **TBD**: the gateway framework, where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, the highlight method if MiniLM is chosen, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
+Everything above except the two firm requirements is a proposal. Open items stay **TBD**: where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, the highlight method if MiniLM is chosen, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
 
 ## Open questions — do not guess
 
 - **Message type:** the MVP assumes text messages to the victim number. Whether voice calls are in scope for the Twilio MVP is TBD.
-- **Twilio architecture:** the gateway framework (TypeScript is agreed), and how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
+- **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** whether it sends scripted conversations, random draws from the message bank, messages typed by a teammate, or a mix.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
 - **Classifier:** final approach (see above), label scheme (binary spam/ham or the 8-class scam categories), thresholds, and evaluation measures.

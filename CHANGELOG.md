@@ -6,11 +6,17 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: Hono for the gateway
+
+- **Decision (Tuan):** the gateway is a TypeScript service built with [Hono](https://hono.dev).
+- **Why:** the gateway is only a couple of routes, but a framework saves hand-writing routing, form-body parsing (Twilio posts form-encoded data), CORS and error handling. Hono is small, TypeScript-first, and its apps can be tested in memory (`app.request(...)`) without starting a server. Plain `node:http`, Express and Fastify were the alternatives.
+- **Still TBD:** where the gateway is hosted.
+
 ### 2026-11-07: TypeScript for the Twilio stack; `DESIGN.md` renamed to `CHANGELOG.md`
 
 - **Decision (Tuan):** the gateway (Twilio webhook and query API) and the perpetrator simulator are TypeScript, as is the Next.js web app. This confirms the earlier lean. The classifier's training and inference stay Python.
 - **Why:** one language across the Twilio side and the web app. Twilio's `twilio` npm package has TypeScript types, `validateRequest` for checking webhook signatures and `getExpectedTwilioSignature` for signing simulator requests. The only realistic alternative was Python (FastAPI), which would split the backend from the web app.
-- **Still TBD:** the gateway framework (Hono recommended) and where it's hosted.
+- **Still TBD:** the gateway framework (later: Hono, see above) and where it's hosted.
 - **Also:** this file was renamed from `DESIGN.md`.
 
 ### 2026-11-07: MVP UI is a basic Next.js message list; 3D scene parked
@@ -298,7 +304,7 @@ TypeScript is agreed (Tuan, 2026-11-07), since the web app is Next.js. One excep
 
 - **TypeScript (Node 20+):** the gateway, the perpetrator simulator, the Next.js web app and the generated contract types. Twilio's `twilio` npm package has first-class TypeScript support, including `validateRequest` for webhook signatures and `getExpectedTwilioSignature` for the simulator. One language across these lets the team share tooling (pnpm workspaces, ESLint, Vitest).
 - **Exception, Python for the model:** training and inference (scikit-learn for TF-IDF + LR, or sentence-transformers for MiniLM) belong in Python, where those libraries live. The gateway only talks to it over HTTP, so the language difference doesn't leak.
-- **Keep the gateway out of the Next.js app.** It's tempting to put the webhook in a Next.js route handler on Vercel. The recommendation is a **separate TypeScript service** (for example, Hono or Fastify; TBD) on an always-on host, such as a Vultr VM next to the model:
+- **Keep the gateway out of the Next.js app.** It's tempting to put the webhook in a Next.js route handler on Vercel. The recommendation is a **separate TypeScript service** built with Hono on an always-on host, such as a Vultr VM next to the model:
   - Vercel functions are short-lived and can't hold the WebSocket/SSE event stream.
   - Vercel has no persistent local disk, so storage would need a hosted database.
   - A web app deploy or frontend bug could break interception. That breaks the "a display failure never affects blocking" rule.
@@ -407,7 +413,7 @@ The scene would be a **Next.js** website, ready to deploy on **Vercel**.
 
 #### Open questions (TBD)
 
-- Gateway framework (for example, Hono or Fastify), and separate service vs. Next.js route handlers on Vercel.
+- Separate gateway service vs. Next.js route handlers on Vercel.
 - Where the scam notice goes: virtual inbox only, or also a real SMS to a protected handset. Notice batching threshold.
 - Whether the panel needs real login, or unguessable links are enough for the MVP.
 - Highlight method if MiniLM is chosen (occlusion vs. attribution vs. hybrid). Whether delivered borderline messages get soft highlights.
