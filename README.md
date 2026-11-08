@@ -25,6 +25,6 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Twilio MVP | Rewrite the feature plan; record the basic-UI MVP scope | `docs/twilio-mvp-plan` | Tuan + Claude Code | In progress | [#1](https://github.com/lytx02/HackUTD/pull/1) |
+| _None yet_ | | | | | |
 
 Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).
