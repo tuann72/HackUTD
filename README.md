@@ -32,6 +32,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Scam score as a percentage with two decimals, truncated (95.43%) | `fix/web-score-two-decimals` | Tuan + Claude Code | Done | [#39](https://github.com/tuann72/HackUTD/pull/39) |
 | Message UI | "Clear chats" button on `/`: hides the current inbox/blocked messages in this browser (nothing deleted on the gateway) | `feat/web-clear-chats` | JP + Claude Code | In review | [#38](https://github.com/tuann72/HackUTD/pull/38) |
 | Voice scam guard | Interview and master plan: Photon SIP feasibility, after-call test, live warning, and caller–victim bridge | `feat/voice-scam-detection` | Codex | In review | [#36](https://github.com/tuann72/HackUTD/pull/36) |
 | Classifier service | Stacked model option, `train.py --model stacked` (task 1.5), deployed on the gateway VM | `feat/classifier-service-stacked` | Timothy + Claude Code | Done | — |
