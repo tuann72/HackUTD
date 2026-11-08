@@ -8,7 +8,7 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ### 2026-11-08: Thicker fonts, bean characters, T-Guard box label
 
-- **Decision (Tuan):** fonts were too thin. Body text is Archivo at weight 500 (was Arial 400), and `font-label` is Space Mono Bold (was Courier New).
+- **Decision (Tuan):** fonts were too thin. Body text and `font-label` are **Inter** (body weight 500, labels bold), replacing Arial and Courier New. Archivo was tried first and was hard to read. Anton stays for the big counter numbers.
 - **Buttons:** every enabled button shows a pointer cursor (Tailwind 4 defaults buttons to the arrow) and a visible hover. The Simulate buttons lost their ↗ arrows.
 - **Scene:** the sender sphere is now a jellybean character (capsule body, face patch with big eyes, stubby arms and feet; an original bean in a party-game style, not any game's art). A pink Receiver bean stands behind the hand, labeled above its head, and bounces when a message is delivered. The "T—GUARD / Active defense system" text is gone from the pink box; the label under the box says "T-Guard".
 

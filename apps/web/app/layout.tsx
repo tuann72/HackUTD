@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Archivo, Geist, Geist_Mono, Space_Mono } from "next/font/google";
+import { Anton, Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,16 +19,9 @@ const anton = Anton({
   subsets: ["latin"],
 });
 
-// Body text: a sturdier sans than Arial (Tuan: "too thin, select thicker").
-const archivo = Archivo({
-  variable: "--font-archivo",
-  subsets: ["latin"],
-});
-
-// Small uppercase labels (`font-label`): a bold mono instead of thin Courier New.
-const spaceMono = Space_Mono({
-  variable: "--font-space-mono",
-  weight: ["400", "700"],
+// Body text and labels (Tuan: thicker than Arial, easier to read than Archivo).
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -41,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} ${archivo.variable} ${spaceMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
