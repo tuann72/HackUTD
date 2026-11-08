@@ -2,6 +2,7 @@
 
 import { useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import { easing } from "maath";
 import type { Group, Mesh, MeshBasicMaterial } from "three";
 
@@ -26,9 +27,16 @@ interface BlobProps {
   shieldAt?: RefObject<number>;
   /** Phase offset so two blobs don't bob in sync. */
   phase?: number;
+  /** Name shown under the blob; it bobs with it, so it always lines up. */
+  label?: string;
+  /** Tailwind text color for the label. */
+  labelClass?: string;
 }
 
-export function Blob({ position, color, facing, hitAt, shieldAt, phase = 0 }: BlobProps) {
+/** The label's center sits this far below the blob's center. */
+const LABEL_Y = -(BLOB_RADIUS + 0.55);
+
+export function Blob({ position, color, facing, hitAt, shieldAt, phase = 0, label, labelClass = "text-slate-100" }: BlobProps) {
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
   const shield = useRef<Mesh>(null);
@@ -76,6 +84,13 @@ export function Blob({ position, color, facing, hitAt, shieldAt, phase = 0 }: Bl
           <sphereGeometry args={[SHIELD_RADIUS, 32, 32]} />
           <meshBasicMaterial color="#f87171" transparent opacity={0} depthWrite={false} />
         </mesh>
+      )}
+      {label && (
+        <Html position={[0, LABEL_Y, 0]} center zIndexRange={[5, 0]} style={{ pointerEvents: "none" }}>
+          <span className={`whitespace-nowrap rounded-md bg-slate-900/70 px-2 py-0.5 text-sm font-medium ${labelClass}`}>
+            {label}
+          </span>
+        </Html>
       )}
     </group>
   );
