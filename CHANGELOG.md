@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Select STT for the voice scam guard
+
+- **Decision (user):** use AssemblyAI Universal-Streaming through LiveKit Inference for the caller-only voice prototype. The model ID is `assemblyai/universal-streaming`; English is sufficient for the planned scripted proof.
+- **Why:** it integrates through the existing LiveKit room, needs no separate AssemblyAI API key, and the current LiveKit Build/Ship rate is `$0.0025/min`. LiveKit documents that Inference is zero-data-retention by default, including model audio and output; this does not define how T-Gate retains the final transcript.
+- **Implementation:** use a Node.js/TypeScript LiveKit agent worker, consistent with the repository service stack. Subscribe only to the SIP caller track, buffer final transcript text in memory, and call the text classifier after hangup. Do not write audio to persistent storage or print transcript text in logs.
+- **Still TBD:** worker deployment target, consent/disclosure process, transcript retention duration, result storage/API, and call-level classifier evaluation. No test call or paid usage test is part of this decision.
+- **References:** [LiveKit STT models](https://docs.livekit.io/agents/models/stt/), [LiveKit Inference privacy and authentication](https://docs.livekit.io/agents/models/inference/), and [LiveKit Inference pricing](https://livekit.com/pricing/inference).
+
 ### 2026-11-08: VM gateway accepts Photon 2.0 / Beta webhooks
 
 - **Why (Timothy):** the team's Photon project is on Beta, and the goal is iPhone → Photon → Vultr gateway → classifier. The gateway only spoke Stable Spectrum, so it would have rejected every Beta delivery.
