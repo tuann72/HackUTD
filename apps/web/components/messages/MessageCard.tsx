@@ -121,6 +121,12 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
       {m.body && <MessageBody body={m.body} highlights={blocked ? m.verdict?.highlights : null} defang={blocked} />}
       <MessageExtras message={m} defang={blocked} />
 
+      {m.verdict?.warning === "large_money_request" && (
+        <p className="mt-3 rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
+          Asks for a large sum of money. Check it&apos;s really them before sending anything.
+        </p>
+      )}
+
       {m.verdict?.review && (
         <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-300">
           <span className="font-semibold">Second opinion:</span> {m.verdict.review.reason}

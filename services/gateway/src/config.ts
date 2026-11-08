@@ -11,6 +11,8 @@ export interface GatewayConfig {
   classifierToken: string | null;
   classifierTimeoutMs: number;
   blockThreshold: number;
+  /** Warn on delivered messages asking for at least this many dollars. 0 turns it off. */
+  moneyWarnAmount: number;
   corsOrigins: string[];
   debug: boolean;
   debugToken: string | null;
@@ -118,6 +120,7 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     classifierToken: str(env, 'CLASSIFIER_TOKEN'),
     classifierTimeoutMs: num(env, 'CLASSIFIER_TIMEOUT_MS', 2500, (n) => Number.isInteger(n) && n > 0, 'a positive integer'),
     blockThreshold: num(env, 'BLOCK_THRESHOLD', 0.5, (n) => n >= 0 && n <= 1, 'a number between 0 and 1'),
+    moneyWarnAmount: num(env, 'MONEY_WARN_AMOUNT', 500, (n) => n >= 0, 'a number, 0 or more'),
     corsOrigins: (str(env, 'CORS_ORIGINS') ?? 'http://localhost:3000')
       .split(',')
       .map((s) => s.trim())
