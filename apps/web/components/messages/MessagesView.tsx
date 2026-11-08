@@ -133,7 +133,7 @@ export function MessagesView() {
           </span>
         </AppHeader>
 
-        <main className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[minmax(20rem,25rem)_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]">
+        <main className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]">
           <section
             aria-label="Live demonstration"
             className="relative order-first h-[48dvh] min-h-72 overflow-hidden border-b border-rule lg:order-none lg:col-start-2 lg:row-start-1 lg:h-auto lg:min-h-0 lg:border-b-0"
