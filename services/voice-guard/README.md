@@ -39,6 +39,21 @@ The gateway acks with `200 ok` before it classifies, so the worker only logs `tr
 
 The `T-Gate Voice` inbound SIP dispatch rule targets agent name `voice-guard`. Set `VOICE_GUARD_CAPTURE_ENABLED=true` only for an authorized, consented call.
 
+## Live call: victim on a real phone, live scoring, whisper warning
+
+Optional, off unless configured. Design: `docs/features/voice-scam-guard.md`, "Live call design".
+
+1. The scammer calls the Photon voice number; the call lands in a LiveKit room and this worker joins and answers (silence track, as before).
+2. If `VOICE_SCORE_URL`/`VOICE_SCORE_TOKEN` are set, the worker publishes a silent **whisper** track and unsubscribes the caller from it server-side (`RoomServiceClient.updateSubscriptions`). The warning audio is synthesized ahead of time with LiveKit Inference TTS. If isolating the caller fails, there is no whisper at all (`whisper_unavailable`), so the scammer can never hear it.
+3. If `VOICE_GUARD_VICTIM_PHONE`/`LIVEKIT_SIP_OUTBOUND_TRUNK_ID` are set, the worker dials the victim's phone into the same room (`SipClient.createSipParticipant`, identity `tguard-victim`). LiveKit SIP participants hear all audio in the room, so the two talk normally.
+4. Only the caller's track is transcribed. After each finalized utterance, at most every `VOICE_SCORE_INTERVAL_MS`, the caller's transcript so far goes to the gateway's `POST /voice/score`. The gateway returns `warn` or `none` and stores nothing.
+5. On the first `warn`, the worker speaks the warning into the whisper track, so only the victim hears it (it waits for the victim to pick up if needed). One warning per call.
+6. When either side hangs up, the worker hangs up the other. The full transcript then goes to `/webhooks/photon` as before and shows on `/messages`.
+
+Log events to trace a call: `whisper_ready`, `victim_dialing`, `victim_call_status`, `live_scored`, `live_warning`, `live_warning_spoken`, `caller_hung_up` / `victim_hung_up`, `transcript_sent_to_gateway`. Failures: `whisper_unavailable`, `victim_dial_failed`, `live_score_failed`, `live_warning_not_spoken`, `live_warning_failed`, `hangup_other_failed`.
+
+Unverified until a real call: whether Photon (or the chosen SIP provider) accepts the outbound leg, whether `updateSubscriptions` keeps a SIP caller off the whisper track, the TTS model/voice defaults, and end-to-end latency.
+
 ## Container and LiveKit Cloud deployment
 
 The Dockerfile compiles TypeScript into `dist/` and runs `node dist/agent.js start` as an unprivileged user. `.dockerignore` excludes local `.env` files and build artifacts. Build locally with `npm run build`; the container image installs production dependencies only.

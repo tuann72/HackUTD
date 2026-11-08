@@ -63,6 +63,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
     `[gateway] sender blocklist=${!blocklist ? 'off (each message judged on its own)' : `on, ${config.mongodbUri ? `atlas (${config.mongodbDb})` : 'memory (resets on restart)'}, strikes=${rules.strikes} score>=${rules.highScore} ttl=${config.senderBlockTtlDays}d`} admin=${config.adminToken ? 'ON' : 'off'}`,
   );
   console.log(`[gateway] review=${reviewer ? `on (${config.nemotronModel}, band ${config.reviewBandLow}-${config.reviewBandHigh})` : 'off'}`);
+  console.log(`[gateway] voice score=${config.voiceScoreToken ? `on (POST /voice/score, warn threshold ${config.voiceWarnThreshold})` : 'off'}`);
   if (config.dnsServers.length > 0) console.log(`[gateway] dns=${config.dnsServers.join(',')}`);
   console.log(`[gateway] Photon webhook: POST ${WEBHOOK_PATH} (signature tolerance ${config.signatureToleranceSeconds}s) debug=${config.debug ? 'ON' : 'off'}`);
 });

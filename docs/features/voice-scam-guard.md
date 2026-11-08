@@ -54,17 +54,17 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Connect the victim: the agent dials the victim's real phone into the call room through a LiveKit outbound SIP trunk (decision: real phone, LacsJP27 2026-11-08) | 1.5 | 3.2 | In progress | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | TBD |
-| 2.2 | Bridge both sides while the guard scores only the caller's participant track; hanging up either side ends the other | 2.1 | 3.2 | In progress | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | TBD |
+| 2.1 | Connect the victim: the agent dials the victim's real phone into the call room through a LiveKit outbound SIP trunk (decision: real phone, LacsJP27 2026-11-08) | 1.5 | 3.2 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| 2.2 | Bridge both sides while the guard scores only the caller's participant track; hanging up either side ends the other | 2.1 | 3.2 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
 | 2.3 | Verify two-way call quality and caller-only transcript attribution with after-call scoring | 2.2 | — | Not started | — | TBD | — |
 
 ### Stage 3: live classification and warning
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Windows and thresholds: score the caller's whole transcript so far after each finalized utterance, at most every 5 s; warn once per call when the gateway says `warn` | 2.3 | — | In progress | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | TBD |
-| 3.2 | Gateway `POST /voice/score` (bearer token, no storage) and live scoring in the agent | 3.1 | 2.1 | In progress | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | TBD |
-| 3.3 | Deliver the live warning: a spoken whisper (TTS) only the victim hears (decision: whisper, LacsJP27 2026-11-08). Vercel display is not part of this task | 3.1 | 3.2 | In progress | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | TBD |
+| 3.1 | Windows and thresholds: score the caller's whole transcript so far after each finalized utterance, at most every 5 s; warn once per call when the gateway says `warn` | 2.3 | — | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| 3.2 | Gateway `POST /voice/score` (bearer token, no storage) and live scoring in the agent | 3.1 | 2.1 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| 3.3 | Deliver the live warning: a spoken whisper (TTS) only the victim hears (decision: whisper, LacsJP27 2026-11-08). Vercel display is not part of this task | 3.1 | 3.2 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
 | 3.4 | Measure warning latency, missed scam cues, and false warnings during bridged scripted calls | 3.2, 3.3 | — | Not started | — | TBD | — |
 
 ## Task details
