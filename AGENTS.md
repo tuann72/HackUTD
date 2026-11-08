@@ -6,7 +6,7 @@
 - **Problem:** Scam calls can pressure people, especially older adults, into rash decisions that cause financial, personal, or emotional harm.
 - **Concept:** Detect likely scam activity, warn the recipient, and potentially help respond on their behalf while keeping the recipient in control.
 - **Hackathon tracks in the current SRS:** Safe Signal (T-Mobile) and Photon. The primary track is not confirmed.
-- **Current project state:** Planning. This repository began as an empty project skeleton; do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
+- **Current project state:** Planning. There is no app code yet. The only content beyond docs is a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
 
 ## Current scope from the SRS
 
@@ -19,7 +19,8 @@
 
 - What input the MVP actually analyzes: SMS, user-provided text, a transcript, or live call audio. The SRS uses “SMS” and “phone calls” together, so this is ambiguous.
 - Which hackathon track is primary and how Photon relates to Safe Signal.
-- Android implementation approach, classifier choice, data source and evaluation measures.
+- Android implementation approach, classifier choice and evaluation measures.
+- Whether the team adopts the `data/` dataset as the training source, and which label scheme the MVP uses: binary spam/ham or the 8-class scam categories. The dataset exists, but adopting it has not been agreed.
 - System architecture, integrations, storage, privacy, permissions, latency, and fail-safe behavior.
 - User journey, alert design, what “respond on the recipient’s behalf” means, and when confirmation is required.
 - Team roster, ownership, demo narrative, success criteria, and submission checklist.
@@ -30,6 +31,18 @@ Keep these items marked **TBD** until the team resolves them. Distinguish agreed
 
 - **Source SRS:** [HackUTD SRS](https://docs.google.com/document/d/1XIBEqGl1SWqR6r0WXhKSHVs-ZWZYoIjby72qngpZ06o/edit)
 - **Design specification:** [`DESIGN.md`](DESIGN.md). It is intentionally blank at project setup and should become the detailed, evolving design document as the team hashes out decisions.
+
+## Data
+
+[`data/README.md`](data/README.md) is the full reference: file purposes, columns, label maps, provenance, cleaning, synthetic-data method and caveats. Key points:
+
+- **`data/scam_categories_100k.csv`:** `message`, `label` (0 = ham, 1–7 = scam groups merged from the FTC Consumer Sentinel categories). `data/scam_categories.csv` maps each label to its name.
+- **`data/spam_ham_100k.csv`:** the same 100k messages with binary `label` (1 = spam, 0 = ham) and an older `spam_type` column.
+- The `*_full.csv` variants carry the metadata: `split`, `is_synthetic`, `source`, `label_method`, `label_confidence`.
+- **Evaluate only on the `val`/`test` splits.** These are 100% real messages and have no synthetic leakage. About 68% of rows are synthetic, and all of them are in `train`.
+- **Labels are machine-assigned** (keyword rules plus a classifier), not human-annotated, and the scam classes are imbalanced.
+- **Rebuild scripts:** `data/build_100k.py`, `data/recategorize.py`, `data/ftc_taxonomy.py`. The raw source corpora are not in the repo; they are in `~/Downloads/scam_data` on the original author's machine.
+- **Repo size:** the large CSVs are 85–93 MB each, under GitHub's 100 MB limit but over its 50 MB warning. They are not committed yet. Decide on Git LFS or a `.gitignore` entry before committing them.
 
 ## Instructions for coding agents
 
