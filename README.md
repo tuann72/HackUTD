@@ -17,6 +17,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Twilio MVP: webhook gateway, simulator, classifier, basic Next.js message UI | [twilio-mvp.md](docs/features/twilio-mvp.md) | MVP | In progress |
 | Classifier service: MiniLM trained and served on Vultr | [classifier-service.md](docs/features/classifier-service.md) | MVP | In progress |
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
+| Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | In progress (plan) |
 | Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (`/scene` with fake data, #14) |
 | Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
 | 3D conversation scene, Next.js + React Three Fiber (parked) | _Not written yet_ | Later | Not started |
@@ -27,6 +28,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Sender blocklist | Write the plan | `feat/sender-blocklist-plan` | Timothy + Claude Code | In progress | TBD |
 | Initial 3D scene | Combine scene and messages on `/`, 2D bubble image (task 3.4) | `feat/initial-3d-scene-combined-page` | Tuan + Claude Code | In review | [#19](https://github.com/tuann72/HackUTD/pull/19) |
 | Classifier service | MiniLM ([#3](https://github.com/lytx02/HackUTD/pull/3)) and TF-IDF ([#6](https://github.com/lytx02/HackUTD/pull/6)) code merged, **not yet run on full data**. Next: train both on Vultr (task 2.1; TF-IDF via README Option B), then deploy (task 3.1) | — | Tuan | Not started | — |
 
