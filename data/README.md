@@ -10,6 +10,7 @@ Labeled SMS and email messages for training spam and scam classifiers. All files
 | Classify **spam vs ham** (binary) | `spam_ham_100k.csv` |
 | Need metadata (splits, source, synthetic flag, label confidence) | the matching `*_full.csv` |
 | Only the original real messages, no synthetic rows | `unified_spam_dataset.csv` |
+| Threat / coercion / fake-emergency extortion texts (proposed label 8) | `potential_threat_synthetic.csv` (train), `potential_threat_eval.csv` (held-out) |
 
 ---
 
@@ -68,6 +69,42 @@ Same rows, plus these columns:
 ## 3. `unified_spam_dataset.csv` (real data only, first pass)
 
 32,416 real messages (15,584 spam, 16,832 ham) with exact duplicates removed. It has no near-duplicate removal, no text cleaning and no synthetic rows. Columns: `message`, `label` (1/0), `spam_type` (fraud/solicitation/ham). `unified_spam_dataset_with_source.csv` adds a `source` column. This file is kept for reference. Use the cleaned 100k files for training.
+
+---
+
+## 4. Potential Threat synthetic data (proposed label 8)
+
+Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING RIGHT NOW GIVE ME $900 OR I EXPLODE" or "YOUR WIFFE IS IN DANGER GIVE ME 500$". The 100k files have almost none: kidnap/ransom words appear in 86 rows (mostly Enron spam noise in labels 5 and 7), "or else / I know where you live" in 34 (mostly eBay phishing and ham), no short ALL-CAPS text contains a money amount, and 215 of 239 short ALL-CAPS texts are ham. **Proposal, not agreed:** label 8 is not in `scam_categories.csv` yet, and the 100k files are unchanged. Plan: [`docs/features/potential-threat-data.md`](../docs/features/potential-threat-data.md).
+
+| file | rows | use |
+|---|---|---|
+| `potential_threat_synthetic.csv` | 4,100: 2,650 label 8, 1,450 label 0 | Extra **training** rows. All `split = train`. |
+| `potential_threat_eval.csv` | 100: 58 label 8, 42 label 0 | Held-out check for the new class. `split = threat_eval`, so `train.py` ignores it. **Never train on it.** It includes Tuan's two examples. |
+| `build_threat_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_threat_synthetic.py [out_dir]`. Two runs give byte-identical files. |
+
+**Columns:** the same as `scam_categories_100k_full.csv`, plus `scenario`. Values: `label_class` 8 (`category_name` "Potential Threat", `is_spam` 1, `ftc_subcategory` -1, `label_method` `template`) or 0 (`Ham`, `is_spam` 0, `label_method` `ham`); `style` `sms`; `is_synthetic` True; `parent_id` empty; `label_confidence` 1.0. Training rows have `source` `synthetic_threat`, `gen_method` `template`; eval rows have `source` `synthetic_threat_eval`, `gen_method` `handwritten`, `label_method` `manual`. Ids start with `s` and are a hash of the text.
+
+**Scenarios** (`scenario` column):
+
+| label 8 | rows | | label 0 (hard negatives) | rows |
+|---|---|---|---|---|
+| `family_emergency` ("mom its me, they will kill me") | 450 | | `urgent_family` ("MOM CALL ME ASAP", "dad im at the hospital, broke my arm, can you pick me up") | 500 |
+| `loved_one_danger` ("YOUR WIFE IS IN DANGER") | 450 | | `casual_money` ("can you venmo me $20 for pizza lol", rent, bills) | 450 |
+| `kidnap_ransom` | 400 | | `harmless_slang` ("im dying lol", "this traffic is killing me") | 300 |
+| `physical_threat` ("pay or we break your legs") | 400 | | `caps_excitement` ("MOM I GOT THE JOB") | 200 |
+| `blackmail` (non-explicit: photos, chats, "your secret") | 350 | | | |
+| `hitman_stalker` ("I know where you live") | 300 | | | |
+| `self_harm_coercion` ("GIVE ME $900 OR I EXPLODE") | 300 | | | |
+
+**Method:** slot-filled templates (relatives, loved ones, names, amounts as `$900` / `900$` / `900 dollars` / `$2,500` / `2.5k`, payment rails: gift cards, Zelle, Cash App, Venmo, Bitcoin/USDT, Western Union, wire, MoneyGram; urgency and "don't call the police" phrases), then the **same** noise for both labels: ALL CAPS / lowercase / as written, SMS slang, typos (letter doubling as in "WIFFE", dropped or swapped letters, common misspellings), punctuation and emojis. Hard negatives get the same caps and typo rates so caps alone can't predict the label: label 8 is 34% ALL CAPS, label 0 is 38%. Rows are deduplicated case- and punctuation-insensitively, never repeat an eval row, and none match a row in the 100k files.
+
+**Caveats:**
+
+- **Template-generated.** Like the other template rows (AUC ≈ 0.997 for telling them from real data), these are easy to recognize and may teach surface patterns (the template phrases, the emoji pools) rather than the idea of a threat. Judge the class on `potential_threat_eval.csv` and on real messages, not on the training rows.
+- **Money is a strong cue.** 98% of label 8 rows and 32% of label 0 rows contain an amount. A threat without a money demand ("i know where you live") is mostly not covered.
+- **The eval file is small and written by the same author** as the templates (an AI agent, in a different hand-written style), so it overstates real-world accuracy. Real threat messages would be a better test.
+- **Self-harm coercion:** rows in that scenario all demand money. A real person in distress who also asks for money could be flagged. Blocking such a message is a worse error than delivering it, so the gateway may want to warn instead of block for this class (TBD).
+- **Not in any 100k file and not read by `train.py` yet.** Training on it needs `train.py` changes; see the plan.
 
 ---
 
