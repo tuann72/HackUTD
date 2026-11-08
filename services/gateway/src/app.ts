@@ -5,7 +5,7 @@ import { cors } from 'hono/cors';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
-import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, parseSpectrumEvent, verifySpectrumRequest } from './photon.js';
+import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, isClassifiable, parseSpectrumEvent, verifySpectrumRequest } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
 /** Path Photon delivers inbound iMessage webhooks to. */
@@ -107,9 +107,13 @@ export function createApp({ db, classifier, config, logger = consoleLogger, now 
     }
 
     const stored = store.insertInbound(parsed.message);
-    if (stored) {
-      logger.info(`${stored.id} received from ${stored.display}`);
+    if (stored && isClassifiable(parsed.message)) {
+      logger.info(`${stored.id} (${parsed.message.kind}) received from ${stored.display}`);
       schedule(stored.id, stored.body, stored.display);
+    } else if (stored) {
+      // No text to judge (attachment, reaction, contact): deliver to the inbox, marked not classified.
+      store.applyDecision(stored.id, 'delivered', 'not_classified', null);
+      logger.info(`${stored.id} (${parsed.message.kind}) from ${stored.display}: delivered, not classified (no text)`);
     } else {
       logger.info('duplicate webhook ignored (already-seen message.id)');
     }

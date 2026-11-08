@@ -6,6 +6,17 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Photon track, dedicated line, rich iMessage content, virtual inbox
+
+- **Decisions (Tuan):**
+  1. Enter the **Photon track**.
+  2. Use one **dedicated** Photon line, so there's no shared-pool filtering.
+  3. **Show attachments, reactions, contact cards and group chats** in the UI.
+  4. Keep the victim's inbox **virtual** (the web UI), as with Twilio.
+- **Contract (additive, still v1):** new optional message fields `kind`, `conversation {id, type}`, `attachments [{name, mimeType, size}]`, `reaction {emoji, targetPreview}` and `contact {name, phones}`, plus a new reason, `not_classified`. They're optional so older v1 data stays valid. The gateway always sends them. Contact-card phones are masked, and Photon's attachment GUIDs and `space.id` never leave the gateway.
+- **Policy:** content with no text (attachment, reaction, contact card, photo-only album) is **delivered unchecked** and shown as "Not checked". The model reads text only. Blocking a known scam sender's attachments waits on the sender blocklist (photon-imessage task 1.5).
+- **UI:** the card shows attachment chips, the reaction emoji and target preview, the contact card and a "Group chat" badge. On blocked messages these are defanged like the body. The scene labels non-text messages with a short summary.
+
 ### 2026-11-08: iMessage through Photon replaces Twilio SMS
 
 - **Decision (Tuan):** migrate to **Photon (Spectrum)** and handle **only iMessage**. The gateway's `POST /twilio/sms` is replaced by `POST /webhooks/photon`. The `twilio` package is removed from the gateway and the simulator. This reverses "Photon dropped" (2026-11-07) for the messaging provider. Whether the team enters a Photon track is TBD. Plan: [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md).

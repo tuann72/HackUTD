@@ -82,26 +82,89 @@ describe('POST /webhooks/photon', () => {
     expect(app.store.count()).toBe(1);
   });
 
-  it('acks but ignores unknown events and content with no text', async () => {
+  it('acks but ignores unknown events, unknown content types and empty text', async () => {
     const app = makeApp();
     for (const body of [
       payload({ event: 'typing' }),
-      payload({ id: 'spc-msg-r', content: { type: 'reaction', emoji: '👍', target: { id: 'x', platform: 'imessage' } } }),
-      payload({ id: 'spc-msg-a', content: { type: 'attachment', id: 'g', name: 'a.jpg', mimeType: 'image/jpeg' } }),
+      payload({ id: 'spc-msg-poll', content: { type: 'poll', question: '?' } }),
       payload({ id: 'spc-msg-e', text: '   ' }),
+      payload({ id: 'spc-msg-g', content: { type: 'group', items: [] } }),
     ]) {
       expect((await app.request(signedRequest(body))).status).toBe(200);
     }
     expect(app.store.count()).toBe(0);
   });
 
-  it('classifies rich links and albums', async () => {
+  it('delivers attachments, reactions and contact cards unclassified, with their metadata', async () => {
+    const calls: string[] = [];
+    const spy: Classifier = {
+      classify: async (r) => {
+        calls.push(r.text);
+        return { label: 'legit', score: 0, category: null, model: 'spy', highlights: [] };
+      },
+    };
+    const app = makeApp({ classifier: spy });
+    await app.request(signedRequest(payload({ id: 'spc-msg-a', content: { type: 'attachment', id: 'GUID-1', name: 'invoice.pdf', mimeType: 'application/pdf', size: 1234 } })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-r', content: { type: 'reaction', emoji: '👍', target: { id: 'x', platform: 'imessage', contentPreview: 'See you at 5' } } })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-c', content: { type: 'contact', name: 'Bank Fraud Dept', phones: ['+15555550199'] } })));
+    await app.idle();
+    expect(calls).toEqual([]);
+    const [c, r, a] = (await list(app)).messages;
+    for (const m of [a, r, c]) expect(m).toMatchObject({ action: 'delivered', reason: 'not_classified', verdict: null, body: '' });
+    expect(a).toMatchObject({ kind: 'attachment', attachments: [{ name: 'invoice.pdf', mimeType: 'application/pdf', size: 1234 }] });
+    expect(r).toMatchObject({ kind: 'reaction', reaction: { emoji: '👍', targetPreview: 'See you at 5' } });
+    expect(c).toMatchObject({ kind: 'contact', contact: { name: 'Bank Fraud Dept', phones: ['***-***-0199'] } });
+    const text = await (await app.request('/api/messages')).text();
+    expect(text).not.toContain('GUID-1');
+    expect(text).not.toContain('+15555550199');
+    expect(validate(JSON.parse(text))).toBe(true);
+  });
+
+  it('classifies rich links and album text, and lists album attachments', async () => {
     const app = makeApp();
     await app.request(signedRequest(payload({ id: 'spc-msg-l', content: { type: 'richlink', url: 'https://bit.ly/acct-verify' } })));
-    const album = { type: 'group', items: [payload({ id: 'i1', text: 'Your account is locked' }).message, payload({ id: 'i2', content: { type: 'attachment', id: 'g' } }).message] };
+    const album = {
+      type: 'group',
+      items: [
+        payload({ id: 'i1', text: 'Your account is locked' }).message,
+        payload({ id: 'i2', content: { type: 'attachment', id: 'g', name: 'IMG_1.HEIC', mimeType: 'image/heic' } }).message,
+      ],
+    };
     await app.request(signedRequest(payload({ id: 'spc-msg-g', content: album })));
+    const photosOnly = { type: 'group', items: [payload({ id: 'i3', content: { type: 'attachment', id: 'h', name: 'a.jpg' } }).message] };
+    await app.request(signedRequest(payload({ id: 'spc-msg-p', content: photosOnly })));
     await app.idle();
-    expect((await list(app)).messages.map((m) => m.body)).toEqual(['Your account is locked', 'https://bit.ly/acct-verify']);
+    const [p, g, l] = (await list(app)).messages;
+    expect(l).toMatchObject({ kind: 'link', body: 'https://bit.ly/acct-verify', reason: 'model_verdict' });
+    expect(g).toMatchObject({
+      kind: 'album',
+      body: 'Your account is locked',
+      reason: 'model_verdict',
+      attachments: [{ name: 'IMG_1.HEIC', mimeType: 'image/heic', size: null }],
+    });
+    expect(p).toMatchObject({ kind: 'album', body: '', reason: 'not_classified', action: 'delivered' });
+  });
+
+  it('tracks group chats as one opaque conversation, separate from DMs', async () => {
+    const app = makeApp();
+    const group = (id: string, from: string, text: string) => {
+      const b = payload({ id, from, text });
+      b.space = { id: 'chat-guid-123', platform: 'imessage', type: 'group', phone: '+15555550100' };
+      b.message.space = { ...b.space };
+      return b;
+    };
+    await app.request(signedRequest(group('spc-msg-1', '+15555550142', 'Hi all')));
+    await app.request(signedRequest(group('spc-msg-2', '+15555550177', 'Hey')));
+    await app.request(signedRequest(payload({ id: 'spc-msg-3', from: '+15555550142', text: 'Just you' })));
+    await app.idle();
+    const [dm, g2, g1] = (await list(app)).messages;
+    expect(g1!.conversation).toEqual(g2!.conversation);
+    expect(g1!.conversation.type).toBe('group');
+    expect(g1!.from.participantId).not.toBe(g2!.from.participantId);
+    expect(dm!.conversation.type).toBe('dm');
+    expect(dm!.conversation.id).not.toBe(g1!.conversation.id);
+    expect(g1!.conversation.id).toMatch(/^c_[0-9a-f]{16}$/);
+    expect(await (await app.request('/api/messages')).text()).not.toContain('chat-guid');
   });
 
   it('rejects a signed but malformed payload with 400', async () => {
@@ -214,6 +277,11 @@ describe('GET /api/messages', () => {
     await app.request(signedRequest(payload({ id: 'spc-pending', text: 'See you soon' })));
     return { app, bodies };
   }
+
+  it('the contract fixture itself matches the schema', () => {
+    expect(validate(readContract('contracts/fixtures/messages.v1.sample.json'))).toBe(true);
+    expect(validate.errors ?? []).toEqual([]);
+  });
 
   it('matches the v1 contract schema, newest first', async () => {
     const { app, bodies } = await seeded();

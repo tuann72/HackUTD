@@ -2,7 +2,21 @@
 // these are copied, not imported, per the decoupling rules.
 
 export type Action = 'pending' | 'delivered' | 'blocked';
-export type Reason = 'model_verdict' | 'classifier_unavailable' | null;
+/** `not_classified`: delivered without a check because there was no text (attachment, reaction, contact). */
+export type Reason = 'model_verdict' | 'classifier_unavailable' | 'not_classified' | null;
+export type MessageKind = 'text' | 'link' | 'attachment' | 'reaction' | 'contact' | 'album';
+
+export interface Conversation {
+  /** Opaque, stable per iMessage chat. */
+  id: string;
+  type: 'dm' | 'group';
+}
+
+export interface Attachment {
+  name: string | null;
+  mimeType: string | null;
+  size: number | null;
+}
 
 export interface Highlight {
   start: number;
@@ -27,6 +41,12 @@ export interface ApiMessage {
   action: Action;
   reason: Reason;
   verdict: Verdict | null;
+  kind: MessageKind;
+  conversation: Conversation;
+  attachments: Attachment[];
+  reaction: { emoji: string; targetPreview: string | null } | null;
+  /** Shared contact card; phones are masked. */
+  contact: { name: string | null; phones: string[] } | null;
 }
 
 export interface MessagesResponse {

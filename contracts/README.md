@@ -23,12 +23,19 @@ Each message:
 | `body` | Message text |
 | `receivedAt` | ISO 8601 time the gateway accepted it |
 | `action` | `pending`, `delivered` or `blocked` |
-| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified) or `null` while pending |
-| `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending or unavailable |
+| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified), `not_classified` (no text to check: attachment, reaction, contact card) or `null` while pending |
+| `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending, unavailable or not classified |
+| `kind` | `text`, `link`, `attachment`, `reaction`, `contact` or `album` (iMessage content). Optional: absent means `text` |
+| `conversation` | `{ id, type }`: an opaque chat id (`c_<hex>`) and `dm` or `group`. Optional: absent means a DM |
+| `attachments` | `[{ name, mimeType, size }]`, metadata only (never a file or URL). Optional, `[]` when none |
+| `reaction` | `{ emoji, targetPreview }` for `kind: "reaction"`, else `null`. `targetPreview` is up to ~80 characters of the message reacted to |
+| `contact` | `{ name, phones }` for a shared contact card, else `null`. `phones` are masked like `from.display` |
+
+`kind`, `conversation`, `attachments`, `reaction` and `contact` were added to v1 on 2026-11-08 as optional fields, so older v1 data stays valid. The gateway always sends them. For non-text kinds, `body` is `""`. The UI renders from `kind` and the extras, never from guessing at `body`.
 
 Highlight spans are character offsets into `body` with `0 <= start < end <= body.length` (JSON Schema can't express this; the gateway drops spans that don't fit). Consumers should still guard against bad spans.
 
-Display rule: `action == "delivered"` with `reason == "classifier_unavailable"` shows as **unverified**. The UI never re-decides scam vs. legitimate.
+Display rules: `action == "delivered"` with `reason == "classifier_unavailable"` shows as **unverified**, and `reason == "not_classified"` shows as **not checked**. The UI never re-decides scam vs. legitimate.
 
 ## Webhook signing (gateway and simulator)
 

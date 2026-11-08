@@ -2,15 +2,22 @@
 
 **Decision (Tuan, 2026-11-08):** move from Twilio SMS to **iMessage through Photon (Spectrum)**. The gateway stops being a Twilio webhook and becomes a **Spectrum webhook receiver**. Only iMessage is in scope. SMS and Twilio are dropped. The rest of the MVP stays the same: SQLite inbox and blocked log, fail-open classifier, polled query API, simulator, and the web UI.
 
+**Follow-up decisions (Tuan, 2026-11-08):**
+
+1. The team **enters the Photon track**.
+2. One **dedicated** Photon line, so every delivery is for the victim and there's no shared-pool filtering.
+3. Attachments, reactions, contact cards and group chats **show in the UI**.
+4. The victim's inbox is the **virtual inbox** (the web UI), as with Twilio.
+
 ## How interception works with Photon
 
-1. The team gets a Photon iMessage line, the **victim line**. Photon gives it a phone number (`space.phone`), or `"shared"` on a pooled line.
+1. The team has one **dedicated** Photon iMessage line, the **victim line**, with its own number (`space.phone`).
 2. A webhook pointing at the gateway is registered on the Photon project (see [Webhook setup](#webhook-setup)). Photon returns a **signing secret** once. That value is `PHOTON_WEBHOOK_SECRET`.
 3. Every inbound iMessage to the line arrives as `POST /webhooks/photon` with a JSON body (`event: "messages"`) and `X-Spectrum-*` headers.
 4. The gateway checks the signature and timestamp, dedupes on `message.id`, stores the message as `pending`, returns `200 ok` right away, then classifies it and marks it delivered or blocked. This is the same policy as before.
 5. The gateway **never replies**. Photon sends a message only if code calls `space.send` or `message.reply`, and the gateway has no Photon send code at all.
 
-Like the Twilio design, the victim's inbox is virtual. "Blocked" means the gateway's inbox doesn't show the message. With a Photon-hosted line, no real phone shows these messages to the victim either. What a "blocked" message means on a real victim handset is **TBD** (it would need on-device or relay delivery).
+**Virtual inbox (decided):** as in the Twilio design, the victim's inbox is the gateway's virtual inbox, shown in the web UI. "Blocked" means the message goes to the blocked list instead of the inbox. No real handset sits behind the Photon line, so nothing reaches a phone directly. Relaying delivered messages to a real handset is out of scope.
 
 ### Signature (from [Photon: verifying signatures](https://photon.codes/docs/webhooks/verifying-signatures))
 
@@ -29,12 +36,19 @@ Like the Twilio design, the victim's inbox is virtual. "Blocked" means the gatew
                "space": { … }, "content": { "type": "text", "text": "…" } } }
 ```
 
-| `content.type` | Gateway behavior (scaffolding) |
-|---|---|
-| `text` | Classified: `text` |
-| `richlink` | Classified: the `url` (scam links often arrive as rich links) |
-| `group` (album) | Text and URL items joined and classified as one message. Empty → ignored |
-| `attachment`, `reaction`, `contact`, unknown | Acknowledged with 200 and ignored (logged). **TBD**: show attachments as "[attachment]" entries? |
+| `content.type` | API `kind` | Gateway behavior |
+|---|---|---|
+| `text` | `text` | Classified: `text` |
+| `richlink` | `link` | Classified: the `url` (scam links often arrive as rich links) |
+| `group` (album) | `album` | Text and URL items joined and classified. Attachment items are listed in `attachments`. Photos only (no text) → delivered, `not_classified` |
+| `attachment` | `attachment` | Delivered, reason `not_classified`. `attachments: [{name, mimeType, size}]` holds metadata only, because Photon sends no bytes or URLs |
+| `reaction` | `reaction` | Delivered, `not_classified`. `reaction: {emoji, targetPreview}` |
+| `contact` | `contact` | Delivered, `not_classified`. `contact: {name, phones}`, with the phones **masked** before storage |
+| unknown, or empty text | — | Acknowledged with 200 and ignored (logged) |
+
+**Group chats:** `space.type == "group"` is stored as a conversation. The API's `conversation: {id, type}` has an opaque `c_<hex>` id per chat, so the raw `space.id` never leaves the gateway. Group messages are classified like DMs, and each sender keeps their own participant id. The UI shows a "Group chat" badge.
+
+**Not classified:** attachment-only messages aren't judged, because the model reads text only. The UI shows them as "Not checked". A scam sender's attachments are still delivered until the sender blocklist (task 1.5) is wired.
 
 The iMessage `sender.id` is usually E.164, but iMessage handles can also be **email addresses**. The gateway masks both (`***-***-0142`, `j***@icloud.com`) and never exposes either in the query API.
 
@@ -62,11 +76,10 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 | 1.3 | Record a real delivery and replace the synthetic fixture (`contracts/fixtures/photon-inbound-imessage.sample.json`) | 1.2 | — | Not started | — | — | — |
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
 | 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | Not started | — | — | — |
-| 1.6 | Decide on attachments, reactions and group chats (`space.type == "group"`) | — | Yes | Not started | — | — | — |
+| 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 
 ## Open questions (TBD)
 
-- Dedicated line or shared pool (`space.phone == "shared"`). With a shared line, the gateway would also have to filter by `space.id`.
-- What "blocked" means for a real handset victim (see above).
+- Should attachment-only messages from a known scam sender be blocked? This depends on task 1.5.
 - Whether to also keep an SMS path. Not planned. Photon's own SMS provider would be a separate decision.
 - Dedupe retention: the gateway keeps every `message.id` forever in SQLite. Photon suggests a 24–48 h TTL, which is fine at hackathon scale.

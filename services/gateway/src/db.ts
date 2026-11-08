@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import type { InboundMessage } from './photon.js';
-import type { Action, ApiMessage, Reason, Verdict } from './types.js';
+import type { Action, ApiMessage, Attachment, Conversation, MessageKind, Reason, Verdict } from './types.js';
 
 // Raw iMessage handles (numbers or emails) and Photon message/space ids are stored here and
 // nowhere else. Nothing in this module returns them to callers outside the DB layer.
@@ -14,18 +14,27 @@ CREATE TABLE IF NOT EXISTS participants (
   display     TEXT NOT NULL,
   created_at  TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS conversations (
+  id          TEXT PRIMARY KEY,
+  space_id    TEXT NOT NULL UNIQUE,
+  type        TEXT NOT NULL CHECK (type IN ('dm', 'group')),
+  created_at  TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS messages (
   seq                  INTEGER PRIMARY KEY AUTOINCREMENT,
   id                   TEXT NOT NULL UNIQUE,
   provider_message_id  TEXT NOT NULL UNIQUE,
   participant_id       TEXT NOT NULL REFERENCES participants(id),
+  conversation_id      TEXT NOT NULL REFERENCES conversations(id),
   line                 TEXT,
-  space_type           TEXT,
   sent_at              TEXT,
+  kind                 TEXT NOT NULL CHECK (kind IN ('text', 'link', 'attachment', 'reaction', 'contact', 'album')),
   body                 TEXT NOT NULL,
+  -- Masked extras for the API: attachments, reaction, contact.
+  extras_json          TEXT NOT NULL,
   received_at          TEXT NOT NULL,
   action          TEXT NOT NULL CHECK (action IN ('pending', 'delivered', 'blocked')),
-  reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable')),
+  reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable', 'not_classified')),
   verdict_json    TEXT,
   classified_at   TEXT
 );
@@ -35,10 +44,10 @@ export function openDb(path: string): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
-  const legacy = db.prepare("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'message_sid'").get();
-  if (legacy) {
+  const cols = (db.prepare("SELECT name FROM pragma_table_info('messages')").all() as Array<{ name: string }>).map((c) => c.name);
+  if (cols.length > 0 && !cols.includes('extras_json')) {
     db.close();
-    throw new Error(`${path} uses the old Twilio schema. Delete it (or point DB_PATH at a new file) and restart.`);
+    throw new Error(`${path} uses an older schema (Twilio or early Photon). Delete it (npm run db:reset) and restart.`);
   }
   db.exec(SCHEMA);
   return db;
@@ -70,6 +79,12 @@ export function normalizeHandle(handle: string): string {
   return t.startsWith('+') ? `+${digits}` : digits;
 }
 
+interface Extras {
+  attachments: Attachment[];
+  reaction: ApiMessage['reaction'];
+  contact: ApiMessage['contact'];
+}
+
 export interface StoredMessage {
   id: string;
   body: string;
@@ -93,6 +108,14 @@ export class Store {
     return p;
   }
 
+  private conversationFor(conv: InboundMessage['conversation'], now: string): string {
+    const existing = this.db.prepare('SELECT id FROM conversations WHERE space_id = ?').get(conv.spaceId) as { id: string } | undefined;
+    if (existing) return existing.id;
+    const id = newId('c');
+    this.db.prepare('INSERT INTO conversations (id, space_id, type, created_at) VALUES (?, ?, ?, ?)').run(id, conv.spaceId, conv.type, now);
+    return id;
+  }
+
   /**
    * Inserts a new pending message. Returns null if this Photon message.id was already seen
    * (Photon delivers at least once and retries on 5xx/timeouts).
@@ -104,13 +127,21 @@ export class Store {
     this.db.exec('BEGIN');
     try {
       const p = this.participantFor(rec.sender, nowIso);
+      const conversationId = this.conversationFor(rec.conversation, nowIso);
+      const extras: Extras = {
+        attachments: rec.attachments,
+        reaction: rec.reaction,
+        // Phones on a shared contact card are third-party numbers: store them masked only.
+        contact: rec.contact ? { name: rec.contact.name, phones: rec.contact.phones.map(maskNumber) } : null,
+      };
       const id = newId('msg');
       const res = this.db
         .prepare(
-          `INSERT OR IGNORE INTO messages (id, provider_message_id, participant_id, line, space_type, sent_at, body, received_at, action)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+          `INSERT OR IGNORE INTO messages
+             (id, provider_message_id, participant_id, conversation_id, line, sent_at, kind, body, extras_json, received_at, action)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
         )
-        .run(id, rec.providerMessageId, p.id, rec.line, rec.spaceType, rec.sentAt, rec.body, nowIso);
+        .run(id, rec.providerMessageId, p.id, conversationId, rec.line, rec.sentAt, rec.kind, rec.body, JSON.stringify(extras), nowIso);
       this.db.exec('COMMIT');
       if (Number(res.changes) === 0) return null;
       return { id, body: rec.body, display: p.display };
@@ -129,8 +160,11 @@ export class Store {
   listMessages(limit: number): ApiMessage[] {
     const rows = this.db
       .prepare(
-        `SELECT m.id, m.participant_id, p.display, m.body, m.received_at, m.action, m.reason, m.verdict_json
-         FROM messages m JOIN participants p ON p.id = m.participant_id
+        `SELECT m.id, m.participant_id, p.display, m.body, m.received_at, m.action, m.reason, m.verdict_json,
+                m.kind, m.extras_json, c.id AS conversation_id, c.type AS conversation_type
+         FROM messages m
+         JOIN participants p ON p.id = m.participant_id
+         JOIN conversations c ON c.id = m.conversation_id
          ORDER BY m.seq DESC LIMIT ?`,
       )
       .all(limit) as Array<{
@@ -142,16 +176,28 @@ export class Store {
       action: Action;
       reason: Reason;
       verdict_json: string | null;
+      kind: MessageKind;
+      extras_json: string;
+      conversation_id: string;
+      conversation_type: Conversation['type'];
     }>;
-    return rows.map((r) => ({
-      id: r.id,
-      from: { participantId: r.participant_id, display: r.display },
-      body: r.body,
-      receivedAt: r.received_at,
-      action: r.action,
-      reason: r.reason ?? null,
-      verdict: r.verdict_json ? (JSON.parse(r.verdict_json) as Verdict) : null,
-    }));
+    return rows.map((r) => {
+      const extras = JSON.parse(r.extras_json) as Extras;
+      return {
+        id: r.id,
+        from: { participantId: r.participant_id, display: r.display },
+        body: r.body,
+        receivedAt: r.received_at,
+        action: r.action,
+        reason: r.reason ?? null,
+        verdict: r.verdict_json ? (JSON.parse(r.verdict_json) as Verdict) : null,
+        kind: r.kind,
+        conversation: { id: r.conversation_id, type: r.conversation_type },
+        attachments: extras.attachments,
+        reaction: extras.reaction,
+        contact: extras.contact,
+      };
+    });
   }
 
   count(): number {
@@ -160,6 +206,6 @@ export class Store {
 
   /** Debug only: wipe everything. */
   reset(): void {
-    this.db.exec('BEGIN; DELETE FROM messages; DELETE FROM participants; DELETE FROM sqlite_sequence; COMMIT;');
+    this.db.exec('BEGIN; DELETE FROM messages; DELETE FROM conversations; DELETE FROM participants; DELETE FROM sqlite_sequence; COMMIT;');
   }
 }

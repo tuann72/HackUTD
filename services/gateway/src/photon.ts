@@ -79,15 +79,31 @@ export interface SpectrumEvent {
   message: SpectrumMessage;
 }
 
-/** What the gateway stores and classifies. */
+export type MessageKind = 'text' | 'link' | 'attachment' | 'reaction' | 'contact' | 'album';
+
+export interface AttachmentMeta {
+  name: string | null;
+  mimeType: string | null;
+  size: number | null;
+}
+
+/** What the gateway stores and classifies. Raw values; db.ts masks before anything leaves it. */
 export interface InboundMessage {
   providerMessageId: string;
   /** iMessage handle: E.164 number or an Apple ID email. */
   sender: string;
   /** The victim line (`space.phone`), or null. */
   line: string | null;
-  spaceType: string | null;
+  /** Photon's `space.id` (raw, contains handles) and whether it's a DM or a group chat. */
+  conversation: { spaceId: string; type: 'dm' | 'group' };
+  kind: MessageKind;
+  /** Classifiable text: the text, the link URL, or an album's text items. "" if there is none. */
   body: string;
+  /** Metadata only: Photon sends no bytes or URLs. */
+  attachments: AttachmentMeta[];
+  reaction: { emoji: string; targetPreview: string | null } | null;
+  /** Shared contact card. Phones are raw here. */
+  contact: { name: string | null; phones: string[] } | null;
   sentAt: string | null;
 }
 
@@ -100,21 +116,47 @@ function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-/** Classifiable text for a content block, or null if it has none. */
-export function contentText(content: unknown): string | null {
+const strOrNull = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
+
+function attachmentMeta(c: Record<string, unknown>): AttachmentMeta {
+  return {
+    name: strOrNull(c.name),
+    mimeType: strOrNull(c.mimeType),
+    size: typeof c.size === 'number' && Number.isFinite(c.size) ? c.size : null,
+  };
+}
+
+type Content = Pick<InboundMessage, 'kind' | 'body' | 'attachments' | 'reaction' | 'contact'>;
+
+/** Maps one content block; null for an unknown type or a block with nothing in it. */
+export function parseContent(content: unknown): Content | null {
   if (!isObj(content)) return null;
+  const empty = { body: '', attachments: [], reaction: null, contact: null };
   switch (content.type) {
     case 'text':
-      return typeof content.text === 'string' && content.text.trim() ? content.text : null;
+      return typeof content.text === 'string' && content.text.trim() ? { ...empty, kind: 'text', body: content.text } : null;
     case 'richlink':
-      return typeof content.url === 'string' && content.url ? content.url : null;
+      return typeof content.url === 'string' && content.url ? { ...empty, kind: 'link', body: content.url } : null;
+    case 'attachment':
+      return { ...empty, kind: 'attachment', attachments: [attachmentMeta(content)] };
+    case 'reaction': {
+      if (typeof content.emoji !== 'string' || !content.emoji) return null;
+      const target = isObj(content.target) ? content.target : {};
+      return { ...empty, kind: 'reaction', reaction: { emoji: content.emoji, targetPreview: strOrNull(target.contentPreview) } };
+    }
+    case 'contact': {
+      const phones = Array.isArray(content.phones) ? content.phones.filter((p): p is string => typeof p === 'string') : [];
+      return { ...empty, kind: 'contact', contact: { name: strOrNull(content.name), phones } };
+    }
     case 'group': {
-      const items = Array.isArray(content.items) ? content.items : [];
-      const parts = items.map((it) => (isObj(it) ? contentText(it.content) : null)).filter((t): t is string => !!t);
-      return parts.length ? parts.join('\n') : null;
+      // An album: text items become the body, attachments are listed.
+      const parts = (Array.isArray(content.items) ? content.items : []).map((it) => (isObj(it) ? parseContent(it.content) : null));
+      const body = parts.filter((p) => p && (p.kind === 'text' || p.kind === 'link')).map((p) => p!.body).join('\n');
+      const attachments = parts.flatMap((p) => p?.attachments ?? []);
+      if (!body && attachments.length === 0) return null;
+      return { ...empty, kind: 'album', body, attachments };
     }
     default:
-      // attachment, reaction, contact and future types: nothing to classify yet (TBD in the plan).
       return null;
   }
 }
@@ -127,24 +169,32 @@ export function parseSpectrumEvent(raw: unknown): ParseResult {
   const sender = isObj(msg.sender) && typeof msg.sender.id === 'string' ? msg.sender.id : '';
   if (!sender) return { kind: 'invalid', error: 'missing message.sender.id' };
 
-  const platform = typeof msg.platform === 'string' ? msg.platform : isObj(raw.space) ? raw.space.platform : undefined;
+  const space = isObj(raw.space) ? raw.space : isObj(msg.space) ? msg.space : {};
+  const platform = typeof msg.platform === 'string' ? msg.platform : space.platform;
   if (platform !== 'imessage') return { kind: 'ignored', reason: `platform ${JSON.stringify(platform)}` };
   if (msg.direction !== undefined && msg.direction !== 'inbound') return { kind: 'ignored', reason: `direction ${String(msg.direction)}` };
 
-  const contentType = isObj(msg.content) ? String(msg.content.type) : 'none';
-  const body = contentText(msg.content);
-  if (body === null) return { kind: 'ignored', reason: `content type ${contentType}` };
+  const content = parseContent(msg.content);
+  if (!content) return { kind: 'ignored', reason: `content type ${isObj(msg.content) ? String(msg.content.type) : 'none'}` };
 
-  const space = isObj(raw.space) ? raw.space : isObj(msg.space) ? msg.space : {};
   return {
     kind: 'message',
     message: {
       providerMessageId: msg.id,
       sender,
       line: typeof space.phone === 'string' ? space.phone : null,
-      spaceType: typeof space.type === 'string' ? space.type : null,
-      body,
+      conversation: {
+        // A DM's space is one per sender; fall back to that if Photon omits the id.
+        spaceId: typeof space.id === 'string' && space.id ? space.id : `dm:${sender}`,
+        type: space.type === 'group' ? 'group' : 'dm',
+      },
+      ...content,
       sentAt: typeof msg.timestamp === 'string' ? msg.timestamp : null,
     },
   };
+}
+
+/** Text worth sending to the classifier. Attachments, reactions and contact cards have none. */
+export function isClassifiable(m: InboundMessage): boolean {
+  return (m.kind === 'text' || m.kind === 'link' || m.kind === 'album') && m.body.trim().length > 0;
 }
