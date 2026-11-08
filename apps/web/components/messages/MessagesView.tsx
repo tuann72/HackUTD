@@ -156,23 +156,29 @@ export function MessagesView() {
             Personal space. Protected.
           </span>
           <div className="flex items-center gap-2">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
-          >
-            Dashboard
-            <span aria-hidden>▤</span>
-          </Link>
-          <button
-            type="button"
-            onClick={clear}
-            disabled={!clearSource || clearing || messages.length === 0}
-            title="Delete all messages from the gateway. This can't be undone."
-            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
-          >
-            {clearing ? "Clearing…" : "Clear chats"}
-            <span aria-hidden>↺</span>
-          </button>
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+            >
+              Dashboard
+              <span aria-hidden>▤</span>
+            </Link>
+            <Link
+              href="/voice"
+              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+            >
+              Voice results
+            </Link>
+            <button
+              type="button"
+              onClick={clear}
+              disabled={!clearSource || clearing || messages.length === 0}
+              title="Delete all messages from the gateway. This can't be undone."
+              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+            >
+              {clearing ? "Clearing…" : "Clear chats"}
+              <span aria-hidden>↺</span>
+            </button>
           </div>
         </header>
 

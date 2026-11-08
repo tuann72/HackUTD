@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://t-gate.example/contracts/voice-call-result.v1.schema.json",
+  "title": "T-Gate voice call result submission v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "call"],
+  "properties": {
+    "schema": { "const": "t-gate.voice-call-result" },
+    "version": { "const": 1 },
+    "call": { "$ref": "#/$defs/call" }
+  },
+  "$defs": {
+    "call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["callId", "transcript", "label", "score", "category", "model", "completedAt"],
+      "properties": {
+        "callId": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Opaque call ID; no phone, SIP, room, or Photon identifiers." },
+        "transcript": { "type": "string", "minLength": 1, "maxLength": 50000 },
+        "label": { "type": "string", "enum": ["scam", "legit"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 1, "description": "Classifier P(scam)." },
+        "category": { "type": ["string", "null"] },
+        "model": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "completedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

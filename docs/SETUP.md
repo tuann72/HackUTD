@@ -97,6 +97,14 @@ The web app is already set up to deploy to Vercel (repo-root `vercel.json`). In 
 | Value | Goes in | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | Vercel env (Production) | `https://<gateway-host>`, no trailing slash. **Redeploy** after setting it; it's fixed at build time. It's public, not a secret |
+| `MONGODB_URI`, `MONGODB_DB` | Vercel env | `MONGODB_URI` is required for durable voice call results. Voice results use a separate `voiceCallResults` collection in this database. |
+| `VOICE_GUARD_RESULTS_INGEST_TOKEN` | Vercel env and LiveKit Cloud worker secret | Same high-entropy secret in both places. The worker uses it only for `POST /api/voice/calls`. |
+| `VOICE_GUARD_RESULTS_VIEW_TOKEN` | Vercel env | Separate high-entropy token. Authorized viewers enter it at `/voice`; the browser keeps it in memory only. The intended viewer list is still TBD. |
+| `VOICE_GUARD_RESULTS_TTL_SECONDS` | Vercel env | Required positive number of seconds. Choose the transcript retention period explicitly; there is no default, and writes are rejected if it is unset. |
+| `VOICE_GUARD_RESULTS_URL` | LiveKit Cloud worker secret | `https://<project>.vercel.app/api/voice/calls`. The worker posts a result only when this and the ingest token are set. |
+| `CLASSIFIER_URL`, `CLASSIFIER_TOKEN` | LiveKit Cloud worker secrets | Point to the classifier service over HTTPS. For local end-to-end development, `CLASSIFIER_URL=http://127.0.0.1:8000` is allowed. |
+
+The voice result store is disabled on Vercel until Atlas, both result tokens, and an explicit TTL are configured. Local `next dev` uses process memory when `MONGODB_URI` is blank; it is lost on restart and is not a production storage option. See the [voice worker local demo steps](../services/voice-guard/README.md#local-end-to-end-call-result-demo).
 
 Then put the Vercel origin (for example `https://<project>.vercel.app`) in the gateway's `CORS_ORIGINS`.
 

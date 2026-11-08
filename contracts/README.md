@@ -7,6 +7,17 @@ The only thing the gateway and the web app share (see `AGENTS.md`, "Decoupling r
 | [`query-api.v1.schema.json`](query-api.v1.schema.json) | JSON Schema for `GET /api/messages`, the gateway's read-only query API |
 | [`fixtures/messages.v1.sample.json`](fixtures/messages.v1.sample.json) | A sample `GET /api/messages` response. The web app uses it when `NEXT_PUBLIC_API_URL` is unset |
 | [`fixtures/photon-inbound-imessage.sample.json`](fixtures/photon-inbound-imessage.sample.json) | The headers and JSON body Photon (Spectrum) posts for an inbound iMessage. **Synthetic**, built from Photon's documented payload; replace with a recorded real delivery (photon-imessage task 1.3) |
+| [`voice-call-result.v1.schema.json`](voice-call-result.v1.schema.json) | Versioned server-to-server submission for one after-call transcript and classifier result |
+| [`voice-call-results.v1.schema.json`](voice-call-results.v1.schema.json) | Versioned read-only response for `GET /api/voice/calls` |
+| [`fixtures/voice-call-results.v1.sample.json`](fixtures/voice-call-results.v1.sample.json) | Synthetic sample response for the voice-result contract |
+
+## Voice call result API (v1)
+
+- `POST /api/voice/calls` accepts the submission schema and requires `Authorization: Bearer <VOICE_GUARD_RESULTS_INGEST_TOKEN>`; only the LiveKit worker should use it.
+- `GET /api/voice/calls?limit=20` returns the response schema and requires `Authorization: Bearer <VOICE_GUARD_RESULTS_VIEW_TOKEN>`; the Vercel UI sends this from memory and never writes to the route.
+- The call ID is opaque. The record contains the final transcript and classifier label, score, category, model, and completion time. It contains no phone number, SIP identity, room name, or Photon ID.
+- Vercel rejects storage until `VOICE_GUARD_RESULTS_TTL_SECONDS` is explicitly set and `MONGODB_URI` is available. Atlas records get an `expiresAt` timestamp and TTL index; reads also filter expired records immediately. The selected retention duration and who should receive the view token remain operator decisions.
+- The classifier is trained on text messages, so its call result is an unvalidated plumbing signal, not a call-level accuracy claim.
 
 ## `GET /api/messages` (v1)
 
