@@ -9,13 +9,15 @@ import {
   type RemoteTrack,
 } from '@livekit/rtc-node';
 import dotenv from 'dotenv';
-import { classifyTranscript } from './classifier.js';
-import { publishCallResult } from './callResults.js';
 import { readConfig } from './config.js';
+import { sendTranscriptToGateway } from './gateway.js';
 import { publishSilenceTrack } from './silence.js';
 import { transcribeCallerTrack } from './transcribe.js';
 
 dotenv.config({ path: '.env' });
+
+/** Placeholder handle when the SIP participant has no caller number (masked as ***-***-0000). */
+const UNKNOWN_CALLER = '+10000000000';
 
 const missingLiveKitEnv = ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET'].filter(
   (name) => !process.env[name]?.trim(),
@@ -32,6 +34,9 @@ export default defineAgent({
       return;
     }
 
+    // Caller number from the SIP participant. Sent only to the gateway, which keeps raw handles in
+    // its own DB and shows them masked. Never logged.
+    let callerHandle = UNKNOWN_CALLER;
     let resolveCallerTrack: ((track: RemoteTrack | null) => void) | undefined;
     let callerTrackResolved = false;
     const callerTrackPromise = new Promise<RemoteTrack | null>((resolve) => {
@@ -45,6 +50,7 @@ export default defineAgent({
         track.kind === TrackKind.KIND_AUDIO
       ) {
         callerTrackResolved = true;
+        callerHandle = participant.attributes['sip.phoneNumber']?.trim() || UNKNOWN_CALLER;
         resolveCallerTrack?.(track);
         console.info(
           JSON.stringify({
@@ -102,52 +108,31 @@ export default defineAgent({
         return;
       }
 
-      if (!config.classifierUrl || !config.classifierToken) {
-        console.info(JSON.stringify({ event: 'classifier_not_configured', messageId }));
+      if (!config.gatewayWebhookUrl || !config.gatewayWebhookSecret) {
+        console.info(JSON.stringify({ event: 'gateway_not_configured', messageId }));
         return;
       }
 
       try {
-        const result = await classifyTranscript(
+        await sendTranscriptToGateway(
           {
-            baseUrl: config.classifierUrl,
-            token: config.classifierToken,
-            timeoutMs: config.classifierTimeoutMs,
+            url: config.gatewayWebhookUrl,
+            secret: config.gatewayWebhookSecret,
+            line: config.victimLine,
+            timeoutMs: config.gatewayTimeoutMs,
           },
-          messageId,
-          transcript,
+          { callId: messageId, caller: callerHandle, transcript, endedAt: new Date() },
         );
-        console.info(
+        // The gateway acks before classifying; the verdict appears in its GET /api/messages.
+        console.info(JSON.stringify({ event: 'transcript_sent_to_gateway', messageId }));
+      } catch (error) {
+        console.warn(
           JSON.stringify({
-            event: 'call_classified',
+            event: 'gateway_send_failed',
             messageId,
-            label: result.label,
-            score: result.score,
-            category: result.category,
-            model: result.model,
+            error: error instanceof Error ? error.message : 'unknown error',
           }),
         );
-        if (config.callResultsUrl && config.callResultsToken) {
-          try {
-            await publishCallResult(
-              {
-                url: config.callResultsUrl,
-                token: config.callResultsToken,
-                timeoutMs: config.classifierTimeoutMs,
-              },
-              messageId,
-              transcript,
-              result,
-            );
-            console.info(JSON.stringify({ event: 'call_result_published', messageId }));
-          } catch {
-            console.warn(JSON.stringify({ event: 'call_result_publish_failed', messageId }));
-          }
-        } else {
-          console.info(JSON.stringify({ event: 'call_result_sink_not_configured', messageId }));
-        }
-      } catch {
-        console.warn(JSON.stringify({ event: 'classification_unavailable', messageId }));
       }
     } catch {
       console.warn(JSON.stringify({ event: 'caller_session_failed' }));
