@@ -11,11 +11,11 @@ import type { SlapName } from "./slap";
 import type { SceneMessage, ShotFeed } from "./feed";
 
 const SENDER_X = -3.2;
-/** The Receiver bean stands behind T-Guard's hand box (further from the camera), peeking out on the right. */
-const RECEIVER_POSITION: [number, number, number] = [4.05, 0, -1.4];
+/** The Receiver bean stands behind and to the right of T-Guard's box, clear of the hand. */
+const RECEIVER_POSITION: [number, number, number] = [3.95, 0, -0.9];
 /** Shots leave the sender bean's side and land in T-Guard's hand, a little in front of it. */
 const SENDER_EDGE = new Vector3(SENDER_X + BLOB_RADIUS, 0.1, 0);
-const RECEIVER_CATCH = new Vector3(2.5, 0.1, 0.3);
+const RECEIVER_CATCH = new Vector3(1.7, 0.1, 0.3);
 /** Minimum gap between shots, so a burst of messages doesn't fire all at once. */
 const SHOT_GAP_MS = 600;
 /**
@@ -27,8 +27,8 @@ const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
 /**
  * Half the width and height of world space, around the origin the camera
  * looks at, that must stay in view: the sender bean, T-Guard's box and hand
- * (fingertips at y about 1.8), the Receiver bean behind it (x up to about 4.65,
- * further back so it projects inside that), the shot arc and "Blocked" stamp,
+ * (x about 1.1 to 3.3, fingertips at y about 1.8), the Receiver bean behind
+ * and right of it (x up to about 4.55), the shot arc and "Blocked" stamp,
  * and the labels (y about -1.75 to 1.5), plus a margin.
  */
 const FRAME_HALF_W = 5.1;
@@ -232,7 +232,6 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           hitAt={hits.at.victim}
           phase={0.6}
           labelAnchor={receiverAnchor}
-          labelAt="above"
         />
         {/* The hand and bubble images load once; the sender blob doesn't wait on them. */}
         <Suspense fallback={null}>

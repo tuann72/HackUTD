@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, type RefObject } from "react";
+import { useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { easing } from "maath";
 import {
+  CanvasTexture,
   Plane,
+  SRGBColorSpace,
   Vector3,
   type Group,
   type Mesh,
@@ -24,7 +26,7 @@ const HAND_IMAGES = {
 useTexture.preload(Object.values(HAND_IMAGES));
 
 /** The pink housing the hand rises out of (the prototype's cube). */
-const BOX = { x: 3.0, w: 1.3, h: 0.8, d: 1.0, bottom: -1.1 };
+const BOX = { x: 2.2, w: 1.3, h: 0.8, d: 1.0, bottom: -1.1 };
 const BOX_TOP = BOX.bottom + BOX.h;
 /** The hand is cut off at the box's top, so the arm seems to come out of the box. */
 const CLIP_AT_BOX_TOP = [new Plane(new Vector3(0, 1, 0), -BOX_TOP)];
@@ -47,10 +49,30 @@ interface HandProps {
   labelAnchor?: RefObject<Object3D | null>;
 }
 
+/** "T—GUARD" on the box's front face, drawn once into a canvas texture (no font download). */
+function useFrontLabel() {
+  return useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const c = canvas.getContext("2d");
+    if (!c) return null;
+    c.fillStyle = "#3c0523";
+    c.font = "900 112px Impact, Arial Black, Arial, sans-serif";
+    c.textAlign = "center";
+    c.fillText("T—GUARD", 256, 140);
+    c.font = "bold 28px Arial, sans-serif";
+    c.fillText("ACTIVE DEFENSE SYSTEM", 256, 196);
+    const texture = new CanvasTexture(canvas);
+    texture.colorSpace = SRGBColorSpace;
+    return texture;
+  }, []);
+}
+
 /**
- * T-Guard: a plain pink box with a photographic hand standing in it, in front
- * of the Receiver bean. When a
- * message is blocked it slaps the bubble away toward the sender. It only
+ * T-Guard: a pink box with a photographic hand standing in it, in front of
+ * and left of the Receiver bean. When a message is blocked it slaps the bubble away toward the sender. It only
  * animates the gateway's decision; it never makes one.
  */
 export function Hand({ hitAt, slap, labelAnchor }: HandProps) {
@@ -59,6 +81,7 @@ export function Hand({ hitAt, slap, labelAnchor }: HandProps) {
   const handMaterial = useRef<MeshBasicMaterial>(null);
   const boxMaterial = useRef<MeshStandardMaterial>(null);
   const textures = useTexture(HAND_IMAGES);
+  const frontLabel = useFrontLabel();
 
   useFrame((state, dt) => {
     const now = performance.now();
@@ -115,6 +138,12 @@ export function Hand({ hitAt, slap, labelAnchor }: HandProps) {
           <planeGeometry args={[BOX.w - 0.16, BOX.d - 0.16]} />
           <meshBasicMaterial color="#250f1d" />
         </mesh>
+        {frontLabel && (
+          <mesh position={[0, -0.02, BOX.d / 2 + 0.002]}>
+            <planeGeometry args={[BOX.w * 0.9, BOX.w * 0.45]} />
+            <meshBasicMaterial map={frontLabel} transparent depthWrite={false} toneMapped={false} />
+          </mesh>
+        )}
         {labelAnchor && <object3D ref={labelAnchor} position={[0, -BOX.h / 2 - 0.35, 0]} />}
       </group>
     </group>
