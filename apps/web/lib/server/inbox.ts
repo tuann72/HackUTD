@@ -32,6 +32,32 @@ export function spectrumSignature(secret: string, timestamp: string, rawBody: st
   return "v0=" + createHmac("sha256", secret).update(`v0:${timestamp}:${rawBody}`).digest("hex");
 }
 
+/**
+ * Photon 2.0 / Beta signs with Standard Webhooks (https://www.standardwebhooks.com): base64
+ * HMAC-SHA256 over `${webhook-id}.${webhook-timestamp}.${body}`, keyed with the base64 part of the
+ * `whsec_` secret. `webhook-signature` holds one or more space-separated `v1,<sig>` (two during a
+ * secret rotation).
+ */
+export function standardSignature(secret: string, id: string, ts: string, raw: string): string {
+  const key = secret.startsWith("whsec_") ? Buffer.from(secret.slice(6), "base64") : Buffer.from(secret);
+  return createHmac("sha256", key).update(`${id}.${ts}.${raw}`).digest("base64");
+}
+
+function verifyStandard(secret: string, h: Headers, raw: string, nowSec: number): string | null {
+  const id = h.get("webhook-id");
+  const ts = h.get("webhook-timestamp");
+  const sigs = h.get("webhook-signature");
+  if (!id || !ts || !sigs || !/^\d+$/.test(ts)) return "missing or malformed signature headers";
+  if (Math.abs(nowSec - Number(ts)) > 300) return "stale timestamp";
+  const want = Buffer.from(standardSignature(secret, id, ts, raw));
+  for (const part of sigs.split(" ")) {
+    const [version, sig] = part.split(",");
+    const got = Buffer.from(sig ?? "");
+    if (version === "v1" && got.length === want.length && timingSafeEqual(got, want)) return null;
+  }
+  return "bad signature";
+}
+
 function verify(secret: string, sig: string | null, ts: string | null, raw: string, nowSec: number): string | null {
   if (!sig || !ts || !/^\d+$/.test(ts)) return "missing or malformed signature headers";
   if (Math.abs(nowSec - Number(ts)) > 300) return "stale timestamp";
@@ -49,7 +75,43 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 
 type Parsed = { ok: true; id: string; sender: string; kind: MessageKind; body: string } | { ok: false; reason: string };
 
+/** Photon 2.0 / Beta envelope: { id, type: "message.received", data: { object: Message } }. */
+function parseBeta(raw: Record<string, unknown>): Parsed {
+  if (raw.type !== "message.received") return { ok: false, reason: `event ${String(raw.type)}` };
+  const m = isObj(raw.data) && isObj(raw.data.object) ? raw.data.object : null;
+  if (!m || typeof m.id !== "string" || !isObj(m.sentBy) || typeof m.sentBy.handle !== "string") {
+    return { ok: false, reason: "missing message id or sender handle" };
+  }
+  if (m.platform !== "imessage") return { ok: false, reason: `platform ${String(m.platform)}` };
+  const c = isObj(m.content) ? m.content : {};
+  const text = (x: unknown) => (isObj(x) && x.type === "text" && typeof x.text === "string" ? x.text : "");
+  let kind: MessageKind;
+  let body = "";
+  switch (c.type) {
+    case "text":
+      kind = "text";
+      body = text(c);
+      if (!body.trim()) return { ok: false, reason: "empty text" };
+      break;
+    case "attachment":
+      kind = "attachment";
+      break;
+    case "reaction":
+      kind = "reaction";
+      break;
+    case "group":
+      // An album: its text parts are classified, the attachments aren't.
+      kind = "album";
+      body = (Array.isArray(c.parts) ? c.parts : []).map(text).filter(Boolean).join("\n");
+      break;
+    default:
+      return { ok: false, reason: `content type ${String(c.type)}` }; // read receipts, typing, ...
+  }
+  return { ok: true, id: m.id, sender: m.sentBy.handle, kind, body };
+}
+
 function parse(raw: unknown): Parsed {
+  if (isObj(raw) && typeof raw.type === "string" && isObj(raw.data)) return parseBeta(raw);
   if (!isObj(raw) || raw.event !== "messages") return { ok: false, reason: "not a messages event" };
   const m = raw.message;
   if (!isObj(m) || typeof m.id !== "string" || !isObj(m.sender) || typeof m.sender.id !== "string") {
@@ -179,7 +241,11 @@ export async function handleWebhook(
   if (!cfg.webhookSecret) return new Response("PHOTON_WEBHOOK_SECRET is not set", { status: 503 });
 
   const raw = await req.text();
-  const bad = verify(cfg.webhookSecret, req.headers.get("x-spectrum-signature"), req.headers.get("x-spectrum-timestamp"), raw, Math.floor(now().getTime() / 1000));
+  const nowSec = Math.floor(now().getTime() / 1000);
+  // Beta (Standard Webhooks headers) or Stable Spectrum (x-spectrum-*), whichever the request carries.
+  const bad = req.headers.has("webhook-signature")
+    ? verifyStandard(cfg.webhookSecret, req.headers, raw, nowSec)
+    : verify(cfg.webhookSecret, req.headers.get("x-spectrum-signature"), req.headers.get("x-spectrum-timestamp"), raw, nowSec);
   if (bad) return new Response(bad, { status: bad === "bad signature" ? 401 : 400 });
 
   let json: unknown;

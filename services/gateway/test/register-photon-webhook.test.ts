@@ -123,3 +123,75 @@ describe('upsertEnv', () => {
     expect(upsertEnv('', 'K', 'v')).toBe('K=v\n');
   });
 });
+
+describe('Photon 2.0 / Beta (pho_prj_ project ids)', () => {
+  const betaEnv = { PHOTON_PROJECT_ID: 'pho_prj_01abc', PHOTON_PROJECT_SECRET: 'pho_ask_secretvalue' };
+  const base = 'https://api.photon.codes/v1/projects/pho_prj_01abc/webhooks';
+  const dest = { destinationId: 'pho_whd_01xyz', url: HOOK_URL, createdAt: 't', enabledEvents: ['message.received'], status: 'enabled' };
+
+  /** Routes by method + URL; each response is JSON. */
+  function routes(table: Record<string, [number, unknown]>) {
+    return vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const key = `${init?.method ?? 'GET'} ${String(url)}`;
+      const hit = table[key];
+      if (!hit) throw new Error(`unexpected ${key}`);
+      return new Response(JSON.stringify(hit[1]), { status: hit[0] });
+    });
+  }
+  function runBeta(argv: string[], f: ReturnType<typeof routes>, extra: { envFile?: string } = {}) {
+    const lines: string[] = [];
+    return main(argv, { fetch: f as unknown as typeof fetch, env: betaEnv, log: (l) => lines.push(l), ...extra }).then((code) => ({ code, out: lines.join('\n') }));
+  }
+
+  it('registers a destination for message.received with Bearer auth, an idempotency key and the newest API version', async () => {
+    const f = routes({
+      [`GET ${base}/api-versions`]: [200, { apiVersions: [
+        { version: '2026-01-01', status: 'deprecated', selectable: false },
+        { version: '2026-07-01', status: 'preview', selectable: true },
+      ] }],
+      [`POST ${base}/destinations`]: [201, { destination: dest, signingSecret: 'whsec_c2VjcmV0' }],
+    });
+    const { code, out } = await runBeta(['register', HOOK_URL], f);
+    expect(code).toBe(0);
+    const init = f.mock.calls[1]![1]!;
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer pho_ask_secretvalue');
+    expect(headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+    expect(JSON.parse(init.body as string)).toEqual({ apiVersion: '2026-07-01', name: 'T-Gate gateway', url: HOOK_URL, enabledEvents: ['message.received'] });
+    expect(out).toContain('registered webhook pho_whd_01xyz');
+    expect(out).toContain('PHOTON_WEBHOOK_SECRET=whsec_c2VjcmV0');
+    expect(out).not.toContain('pho_ask_secretvalue');
+  });
+
+  it('lists (all pages), deletes and rotates', async () => {
+    const f = routes({
+      [`GET ${base}/destinations`]: [200, { destinations: [dest], nextPageToken: 'p2' }],
+      [`GET ${base}/destinations?pageToken=p2`]: [200, { destinations: [{ ...dest, destinationId: 'pho_whd_02' }] }],
+      [`DELETE ${base}/destinations/pho_whd_01xyz`]: [200, dest],
+      [`POST ${base}/destinations/pho_whd_01xyz/secret-rotations`]: [200, { signingSecret: 'whsec_bmV3', previousSecretExpiresAt: '2026-11-08T12:00:00Z' }],
+    });
+    const list = await runBeta(['list'], f);
+    expect(list.out).toContain(`pho_whd_01xyz  ${HOOK_URL}  created t  enabled  events: message.received`);
+    expect(list.out).toContain('pho_whd_02');
+    expect((await runBeta(['delete', 'pho_whd_01xyz'], f)).out).toBe('deleted webhook pho_whd_01xyz');
+    const dir = mkdtempSync(join(tmpdir(), 'tgate-'));
+    const envFile = join(dir, '.env');
+    const rot = await runBeta(['rotate', 'pho_whd_01xyz', '--write-env'], f, { envFile });
+    expect(rot.code).toBe(0);
+    expect(readFileSync(envFile, 'utf8')).toBe('PHOTON_WEBHOOK_SECRET=whsec_bmV3\n');
+    expect(JSON.parse(f.mock.calls.at(-1)![1]!.body as string)).toEqual({ overlapSeconds: 3600 });
+  });
+
+  it('explains problem-details errors and refuses keys with stray characters', async () => {
+    const f = routes({ [`GET ${base}/destinations`]: [401, { title: 'Not Authenticated', requestId: 'pho_req_1' }] });
+    expect((await runBeta(['list'], f)).out).toMatch(/401: Not Authenticated.*PHOTON_PROJECT_SECRET.*\[pho_req_1\]/);
+    const lines: string[] = [];
+    const code = await main(['list'], { fetch: vi.fn() as never, env: { ...betaEnv, PHOTON_PROJECT_SECRET: 'pho_ask_x`' }, log: (l) => lines.push(l) });
+    expect(code).toBe(1);
+    expect(lines.join()).toMatch(/PHOTON_PROJECT_SECRET contains a quote, backtick or space/);
+  });
+
+  it('rotate is Beta only', async () => {
+    expect((await run(['rotate', 'abc-1'], fakeFetch(200, {}))).out).toMatch(/Beta only/);
+  });
+});
