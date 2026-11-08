@@ -157,7 +157,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Done (A: Vultr VM; web on Vercel) | `chore/deploy-vercel-web` | Tuan + Claude Code | |
+| 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Done (A: Vultr VM; web on Vercel) | `chore/deploy-vercel-web` | Tuan + Claude Code | [#16](https://github.com/tuann72/HackUTD/pull/16) |
 | 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | In progress (approach done: MiniLM on Vultr; label scheme after the Vultr training run) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 1: foundations
