@@ -1,0 +1,30 @@
+# T-Gate
+
+T-Gate detects likely scam messages and warns the recipient. Built for HackUTD's **Safe Signal (T-Mobile)** track.
+
+The MVP uses one Twilio number as the "victim". A simulated "perpetrator" sends scam and legitimate messages from a message bank as Twilio-format webhook calls. T-Gate classifies each message the victim receives as scam or legitimate, and blocks scams before they reach the victim.
+
+Proposed, not final: the victim gets a short "potential scam blocked" notice with a link to a blocked-scams panel. The panel shows why each message was blocked, its category, and the scam keywords highlighted. A Next.js web app (React Three Fiber and Motion, hosted on Vercel) shows the conversation live as a simple 3D scene. The planned stack is TypeScript for the gateway and web app, and Python for the model (possibly hosted on Vultr).
+
+Status: **planning**. No app code yet. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`DESIGN.md`](DESIGN.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset.
+
+## Feature board
+
+Every feature has a plan in [`docs/features/`](docs/features/) with ordered tasks and parallelization notes. New plans start from [`_TEMPLATE.md`](docs/features/_TEMPLATE.md).
+
+| Feature | Plan | Phase | Status |
+|---|---|---|---|
+| Twilio MVP: victim/perpetrator message classification | [twilio-mvp.md](docs/features/twilio-mvp.md) | MVP | Not started |
+| Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
+| Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
+| 3D conversation scene, Next.js + React Three Fiber (proposed) | _Not written yet_ | TBD | Not started |
+
+## Active work
+
+**Check this table and `gh pr list --state open` before starting anything.** Add a row when you start a task, open a draft PR right away so other branches can see the claim, and update the row as status changes. See `AGENTS.md`, "Claim the work".
+
+| Feature | Task | Branch | Worked on by | Status | PR |
+|---|---|---|---|---|---|
+| _None yet_ | | | | | |
+
+Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).
