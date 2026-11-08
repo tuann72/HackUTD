@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: Tracks are T-Mobile, NVIDIA and Photon; Nemotron and Nessie added
+
+- **Decision (Timothy):** the hackathon tracks are **Safe Signal (T-Mobile)**, **NVIDIA** and **Photon**.
+- **Replaces:** "Safe Signal track only; Photon dropped" and the Vultr track from "MiniLM, trained and served on Vultr; Vultr track added". Vultr hosting itself is unchanged.
+- **NVIDIA:** covered by **Nemotron**, added with **Capital One's Nessie** mock banking API as a second layer behind MiniLM (see [`AGENTS.md`, "Scam follow-up"](AGENTS.md#scam-follow-up-nemotron-and-nessie-proposed)). Nemotron is called on the classifier's uncertain band (text only), and Nemotron + Nessie run when a risky transaction follows a delivered message, so missed scams are caught where they cause harm without calling Nemotron on every message. That flow is proposed, not agreed.
+- **Photon:** nothing in the repo uses Photon yet. What covers the track (and which Photon product or version) is **TBD** and needs deciding before submission.
+
 ### 2026-11-07: Gateway on a Vultr VM, web app on Vercel
 
 - **Decision (Tuan):** the gateway runs on a **Vultr VM** (option A in the Twilio MVP plan). Only `apps/web` deploys to **Vercel**, through a repo-root `vercel.json` with one service (`web`) that serves every path. The classifier stays on Vultr as agreed.

@@ -1,6 +1,6 @@
 # T-Gate
 
-T-Gate detects likely scam messages and warns the recipient. Built for HackUTD's **Safe Signal (T-Mobile)** and **Vultr** tracks.
+T-Gate detects likely scam messages and warns the recipient. Built for HackUTD's **Safe Signal (T-Mobile)**, **NVIDIA** and **Photon** tracks.
 
 The MVP uses one Twilio number as the "victim". A simulated "perpetrator" sends scam and legitimate messages from a message bank as Twilio-format webhook calls. T-Gate classifies each message the victim receives as scam or legitimate, and blocks scams before they reach the victim.
 
