@@ -11,7 +11,7 @@ Real and simulated text messages to the **victim number** reach our gateway, get
 
 That's the whole MVP. The 3D scene, the scam notice and the blocked-scams panel come later (see [Out of scope](#out-of-scope)).
 
-Background: `AGENTS.md`, "Current scope"; `DESIGN.md`, "Perpetrator simulator", "Message bank" and "Gateway behavior details".
+Background: `AGENTS.md`, "Current scope"; `CHANGELOG.md`, "Perpetrator simulator", "Message bank" and "Gateway behavior details".
 
 ## At a glance
 
@@ -34,7 +34,7 @@ Simulator ──signed POST───────────────┤
 
 | Piece | What it is | Language |
 |---|---|---|
-| Gateway | Small HTTP service: the Twilio webhook plus a read-only query API | TypeScript (lean, framework TBD; Hono suggested) |
+| Gateway | Small HTTP service: the Twilio webhook plus a read-only query API | TypeScript (framework TBD; Hono suggested) |
 | Classifier | A stub at first, behind a classifier interface; the real model plugs in later | Stub in TS; real model in Python |
 | Simulator | CLI that sends signed, Twilio-format POSTs from a scenario file | TypeScript |
 | Message UI | One Next.js page that polls the query API | TypeScript (Next.js) |
@@ -123,7 +123,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 ## Out of scope
 
-- The 3D scene (React Three Fiber). Parked for later; ideas are in `DESIGN.md`, "3D scene".
+- The 3D scene (React Three Fiber). Parked for later; ideas are in `CHANGELOG.md`, "3D scene".
 - Scam notice to the victim, the blocked-scams panel and keyword highlights.
 - Real-time event stream (WebSocket or SSE). The MVP UI polls.
 - Letting the public text the victim number (the separate "Live public demo" feature).
@@ -143,14 +143,14 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 ## Tasks
 
-Tasks in the same stage can run **in parallel**. Each task touches its own folder, so parallel branches don't conflict.
+Tasks in the same stage can run **in parallel**. Each task touches its own folder (layout from `CHANGELOG.md`, "Decoupling rules"), so parallel branches don't conflict.
 
 ### Stage 0: decisions
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Choose gateway hosting (A or B), framework and storage; record in `DESIGN.md` | — | 0.2 | Not started | | | |
-| 0.2 | Choose classifier approach and label scheme; record in `DESIGN.md` | — | 0.1 | Not started | | | |
+| 0.1 | Choose gateway hosting (A or B), framework and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
+| 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | Not started | | | |
 
 ### Stage 1: foundations
 
@@ -188,7 +188,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 ### 1.2 Gateway
 
 - **What:** `POST /twilio/sms` and `GET /api/messages`, following [What the gateway does](#what-the-gateway-does-with-one-message). The stub classifier can be simple keyword rules, so the whole path works before the model exists.
-- **Files:** `apps/gateway/` (path TBD).
+- **Files:** `services/gateway/` (path TBD).
 - **Done when:** replaying the 1.1 fixture (correctly signed) stores a message; a bad signature gets 403; a repeated `MessageSid` is ignored; the query API returns the message without raw numbers. Tests cover all four.
 
 ### 1.3 Message UI
@@ -212,7 +212,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 ### 2.1 Simulator CLI
 
 - **What:** see [Simulator](#simulator).
-- **Files:** `apps/simulator/` (path TBD).
+- **Files:** `services/perpetrator-sim/` (path TBD).
 - **Done when:** a scenario plays against a local gateway and every message shows up in the query API; `--dry-run` prints the signed requests without sending.
 
 ### 2.2 Connect the UI
@@ -232,6 +232,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ## Progress notes
 
+- **2026-11-07:** TypeScript confirmed for the gateway and simulator (Tuan). Framework and hosting still TBD.
 - **2026-11-07:** Plan rewritten around a concrete MVP (Tuan): the MVP UI is a basic Next.js page that polls a read-only query API; the 3D scene is parked for later. Added how messages reach the gateway and when a tunnel is needed, the gateway steps, the query API, simulator scenario mode and a task list split by folder for parallel work.
 - **2026-11-07:** Switched to one Twilio number. The perpetrator is simulated with signed webhook calls, fed by a message bank.
 - **2026-11-07:** Plan created from the team's Twilio-first scope decision.

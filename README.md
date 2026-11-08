@@ -4,9 +4,9 @@ T-Gate detects likely scam messages and warns the recipient. Built for HackUTD's
 
 The MVP uses one Twilio number as the "victim". A simulated "perpetrator" sends scam and legitimate messages from a message bank as Twilio-format webhook calls. T-Gate classifies each message the victim receives as scam or legitimate, and blocks scams before they reach the victim.
 
-Proposed, not final: the victim gets a short "potential scam blocked" notice with a link to a blocked-scams panel. The panel shows why each message was blocked, its category, and the scam keywords highlighted. For the MVP, a basic Next.js page lists delivered and blocked messages. A 3D scene (React Three Fiber) is planned for later. The planned stack is TypeScript for the gateway and web app, and Python for the model (possibly hosted on Vultr).
+Proposed, not final: the victim gets a short "potential scam blocked" notice with a link to a blocked-scams panel. The panel shows why each message was blocked, its category, and the scam keywords highlighted. For the MVP, a basic Next.js page lists delivered and blocked messages. A 3D scene (React Three Fiber) is planned for later. The stack is TypeScript for the gateway, simulator and web app, and Python for the model (possibly hosted on Vultr).
 
-Status: **planning**. No app code yet. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`DESIGN.md`](DESIGN.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset.
+Status: **planning**. No app code yet. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`CHANGELOG.md`](CHANGELOG.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset.
 
 ## Feature board
 

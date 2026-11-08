@@ -1,8 +1,17 @@
-# T-Gate Design
+# T-Gate Changelog
+
+The team's decision log (newest first) and the detailed design spec behind it. Renamed from `DESIGN.md` on 2026-11-07.
 
 The detailed, evolving design document. `AGENTS.md` holds the current summary; this file holds the reasoning. Mark anything undecided as **TBD**.
 
 ## Decision log
+
+### 2026-11-07: TypeScript for the Twilio stack; `DESIGN.md` renamed to `CHANGELOG.md`
+
+- **Decision (Tuan):** the gateway (Twilio webhook and query API) and the perpetrator simulator are TypeScript, as is the Next.js web app. This confirms the earlier lean. The classifier's training and inference stay Python.
+- **Why:** one language across the Twilio side and the web app. Twilio's `twilio` npm package has TypeScript types, `validateRequest` for checking webhook signatures and `getExpectedTwilioSignature` for signing simulator requests. The only realistic alternative was Python (FastAPI), which would split the backend from the web app.
+- **Still TBD:** the gateway framework (Hono recommended) and where it's hosted.
+- **Also:** this file was renamed from `DESIGN.md`.
 
 ### 2026-11-07: MVP UI is a basic Next.js message list; 3D scene parked
 
@@ -40,7 +49,7 @@ Newest first. Each entry: date, decision, rationale, and what it replaces.
 
 ### 2026-11-07: Leaning TypeScript; proposed scam notice, blocked-scams panel and keyword highlights
 
-- **Stack (Tuan's lean, not final):** TypeScript for the gateway, the perpetrator simulator and the Next.js web app. The model training and inference service stays Python. See [Technology stack](#technology-stack-leaning-typescript).
+- **Stack (Tuan's lean, not final):** TypeScript for the gateway, the perpetrator simulator and the Next.js web app. The model training and inference service stays Python. See [Technology stack](#technology-stack-typescript).
 - **Proposed:** when a scam is blocked, the victim gets a short notice ("T-Gate blocked a potential scam… View: <link>"). The link opens a **blocked-scams panel** in the Next.js app that lists every blocked message, why it was blocked and its category. The panel **highlights the keywords** that pushed the model toward "scam", so the victim learns to spot them in messages that get through.
 - **Details:** [Scam notice to the victim](#scam-notice-to-the-victim), [Blocked-scams panel](#blocked-scams-panel), [Keyword highlighting](#keyword-highlighting).
 
@@ -283,9 +292,9 @@ Proposed block record:
 - **Queries:** blocked counts by category and over time, and the most recent blocks. Who sees this (a dashboard, the scene, logs) is TBD.
 - The `message.blocked` event carries `verdict.category`, so displays can show the reason, for example as a label on the red bubble.
 
-#### Technology stack (leaning TypeScript)
+#### Technology stack (TypeScript)
 
-Tuan's lean is TypeScript, since the web app is Next.js. That fits, with one exception and one hosting caveat.
+TypeScript is agreed (Tuan, 2026-11-07), since the web app is Next.js. One exception and one hosting caveat:
 
 - **TypeScript (Node 20+):** the gateway, the perpetrator simulator, the Next.js web app and the generated contract types. Twilio's `twilio` npm package has first-class TypeScript support, including `validateRequest` for webhook signatures and `getExpectedTwilioSignature` for the simulator. One language across these lets the team share tooling (pnpm workspaces, ESLint, Vitest).
 - **Exception, Python for the model:** training and inference (scikit-learn for TF-IDF + LR, or sentence-transformers for MiniLM) belong in Python, where those libraries live. The gateway only talks to it over HTTP, so the language difference doesn't leak.
@@ -398,7 +407,7 @@ The scene would be a **Next.js** website, ready to deploy on **Vercel**.
 
 #### Open questions (TBD)
 
-- Confirm the TypeScript lean. Gateway framework (for example, Hono or Fastify), and separate service vs. Next.js route handlers on Vercel.
+- Gateway framework (for example, Hono or Fastify), and separate service vs. Next.js route handlers on Vercel.
 - Where the scam notice goes: virtual inbox only, or also a real SMS to a protected handset. Notice batching threshold.
 - Whether the panel needs real login, or unguessable links are enough for the MVP.
 - Highlight method if MiniLM is chosen (occlusion vs. attribution vs. hybrid). Whether delivered borderline messages get soft highlights.
