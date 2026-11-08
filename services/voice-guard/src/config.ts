@@ -1,38 +1,36 @@
 export interface VoiceGuardConfig {
   captureEnabled: boolean;
-  classifierUrl?: string;
-  classifierToken?: string;
-  classifierTimeoutMs: number;
-  callResultsUrl?: string;
-  callResultsToken?: string;
+  /** Gateway webhook (https://<gateway-host>/webhooks/photon). Unset = transcribe only, send nothing. */
+  gatewayWebhookUrl?: string;
+  /** The gateway's PHOTON_WEBHOOK_SECRET. Required with gatewayWebhookUrl. */
+  gatewayWebhookSecret?: string;
+  /** Victim line put in `space.phone`. */
+  victimLine: string;
+  gatewayTimeoutMs: number;
 }
 
+/** Fictional default victim line, the same one the web Simulate panel uses. */
+export const DEFAULT_VICTIM_LINE = '+15555550100';
+
 export function readConfig(env: NodeJS.ProcessEnv = process.env): VoiceGuardConfig {
-  const classifierUrl = env.CLASSIFIER_URL?.trim();
-  const classifierToken = env.CLASSIFIER_TOKEN?.trim();
-  const timeoutValue = env.CLASSIFIER_TIMEOUT_MS?.trim();
-  const classifierTimeoutMs = timeoutValue ? Number(timeoutValue) : 10_000;
-  const callResultsUrl = env.VOICE_GUARD_RESULTS_URL?.trim();
-  const callResultsToken = env.VOICE_GUARD_RESULTS_INGEST_TOKEN?.trim();
+  const gatewayWebhookUrl = env.GATEWAY_WEBHOOK_URL?.trim();
+  const gatewayWebhookSecret = env.GATEWAY_WEBHOOK_SECRET?.trim();
+  const timeoutValue = env.GATEWAY_TIMEOUT_MS?.trim();
+  const gatewayTimeoutMs = timeoutValue ? Number(timeoutValue) : 10_000;
 
-  if (classifierUrl && !classifierToken) {
-    throw new Error('CLASSIFIER_TOKEN is required when CLASSIFIER_URL is set');
+  if ((gatewayWebhookUrl && !gatewayWebhookSecret) || (!gatewayWebhookUrl && gatewayWebhookSecret)) {
+    throw new Error('GATEWAY_WEBHOOK_URL and GATEWAY_WEBHOOK_SECRET must be set together');
   }
 
-  if ((callResultsUrl && !callResultsToken) || (!callResultsUrl && callResultsToken)) {
-    throw new Error('VOICE_GUARD_RESULTS_URL and VOICE_GUARD_RESULTS_INGEST_TOKEN must be set together');
-  }
-
-  if (!Number.isInteger(classifierTimeoutMs) || classifierTimeoutMs <= 0) {
-    throw new Error('CLASSIFIER_TIMEOUT_MS must be a positive integer');
+  if (!Number.isInteger(gatewayTimeoutMs) || gatewayTimeoutMs <= 0) {
+    throw new Error('GATEWAY_TIMEOUT_MS must be a positive integer');
   }
 
   return {
     captureEnabled: env.VOICE_GUARD_CAPTURE_ENABLED === 'true',
-    ...(classifierUrl ? { classifierUrl } : {}),
-    ...(classifierToken ? { classifierToken } : {}),
-    ...(callResultsUrl ? { callResultsUrl } : {}),
-    ...(callResultsToken ? { callResultsToken } : {}),
-    classifierTimeoutMs,
+    ...(gatewayWebhookUrl ? { gatewayWebhookUrl } : {}),
+    ...(gatewayWebhookSecret ? { gatewayWebhookSecret } : {}),
+    victimLine: env.VOICE_GUARD_VICTIM_LINE?.trim() || DEFAULT_VICTIM_LINE,
+    gatewayTimeoutMs,
   };
 }

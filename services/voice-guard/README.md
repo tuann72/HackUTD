@@ -1,77 +1,63 @@
 # Voice guard worker
 
-This LiveKit Agents worker is the caller-only receiver for the voice scam guard. It filters for SIP participant audio, streams it to AssemblyAI Universal-Streaming through LiveKit Inference, keeps finalized transcript text in memory, and submits that text to the existing classifier after the audio track ends when the classifier is configured. When the Vercel result endpoint and ingest token are configured, it posts the transcript and classifier fields to the protected call-results API. It publishes a zero-amplitude audio track to complete LiveKit's SIP answer handshake; it does not send speech or caller audio back to the caller. It never persists audio or logs transcript text.
+This LiveKit Agents worker is the caller-only receiver for the voice scam guard. It filters for SIP participant audio, streams it to AssemblyAI Universal-Streaming through LiveKit Inference, and keeps finalized transcript text in memory. After the caller hangs up, it sends the transcript to the **T-Guard gateway on the VM** the same way the perpetrator simulator and the web Simulate panel do: a Photon (Spectrum) inbound-iMessage webhook, signed with `X-Spectrum-Signature`, POSTed to `/webhooks/photon`. The gateway then runs its normal pipeline (classifier, review band, money rule, block or deliver), stores the result, and the web UI shows it on `/messages` through `GET /api/messages`. The worker never calls the classifier or Photon directly.
 
-The transcript is sent to `POST {CLASSIFIER_URL}/classify` as `{ messageId, text }`, where `messageId` is a random UUID. No phone number, SIP identifier, or LiveKit room name is sent to the classifier. If configured, the worker then submits `{ callId, transcript, label, score, category, model, completedAt }` to `VOICE_GUARD_RESULTS_URL`; result submission is authenticated and does not affect call completion.
+It publishes a zero-amplitude audio track to complete LiveKit's SIP answer handshake; it does not send speech or caller audio back to the caller. It never persists audio or logs transcript text or caller numbers.
+
+## What the gateway receives
+
+One signed `messages` event per call, the same shape `apps/web/lib/server/simulate.ts` builds:
+
+- `message.id`: `voice-<uuid>` (a random per-call id; the gateway dedupes on it).
+- `message.sender.id`: the caller's number from the SIP participant's `sip.phoneNumber` attribute, or `+10000000000` if LiveKit didn't provide one. The gateway keeps raw handles in its own SQLite DB only and shows them masked (`***-***-1234`).
+- `space.id`: `voice;-;<caller>`, so a call doesn't merge into that number's iMessage chat. `space.phone` is `VOICE_GUARD_VICTIM_LINE` (default `+15555550100`).
+- `message.content`: `{ type: "text", text: <transcript> }`.
+
+The gateway acks with `200 ok` before it classifies, so the worker only logs `transcript_sent_to_gateway`; the verdict appears in the gateway's logs and in `GET /api/messages` a moment later. In the UI a call currently looks like a text message from the caller's masked number.
 
 ## Local setup
 
 1. Copy `.env.example` to `.env` and set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` from LiveKit Cloud.
 2. Leave `VOICE_GUARD_CAPTURE_ENABLED=false` until a consented test call is authorized. This default keeps the worker from connecting to the room or subscribing to call audio.
-3. Set `CLASSIFIER_URL` to the classifier service base URL and `CLASSIFIER_TOKEN` to its bearer token when the classifier is available. If unset, the worker transcribes in memory but skips classification.
-4. For result display, set `VOICE_GUARD_RESULTS_URL` to the full `https://<vercel-site>/api/voice/calls` URL and set `VOICE_GUARD_RESULTS_INGEST_TOKEN` to the same value configured in Vercel. Leave both unset to skip result storage.
-5. Install dependencies with `npm install`.
-6. Start the worker with `npm run dev`.
+3. Set `GATEWAY_WEBHOOK_URL` to the gateway's webhook (`https://<gateway-host>/webhooks/photon`, or `http://localhost:8787/webhooks/photon` for a local gateway) and `GATEWAY_WEBHOOK_SECRET` to the gateway's `PHOTON_WEBHOOK_SECRET`. Leave both empty to transcribe only.
+4. Install dependencies with `npm install`.
+5. Start the worker with `npm run dev`.
 
-## Local end-to-end call result demo
+## Local end-to-end demo
 
-Run the web app and voice worker locally while the worker still joins the configured LiveKit Cloud room. Do not use the sample tokens below outside local development.
-
-1. Start the classifier service on the laptop at `http://127.0.0.1:8000`. The service needs `classifier/artifacts/model.json` and the matching model files; those artifacts are not committed. The repo instructions prohibit training the production model on the laptop, so use an existing local artifact set or point `CLASSIFIER_URL` at an available classifier endpoint instead.
-
-   ```bash
-   cd classifier
-   CLASSIFIER_TOKEN=local-dev-classifier-token uvicorn service.app:app --host 127.0.0.1 --port 8000
-   ```
-
-2. In `apps/web/.env.local`, set the local-only result credentials and TTL, and leave `MONGODB_URI` empty to use the development process-memory store:
-
-   ```dotenv
-   VOICE_GUARD_RESULTS_INGEST_TOKEN=local-dev-ingest-token
-   VOICE_GUARD_RESULTS_VIEW_TOKEN=local-dev-view-token
-   VOICE_GUARD_RESULTS_TTL_SECONDS=3600
-   MONGODB_URI=
-   ```
-
-   Then run `npm run dev` from `apps/web`.
-
-3. In the voice worker's local `.env`, configure:
+1. Start the gateway (`services/gateway`, see its README) with a `PHOTON_WEBHOOK_SECRET` and a classifier, and the web app (`apps/web`) with `NEXT_PUBLIC_API_URL=http://localhost:8787`.
+2. In the worker's `.env`:
 
    ```dotenv
    VOICE_GUARD_CAPTURE_ENABLED=true
-   CLASSIFIER_URL=http://127.0.0.1:8000
-   CLASSIFIER_TOKEN=local-dev-classifier-token
-   VOICE_GUARD_RESULTS_URL=http://127.0.0.1:3000/api/voice/calls
-   VOICE_GUARD_RESULTS_INGEST_TOKEN=local-dev-ingest-token
+   GATEWAY_WEBHOOK_URL=http://localhost:8787/webhooks/photon
+   GATEWAY_WEBHOOK_SECRET=<the gateway's PHOTON_WEBHOOK_SECRET>
    ```
 
-   Start it with `npm run dev` from `services/voice-guard`.
+   Start it with `npm run dev`.
+3. Place a consented call. After hangup, the transcript shows up on `/messages` as delivered or blocked.
 
-4. Open `http://localhost:3000/voice`, enter `local-dev-view-token`, then place a consented call. After hangup, the page polls every five seconds and displays the transcript and classifier result. Local-memory results disappear when `next dev` restarts; no audio or durable transcript is written locally.
-
-If `classifier/artifacts/` is absent, step 1 cannot start; use a running classifier endpoint in `CLASSIFIER_URL` or make the trained model artifacts available before placing a call.
-
-The `T-Gate Voice` inbound SIP dispatch rule targets agent name `voice-guard`. Set `VOICE_GUARD_CAPTURE_ENABLED=true` only for an authorized, consented call. The worker publishes silence so the caller is answered, then listens to caller audio; spoken response remains out of scope.
+The `T-Gate Voice` inbound SIP dispatch rule targets agent name `voice-guard`. Set `VOICE_GUARD_CAPTURE_ENABLED=true` only for an authorized, consented call.
 
 ## Container and LiveKit Cloud deployment
 
 The Dockerfile compiles TypeScript into `dist/` and runs `node dist/agent.js start` as an unprivileged user. `.dockerignore` excludes local `.env` files and build artifacts. Build locally with `npm run build`; the container image installs production dependencies only.
 
-The selected host is LiveKit Cloud. The production `voice-guard` agent is deployed in `us-east`, is running with one ready replica, and is registered under the expected agent name. It has `VOICE_GUARD_CAPTURE_ENABLED=true`; LiveKit injects `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET`. The local `.env` is excluded from the deployment source archive. `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` are not configured in Cloud, so the current deployment answers and transcribes but skips classification. To publish results after deploying the combined worker, also set `VOICE_GUARD_RESULTS_URL=https://<vercel-site>/api/voice/calls` and `VOICE_GUARD_RESULTS_INGEST_TOKEN` to the matching Vercel secret.
+The selected host is LiveKit Cloud. The production `voice-guard` agent is deployed in `us-east` with `VOICE_GUARD_CAPTURE_ENABLED=true`; LiveKit injects `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET`. To send transcripts to the VM after deploying this version, set the Cloud secrets `GATEWAY_WEBHOOK_URL=https://<gateway-host>/webhooks/photon` and `GATEWAY_WEBHOOK_SECRET` (the gateway's `PHOTON_WEBHOOK_SECRET`). The old `CLASSIFIER_*` and `VOICE_GUARD_RESULTS_*` variables are no longer read.
 
-The current Build plan includes 1,000 agent session minutes, 1,000 third-party SIP minutes, and $2.50 of LiveKit Inference allowance. Production workers can cold-start after idle, adding up to 10–20 seconds before joining a call. The worker is registered, but production dispatch has not been verified with a post-deployment call.
+The current Build plan includes 1,000 agent session minutes, 1,000 third-party SIP minutes, and $2.50 of LiveKit Inference allowance. Production workers can cold-start after idle, adding up to 10–20 seconds before joining a call. Production dispatch has not been verified with a post-deployment call.
 
 ## Data handling
 
 - Audio frames are streamed directly from the SIP track into LiveKit Inference and are not written to disk or object storage.
-- Only finalized transcript text is buffered in process memory before classification. Interim transcript events are ignored.
-- When configured, the final transcript and verdict are sent over HTTPS to the Vercel call-results endpoint. Vercel accepts the result only when `VOICE_GUARD_RESULTS_INGEST_TOKEN`, `VOICE_GUARD_RESULTS_VIEW_TOKEN`, `VOICE_GUARD_RESULTS_TTL_SECONDS`, and `MONGODB_URI` are configured. The TTL has no default; records expire from the dedicated Atlas collection, and reads immediately filter expired records. The viewer token is typed into `/voice` and kept in page memory only.
-- LiveKit documents Inference as zero-data-retention by default, including audio and model outputs. T-Gate transcript retention duration is still TBD. If result submission is not configured, the worker drops the transcript after classification; if enabled, Vercel stores it only through the explicitly configured TTL.
-- Logs contain only opaque IDs and classification metadata, never caller numbers or transcript text.
+- Only finalized transcript text is buffered in process memory. Interim transcript events are ignored.
+- The final transcript and caller number go over HTTPS to the gateway only. The gateway stores them in its SQLite DB like any iMessage (raw handle internal, masked in the API) and sends only the text and an opaque id to the classifier. Transcript retention follows the gateway's message storage (Clear chats deletes them); a call-specific retention period is still TBD.
+- LiveKit documents Inference as zero-data-retention by default, including audio and model outputs.
+- Logs contain only opaque IDs and event names, never caller numbers or transcript text.
 
 ## Current limits
 
 - English transcription only, matching Universal-Streaming's documented language support.
-- The existing classifier is trained on text messages. Call-level accuracy, transcript windowing, and thresholds are not validated by this worker.
-- Vercel result storage and display are implemented in the follow-on task, but remain disabled until the owner configures the explicit retention TTL and view/ingest tokens.
-- A consented call verified the local route: SIP status changed from `ringing` to `active`, the worker transcribed non-empty caller speech, then the call ended. The classifier is not configured and no verdict or UI result is produced yet.
+- The classifier is trained on text messages. Call-level accuracy, transcript windowing, and thresholds are not validated.
+- Calls appear in the UI as text messages; there is no call badge or separate message kind yet.
+- The worker sends once and does not retry if the gateway is unreachable; the transcript is then dropped.

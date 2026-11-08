@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Voice transcripts go to the VM gateway like simulated messages
+
+- **Decision (LacsJP27):** the voice-guard worker sends each finished call's transcript to the gateway on the VM as a signed Photon (Spectrum) inbound-iMessage webhook on `/webhooks/photon`, the same path the perpetrator simulator and the Simulate panel use. The gateway classifies it, applies its block/deliver policy (threshold, review band, money rule) and stores it, and `/messages` shows it through `GET /api/messages`.
+- **Replaces** the worker's direct `POST /classify` call and its upload to the Vercel `/api/voice/calls` endpoint. The worker no longer reads `CLASSIFIER_*` or `VOICE_GUARD_RESULTS_*`; it reads `GATEWAY_WEBHOOK_URL`, `GATEWAY_WEBHOOK_SECRET` (the gateway's `PHOTON_WEBHOOK_SECRET`), `GATEWAY_TIMEOUT_MS` and `VOICE_GUARD_VICTIM_LINE`.
+- **Why:** one decision path for messages and calls, with no gateway change and no classifier exposed to LiveKit Cloud (the Caddy classifier proxy in #78 is no longer needed for voice).
+- **Payload:** `message.id` `voice-<uuid>`, sender = the SIP caller number (`sip.phoneNumber`, or `+10000000000` if missing), `space.id` `voice;-;<caller>`, text content = the transcript.
+- **Limits / follow-ups:** a call appears in the UI as a text message (no call badge or message kind); one send with no retry; the Vercel `/voice` page and `/api/voice/calls` route stay in the web app but the worker no longer feeds them (remove or keep is TBD).
+
 ### 2026-11-08: Less small text on /messages, bigger totals labels
 
 - **Decision (Tuan):** remove the small captions on `/messages`: "01 / The protector" and "Fictional senders. Real classifier." under the scene, "You're in good hands." and "Let through, untouched." under the totals, and the footer note "“Potential scam” is the classifier's verdict and can be wrong. Links and phone numbers in blocked messages are disabled." The "Threats blocked" and "Delivered" labels go from 10px to 20px (`text-xl`). Links and numbers in blocked messages are still disabled; only the note saying so is gone.
