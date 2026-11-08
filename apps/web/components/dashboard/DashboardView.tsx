@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ShieldLetter } from "@/components/brand/ShieldLetter";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   messageStats,
@@ -224,7 +225,7 @@ export function DashboardView() {
           href="/"
           className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
         >
-          T-GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
+          T-G<ShieldLetter className="mx-[0.04em]" />ARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
         </Link>
         <span className={`hidden ${LABEL} text-muted sm:block`}>Dashboard</span>
         <Link
