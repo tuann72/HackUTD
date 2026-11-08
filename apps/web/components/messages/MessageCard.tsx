@@ -1,11 +1,13 @@
 "use client";
 
-import { isUnverified, type Message } from "@/lib/messages";
+import { isGroupChat, isNotClassified, isUnverified, type Message } from "@/lib/messages";
 import { categoryClass, categoryLabel } from "./category";
 import { MessageBody } from "./MessageBody";
+import { MessageExtras } from "./MessageExtras";
 import { formatRelative, formatScore } from "./time";
 
 const UNVERIFIED_TITLE = "The classifier was unavailable, so this was delivered without a check.";
+const NOT_CLASSIFIED_TITLE = "No text to check (attachment, reaction or contact card), so this was delivered without a check.";
 
 export function CategoryBadge({ category }: { category: string | null | undefined }) {
   return (
@@ -38,6 +40,14 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
     >
       <header className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">{m.from.display}</span>
+        {isGroupChat(m) && (
+          <span
+            title={`Group chat ${m.conversation?.id ?? ""}`}
+            className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 ring-1 ring-inset ring-sky-600/20 dark:bg-sky-500/15 dark:text-sky-300 dark:ring-sky-400/30"
+          >
+            Group chat
+          </span>
+        )}
         <time
           dateTime={m.receivedAt}
           title={m.receivedAt}
@@ -61,6 +71,15 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
               Potential scam
             </span>
           )}
+          {isNotClassified(m) && (
+            <span
+              title={NOT_CLASSIFIED_TITLE}
+              aria-label={`Not checked. ${NOT_CLASSIFIED_TITLE}`}
+              className="inline-flex cursor-help items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-400"
+            >
+              Not checked
+            </span>
+          )}
           {unverified && (
             <span
               title={UNVERIFIED_TITLE}
@@ -79,7 +98,8 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
         </div>
       )}
 
-      <MessageBody body={m.body} highlights={blocked ? m.verdict?.highlights : null} defang={blocked} />
+      {m.body && <MessageBody body={m.body} highlights={blocked ? m.verdict?.highlights : null} defang={blocked} />}
+      <MessageExtras message={m} defang={blocked} />
 
       {m.verdict && (
         <footer className="mt-3 flex items-baseline justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">

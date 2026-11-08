@@ -6,6 +6,32 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Shared-pool Photon number, not a dedicated line
+
+- **Correction (Tuan):** the team isn't on Photon's Business plan. The victim line is the **shared-pool number** the project gets on Free/Pro. No code change: the gateway never filters on `space.phone`, and webhooks only carry our project's conversations.
+- **Consequences:** no real group chats (the UI support stays for the simulator); quotas of 50 new conversations per line per day and 5,000 messages per day (a live-demo risk); and whether arbitrary iPhones can reach the project is undocumented. Test this before the demo.
+
+### 2026-11-08: Photon track, dedicated line, rich iMessage content, virtual inbox
+
+- **Decisions (Tuan):**
+  1. Enter the **Photon track**.
+  2. Use one **dedicated** Photon line, so there's no shared-pool filtering. *(Superseded the same day: shared-pool number, see above.)*
+  3. **Show attachments, reactions, contact cards and group chats** in the UI.
+  4. Keep the victim's inbox **virtual** (the web UI), as with Twilio.
+- **Contract (additive, still v1):** new optional message fields `kind`, `conversation {id, type}`, `attachments [{name, mimeType, size}]`, `reaction {emoji, targetPreview}` and `contact {name, phones}`, plus a new reason, `not_classified`. They're optional so older v1 data stays valid. The gateway always sends them. Contact-card phones are masked, and Photon's attachment GUIDs and `space.id` never leave the gateway.
+- **Policy:** content with no text (attachment, reaction, contact card, photo-only album) is **delivered unchecked** and shown as "Not checked". The model reads text only. Blocking a known scam sender's attachments waits on the sender blocklist (photon-imessage task 1.5).
+- **UI:** the card shows attachment chips, the reaction emoji and target preview, the contact card and a "Group chat" badge. On blocked messages these are defanged like the body. The scene labels non-text messages with a short summary.
+
+### 2026-11-08: iMessage through Photon replaces Twilio SMS
+
+- **Decision (Tuan):** migrate to **Photon (Spectrum)** and handle **only iMessage**. The gateway's `POST /twilio/sms` is replaced by `POST /webhooks/photon`. The `twilio` package is removed from the gateway and the simulator. This reverses "Photon dropped" (2026-11-07) for the messaging provider. Whether the team enters a Photon track is TBD. Plan: [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md).
+- **Webhook:** JSON `messages` events. The signature is `X-Spectrum-Signature: v0=` + HMAC-SHA256(signing secret, `v0:<X-Spectrum-Timestamp>:<raw body>`), with a 300 s replay window ([Photon docs](https://photon.codes/docs/webhooks/verifying-signatures)). The URL isn't signed, so `PUBLIC_WEBHOOK_URL` is removed. Responses: `400` for missing headers, a stale timestamp or a malformed body; `401` for a bad signature; `200 ok` for everything else, including duplicates and ignored content, so Photon (which retries 5xx, 408 and 429 up to 6 times) doesn't retry them.
+- **Verified by hand, not with Photon's SDK:** about 20 lines of `node:crypto` keep the gateway free of a provider SDK and let tests and the simulator sign requests the same way. `spectrum-ts` and its Hono adapter exist and could replace this later.
+- **Data:** dedupe on Photon's `message.id`. Participants are keyed by iMessage handle (an E.164 number or an Apple ID email), normalized and masked (`***-***-0142`, `j***@icloud.com`). The query API contract is unchanged. The SQLite schema changed, and the gateway refuses to open an old Twilio-schema file.
+- **Content:** `text`, `richlink` (its URL) and `group` (joined items) are classified. `attachment`, `reaction` and `contact` are acknowledged and ignored (TBD).
+- **Hosting:** Photon delivers only to public HTTPS URLs with no redirects, which fits the Vultr VM behind Caddy. Real messages on a laptop need a tunnel. The simulator still posts to `localhost`.
+- **Still TBD:** dedicated vs. shared line, what "blocked" means on a real victim handset, attachments and group chats, and wiring the sender blocklist on email handles.
+
 ### 2026-11-08: Sender blocklist and scam fingerprints in MongoDB Atlas
 
 - **Decision (Timothy):** Vultr is the judge: the classifier on Vultr scores each message and the gateway blocks it at `BLOCK_THRESHOLD`, as before. New: each blocked message records a **fingerprint** in **MongoDB Atlas**, and proven scam senders go on a **blocklist** so their later messages are blocked without the model (reason `sender_blocked`). Plan: [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md).

@@ -2,27 +2,39 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import type { Action, ApiMessage, Reason, Verdict } from './types.js';
+import type { InboundMessage } from './photon.js';
+import type { Action, ApiMessage, Attachment, Conversation, MessageKind, Reason, Verdict } from './types.js';
 
-// Raw phone numbers and Twilio SIDs are stored here and nowhere else.
-// Nothing in this module returns them to callers outside the DB layer.
+// Raw iMessage handles (numbers or emails) and Photon message/space ids are stored here and
+// nowhere else. Nothing in this module returns them to callers outside the DB layer.
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS participants (
   id          TEXT PRIMARY KEY,
-  phone       TEXT NOT NULL UNIQUE,
+  handle      TEXT NOT NULL UNIQUE,
   display     TEXT NOT NULL,
   created_at  TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS conversations (
+  id          TEXT PRIMARY KEY,
+  space_id    TEXT NOT NULL UNIQUE,
+  type        TEXT NOT NULL CHECK (type IN ('dm', 'group')),
+  created_at  TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS messages (
-  seq             INTEGER PRIMARY KEY AUTOINCREMENT,
-  id              TEXT NOT NULL UNIQUE,
-  message_sid     TEXT NOT NULL UNIQUE,
-  participant_id  TEXT NOT NULL REFERENCES participants(id),
-  to_number       TEXT,
-  body            TEXT NOT NULL,
-  received_at     TEXT NOT NULL,
+  seq                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  id                   TEXT NOT NULL UNIQUE,
+  provider_message_id  TEXT NOT NULL UNIQUE,
+  participant_id       TEXT NOT NULL REFERENCES participants(id),
+  conversation_id      TEXT NOT NULL REFERENCES conversations(id),
+  line                 TEXT,
+  sent_at              TEXT,
+  kind                 TEXT NOT NULL CHECK (kind IN ('text', 'link', 'attachment', 'reaction', 'contact', 'album')),
+  body                 TEXT NOT NULL,
+  -- Masked extras for the API: attachments, reaction, contact.
+  extras_json          TEXT NOT NULL,
+  received_at          TEXT NOT NULL,
   action          TEXT NOT NULL CHECK (action IN ('pending', 'delivered', 'blocked')),
-  reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable')),
+  reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable', 'not_classified')),
   verdict_json    TEXT,
   classified_at   TEXT
 );
@@ -32,6 +44,11 @@ export function openDb(path: string): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  const cols = (db.prepare("SELECT name FROM pragma_table_info('messages')").all() as Array<{ name: string }>).map((c) => c.name);
+  if (cols.length > 0 && !cols.includes('extras_json')) {
+    db.close();
+    throw new Error(`${path} uses an older schema (Twilio or early Photon). Delete it (npm run db:reset) and restart.`);
+  }
   db.exec(SCHEMA);
   return db;
 }
@@ -47,11 +64,25 @@ export function maskNumber(phone: string): string {
   return `***-***-${digits.slice(-4).padStart(4, '*')}`;
 }
 
-export interface InboundRecord {
-  messageSid: string;
-  from: string;
-  to: string | null;
-  body: string;
+/** iMessage handles are numbers or Apple ID emails: `jane@icloud.com` -> `j***@icloud.com`. */
+export function maskHandle(handle: string): string {
+  const at = handle.lastIndexOf('@');
+  if (at > 0) return `${handle[0]}***@${handle.slice(at + 1)}`;
+  return maskNumber(handle);
+}
+
+/** Phone handles in E.164 without formatting; email handles lowercased. One participant per person. */
+export function normalizeHandle(handle: string): string {
+  const t = handle.trim();
+  if (t.includes('@')) return t.toLowerCase();
+  const digits = t.replace(/\D/g, '');
+  return t.startsWith('+') ? `+${digits}` : digits;
+}
+
+interface Extras {
+  attachments: Attachment[];
+  reaction: ApiMessage['reaction'];
+  contact: ApiMessage['contact'];
 }
 
 export interface StoredMessage {
@@ -63,36 +94,54 @@ export interface StoredMessage {
 export class Store {
   constructor(private readonly db: DatabaseSync) {}
 
-  /** Returns the participant id for a phone number, creating one on first sight. */
-  private participantFor(phone: string, now: string): { id: string; display: string } {
+  /** Returns the participant id for an iMessage handle, creating one on first sight. */
+  private participantFor(rawHandle: string, now: string): { id: string; display: string } {
+    const handle = normalizeHandle(rawHandle);
     const existing = this.db
-      .prepare('SELECT id, display FROM participants WHERE phone = ?')
-      .get(phone) as { id: string; display: string } | undefined;
+      .prepare('SELECT id, display FROM participants WHERE handle = ?')
+      .get(handle) as { id: string; display: string } | undefined;
     if (existing) return existing;
-    const p = { id: newId('p'), display: maskNumber(phone) };
+    const p = { id: newId('p'), display: maskHandle(handle) };
     this.db
-      .prepare('INSERT INTO participants (id, phone, display, created_at) VALUES (?, ?, ?, ?)')
-      .run(p.id, phone, p.display, now);
+      .prepare('INSERT INTO participants (id, handle, display, created_at) VALUES (?, ?, ?, ?)')
+      .run(p.id, handle, p.display, now);
     return p;
   }
 
+  private conversationFor(conv: InboundMessage['conversation'], now: string): string {
+    const existing = this.db.prepare('SELECT id FROM conversations WHERE space_id = ?').get(conv.spaceId) as { id: string } | undefined;
+    if (existing) return existing.id;
+    const id = newId('c');
+    this.db.prepare('INSERT INTO conversations (id, space_id, type, created_at) VALUES (?, ?, ?, ?)').run(id, conv.spaceId, conv.type, now);
+    return id;
+  }
+
   /**
-   * Inserts a new pending message. Returns null if this MessageSid was already seen (Twilio retry).
+   * Inserts a new pending message. Returns null if this Photon message.id was already seen
+   * (Photon delivers at least once and retries on 5xx/timeouts).
    */
-  insertInbound(rec: InboundRecord, now = new Date()): StoredMessage | null {
+  insertInbound(rec: InboundMessage, now = new Date()): StoredMessage | null {
     const nowIso = now.toISOString();
-    const seen = this.db.prepare('SELECT 1 FROM messages WHERE message_sid = ?').get(rec.messageSid);
+    const seen = this.db.prepare('SELECT 1 FROM messages WHERE provider_message_id = ?').get(rec.providerMessageId);
     if (seen) return null;
     this.db.exec('BEGIN');
     try {
-      const p = this.participantFor(rec.from, nowIso);
+      const p = this.participantFor(rec.sender, nowIso);
+      const conversationId = this.conversationFor(rec.conversation, nowIso);
+      const extras: Extras = {
+        attachments: rec.attachments,
+        reaction: rec.reaction,
+        // Phones on a shared contact card are third-party numbers: store them masked only.
+        contact: rec.contact ? { name: rec.contact.name, phones: rec.contact.phones.map(maskNumber) } : null,
+      };
       const id = newId('msg');
       const res = this.db
         .prepare(
-          `INSERT OR IGNORE INTO messages (id, message_sid, participant_id, to_number, body, received_at, action)
-           VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+          `INSERT OR IGNORE INTO messages
+             (id, provider_message_id, participant_id, conversation_id, line, sent_at, kind, body, extras_json, received_at, action)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
         )
-        .run(id, rec.messageSid, p.id, rec.to, rec.body, nowIso);
+        .run(id, rec.providerMessageId, p.id, conversationId, rec.line, rec.sentAt, rec.kind, rec.body, JSON.stringify(extras), nowIso);
       this.db.exec('COMMIT');
       if (Number(res.changes) === 0) return null;
       return { id, body: rec.body, display: p.display };
@@ -111,8 +160,11 @@ export class Store {
   listMessages(limit: number): ApiMessage[] {
     const rows = this.db
       .prepare(
-        `SELECT m.id, m.participant_id, p.display, m.body, m.received_at, m.action, m.reason, m.verdict_json
-         FROM messages m JOIN participants p ON p.id = m.participant_id
+        `SELECT m.id, m.participant_id, p.display, m.body, m.received_at, m.action, m.reason, m.verdict_json,
+                m.kind, m.extras_json, c.id AS conversation_id, c.type AS conversation_type
+         FROM messages m
+         JOIN participants p ON p.id = m.participant_id
+         JOIN conversations c ON c.id = m.conversation_id
          ORDER BY m.seq DESC LIMIT ?`,
       )
       .all(limit) as Array<{
@@ -124,16 +176,28 @@ export class Store {
       action: Action;
       reason: Reason;
       verdict_json: string | null;
+      kind: MessageKind;
+      extras_json: string;
+      conversation_id: string;
+      conversation_type: Conversation['type'];
     }>;
-    return rows.map((r) => ({
-      id: r.id,
-      from: { participantId: r.participant_id, display: r.display },
-      body: r.body,
-      receivedAt: r.received_at,
-      action: r.action,
-      reason: r.reason ?? null,
-      verdict: r.verdict_json ? (JSON.parse(r.verdict_json) as Verdict) : null,
-    }));
+    return rows.map((r) => {
+      const extras = JSON.parse(r.extras_json) as Extras;
+      return {
+        id: r.id,
+        from: { participantId: r.participant_id, display: r.display },
+        body: r.body,
+        receivedAt: r.received_at,
+        action: r.action,
+        reason: r.reason ?? null,
+        verdict: r.verdict_json ? (JSON.parse(r.verdict_json) as Verdict) : null,
+        kind: r.kind,
+        conversation: { id: r.conversation_id, type: r.conversation_type },
+        attachments: extras.attachments,
+        reaction: extras.reaction,
+        contact: extras.contact,
+      };
+    });
   }
 
   count(): number {
@@ -142,6 +206,6 @@ export class Store {
 
   /** Debug only: wipe everything. */
   reset(): void {
-    this.db.exec('BEGIN; DELETE FROM messages; DELETE FROM participants; DELETE FROM sqlite_sequence; COMMIT;');
+    this.db.exec('BEGIN; DELETE FROM messages; DELETE FROM conversations; DELETE FROM participants; DELETE FROM sqlite_sequence; COMMIT;');
   }
 }

@@ -1,82 +1,72 @@
+import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import twilio from "twilio";
 import { describe, expect, it } from "vitest";
+import { verify } from "../src/fake-gateway.ts";
 import { buildSignedRequest } from "../src/sender.ts";
+import { buildInboundMessage, maskNumber, signBody } from "../src/spectrum-request.ts";
 import { REPO_ROOT } from "../src/steps.ts";
-import { buildInboundSms, INBOUND_SMS_FIELDS, maskNumber, numSegments, signRequest } from "../src/twilio-request.ts";
 
 const config = {
-  webhookUrl: "http://localhost:8787/twilio/sms",
-  authToken: "dev-auth-token-change-me",
-  accountSid: "AC00000000000000000000000000000000",
+  webhookUrl: "http://localhost:8787/webhooks/photon",
+  webhookSecret: "dev-photon-webhook-secret-change-me",
   victimNumber: "+15555550100",
 };
+const at = new Date("2026-11-08T15:04:05.000Z");
+const nowS = at.getTime() / 1000;
 
 describe("signature", () => {
-  const req = buildSignedRequest(config, { from: "+15555550142", body: "Hi Grandma it's me" });
-  const sig = req.headers["X-Twilio-Signature"]!;
+  const req = buildSignedRequest(config, { from: "+15555550142", body: "Hi Grandma it's me" }, () => at);
+  const sig = req.headers["X-Spectrum-Signature"]!;
+  const ts = req.headers["X-Spectrum-Timestamp"]!;
 
-  it("validates with twilio.validateRequest for the same URL and params", () => {
-    expect(twilio.validateRequest(config.authToken, sig, config.webhookUrl, req.params)).toBe(true);
+  it("is v0= + HMAC-SHA256 over v0:<ts>:<raw body>, per Photon's docs", () => {
+    expect(ts).toBe(String(nowS));
+    const expected = "v0=" + createHmac("sha256", config.webhookSecret).update(`v0:${ts}:${req.body}`).digest("hex");
+    expect(sig).toBe(expected);
+    expect(sig).toMatch(/^v0=[0-9a-f]{64}$/);
+    expect(signBody(config.webhookSecret, ts, req.body)).toBe(sig);
   });
 
-  it("validates after a round trip through the form-encoded body", () => {
-    const decoded = Object.fromEntries(new URLSearchParams(req.body));
-    expect(twilio.validateRequest(config.authToken, sig, config.webhookUrl, decoded)).toBe(true);
+  it("verifies, and fails for a wrong secret, tampered body or stale timestamp", () => {
+    expect(verify(config.webhookSecret, sig, ts, req.body, nowS)).toBe(true);
+    expect(verify("other", sig, ts, req.body, nowS)).toBe(false);
+    expect(verify(config.webhookSecret, sig, ts, req.body.replace("Grandma", "Grandpa"), nowS)).toBe(false);
+    expect(verify(config.webhookSecret, sig, ts, req.body, nowS + 301)).toBe(false);
   });
 
-  it("fails for a different URL", () => {
-    expect(twilio.validateRequest(config.authToken, sig, "http://localhost:8788/twilio/sms", req.params)).toBe(false);
-    expect(twilio.validateRequest(config.authToken, sig, "https://gw.example.com/twilio/sms", req.params)).toBe(false);
-  });
-
-  it("fails for a different token or tampered body", () => {
-    expect(twilio.validateRequest("other-token", sig, config.webhookUrl, req.params)).toBe(false);
-    expect(twilio.validateRequest(config.authToken, sig, config.webhookUrl, { ...req.params, Body: "x" })).toBe(false);
-  });
-
-  it("matches signRequest", () => {
-    expect(signRequest(config.authToken, config.webhookUrl, req.params)).toBe(sig);
+  it("sends JSON with the Spectrum headers", () => {
+    expect(req.headers["Content-Type"]).toBe("application/json");
+    expect(req.headers["X-Spectrum-Event"]).toBe("messages");
+    expect(JSON.parse(req.body)).toEqual(req.payload);
   });
 });
 
-describe("form fields", () => {
+describe("payload", () => {
   const fixture = JSON.parse(
-    readFileSync(join(REPO_ROOT, "contracts/fixtures/twilio-inbound-sms.sample.json"), "utf8"),
-  ) as { form: Record<string, string> };
+    readFileSync(join(REPO_ROOT, "contracts/fixtures/photon-inbound-imessage.sample.json"), "utf8"),
+  ) as { body: Record<string, any> };
 
-  it("has exactly the fixture's keys, in order", () => {
-    const params = buildInboundSms({ from: "+15555550142", to: "+15555550100", body: "hi", accountSid: "AC0" });
-    expect(Object.keys(params)).toEqual(Object.keys(fixture.form));
-    expect([...INBOUND_SMS_FIELDS]).toEqual(Object.keys(fixture.form));
-  });
-
-  it("reproduces the fixture's values for the fixture's inputs", () => {
-    const f = fixture.form;
-    const params = buildInboundSms({
-      from: f.From!,
-      to: f.To!,
-      body: f.Body!,
-      accountSid: f.AccountSid!,
-      messageSid: f.MessageSid,
+  it("reproduces the fixture for the fixture's inputs", () => {
+    const f = fixture.body;
+    const p = buildInboundMessage({
+      from: f.message.sender.id,
+      line: f.space.phone,
+      body: f.message.content.text,
+      messageId: f.message.id,
+      timestamp: f.message.timestamp,
     });
-    expect(params).toEqual(f);
+    expect(p).toEqual(f);
   });
 
-  it("uses one SM + 32 hex sid for all three sid fields, fresh per message", () => {
-    const a = buildInboundSms({ from: "+15555550142", to: "+15555550100", body: "hi", accountSid: "AC0" });
-    const b = buildInboundSms({ from: "+15555550142", to: "+15555550100", body: "hi", accountSid: "AC0" });
-    expect(a.MessageSid).toMatch(/^SM[0-9a-f]{32}$/);
-    expect(a.SmsSid).toBe(a.MessageSid);
-    expect(a.SmsMessageSid).toBe(a.MessageSid);
-    expect(b.MessageSid).not.toBe(a.MessageSid);
+  it("uses a fresh spc-msg-<uuid> id per message", () => {
+    const a = buildInboundMessage({ from: "+15555550142", line: "+15555550100", body: "hi" });
+    const b = buildInboundMessage({ from: "+15555550142", line: "+15555550100", body: "hi" });
+    expect(a.message.id).toMatch(/^spc-msg-[0-9a-f-]{36}$/);
+    expect(b.message.id).not.toBe(a.message.id);
   });
 
-  it("counts segments and masks numbers", () => {
-    expect(numSegments("x")).toBe(1);
-    expect(numSegments("x".repeat(160))).toBe(1);
-    expect(numSegments("x".repeat(161))).toBe(2);
+  it("masks numbers", () => {
     expect(maskNumber("+15555550142")).toBe("***-***-0142");
   });
 });

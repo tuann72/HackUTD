@@ -4,7 +4,8 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 
 > **Feature plans live in [`docs/features/`](docs/features/).** Before working on a feature, read its plan there: it has the concrete design, ordered tasks, what can run in parallel, and who's on what. Current plans:
 >
-> - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (Twilio webhook, gateway, simulator, basic message UI).
+> - [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md): the gateway takes iMessages through Photon (Spectrum) webhooks, replacing the Twilio webhook (in progress).
+> - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (gateway, simulator, basic message UI). Its Twilio webhook parts are superseded by the Photon plan.
 > - [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md): sender blocklist and scam fingerprints in MongoDB Atlas (in progress).
 >
 > New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
@@ -14,23 +15,23 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 - **Name:** **T-Gate** (renamed from the earlier working name "Gate Guardian"). The repository folder and GitHub repo are still called `HackUTD`.
 - **Problem:** Scam calls and messages pressure people, especially older adults, into rash decisions that cause financial, personal, or emotional harm.
 - **Concept:** Detect likely scam activity, warn the recipient, and potentially help respond on their behalf while keeping the recipient in control.
-- **Hackathon tracks:** **Safe Signal (T-Mobile)** and **Vultr** (Tuan, 2026-11-07). The Vultr track is covered by training and serving the classifier on Vultr. Photon, listed in the SRS, is dropped.
-- **Current project state:** Building the Twilio MVP (Tuan lifted the scaffolding hold for it on 2026-11-07): the query API contract in [`contracts/`](contracts/README.md), the message bank in [`data/message_bank/`](data/message_bank/README.md), the perpetrator simulator in [`services/perpetrator-sim/`](services/perpetrator-sim/README.md), the gateway in [`services/gateway/`](services/gateway/README.md), the message UI with the initial 3D scene (`apps/web/`, one page at `/`), and the sender-blocklist module (`services/gateway/src/blocklist.ts`, not yet wired into the webhook flow) are on `main`. The repo also has the classifier's training script and inference service (MiniLM and a TF-IDF + LR baseline) in [`classifier/`](classifier/README.md), and a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
+- **Hackathon tracks:** **Safe Signal (T-Mobile)** and **Vultr** (Tuan, 2026-11-07). The Vultr track is covered by training and serving the classifier on Vultr. **Update (Tuan, 2026-11-08):** Photon is back as the **messaging provider** (iMessage through Photon's Spectrum webhooks, replacing Twilio). The team **enters the Photon track** too (Tuan, 2026-11-08).
+- **Current project state:** Building the MVP (Tuan lifted the scaffolding hold for it on 2026-11-07), now on **iMessage through Photon** (2026-11-08, branch `feat/photon-imessage-gateway`, which replaces the Twilio webhook in the gateway and simulator): the query API contract in [`contracts/`](contracts/README.md), the message bank in [`data/message_bank/`](data/message_bank/README.md), the perpetrator simulator in [`services/perpetrator-sim/`](services/perpetrator-sim/README.md), the gateway in [`services/gateway/`](services/gateway/README.md), the message UI with the initial 3D scene (`apps/web/`, one page at `/`), and the sender-blocklist module (`services/gateway/src/blocklist.ts`, not yet wired into the webhook flow) are on `main`. The repo also has the classifier's training script and inference service (MiniLM and a TF-IDF + LR baseline) in [`classifier/`](classifier/README.md), and a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
 
 ## Current scope (agreed)
 
-### MVP: Twilio scam-message simulation
+### MVP: iMessage scam-message simulation (Photon)
 
-The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. The full plan is in [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md).
+The MVP started **Twilio-first** (SMS) and replaces the SRS's MVP. There is no mobile app. **Decision (Tuan, 2026-11-08): iMessage only, through Photon (Spectrum) webhooks. SMS and Twilio are dropped.** The webhook plan is [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md). The rest of the MVP (UI, storage, fail-open, simulator, message bank) is in [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md), and where the two disagree on the webhook, the Photon plan wins.
 
 - **MVP UI (Tuan, 2026-11-07):** a **basic Next.js page** that lists messages as delivered (inbox) or blocked. It polls the gateway's read-only query API (`GET /api/messages`); there's no event stream or WebSocket in the MVP. The **3D scene is parked** for later, along with the scam notice and blocked-scams panel. Don't build them for the MVP. **Update (Tuan, 2026-11-07):** the message list and the initial scene are now **one page at `/`**, the scene band on top and the inbox/blocked lists below; `/messages` and `/scene` redirect to `/`.
-- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. The gateway will be deployed on a Vultr VM (Tuan, 2026-11-07); deploying it early is recommended.
+- **Tunnels are only for local dev with a real phone.** Photon delivers webhooks only to a public **HTTPS** URL (no private IPs or redirects), so a gateway on a laptop needs a tunnel to receive real iMessages. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. The gateway will be deployed on a Vultr VM (Tuan, 2026-11-07); deploying it early is recommended.
 - **MVP decisions (Tuan, 2026-11-07):** SQLite storage with debug tools to clear it; **fail open** when the classifier is down (deliver, marked unverified); JSONL message bank; each package standalone (own `package.json`, no workspaces). The gateway and UI share only [`contracts/`](contracts/README.md).
 
-- The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `CHANGELOG.md`, "One Twilio number, simulated perpetrator".)
-- **The perpetrator is simulated with API calls**, not a second Twilio number. A perpetrator simulator sends HTTP requests to the gateway's webhook in exactly the format Twilio uses for an inbound SMS to the victim number (`From`, `To`, `Body`, `MessageSid`, …), signed with a valid `X-Twilio-Signature`. The gateway handles simulated and real messages the same way.
+- The team uses **one Photon shared-pool number as the victim line** (Free/Pro plan, not a dedicated Business line; formerly one Twilio number). Shared pools have no group chats and a quota of 50 new conversations per line per day. Whether any iPhone can reach our project through it is undocumented; test it (photon-imessage task 1.4). It receives messages and is the line T-Gate protects. Its inbox is the gateway's **virtual inbox** shown in the web UI. No real handset sits behind it (Tuan, 2026-11-08).
+- **The perpetrator is simulated with API calls.** A perpetrator simulator sends HTTP requests to the gateway's webhook in exactly Photon's inbound `messages` format (JSON with `space`, `message.id`, `message.sender.id`, `message.content`), signed with a valid `X-Spectrum-Signature` (HMAC-SHA256 over `v0:<timestamp>:<body>`). The gateway handles simulated and real messages the same way.
 - **Message bank:** the simulator draws its messages from a bank of labeled scam and legitimate examples, so demos and tests are repeatable and show both outcomes. Candidate sources: a subset of the real `test` split in `data/` (SMS-style rows), plus generated messages (templates or LLM-written). The exact mix is TBD.
-- **Real path check:** a teammate texts the victim number from their own phone to confirm the real Twilio → gateway path works. That's the same path the later public demo uses.
+- **Real path check:** a teammate iMessages the victim line from their own iPhone to confirm the real Photon → gateway path works. That's the same path the later public demo uses.
 - Messages that arrive at the victim number are classified as scam or legitimate (see [Classifier](#classifier-agreed-minilm-on-vultr)).
 
 ### Later: live public demo
@@ -62,18 +63,18 @@ Planned after the MVP works, not part of the MVP:
 
 **Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** For the MVP, only the gateway, simulator, classifier interface and a read-only query API are in play; the event stream, scene, notice and panel below are later scope (see [MVP](#mvp-twilio-scam-message-simulation)). Only the MVP pieces are being built. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`CHANGELOG.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](CHANGELOG.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
 
-**How interception works:** Twilio sends every SMS addressed to the victim number to our webhook. No phone sits behind that number. The victim's inbox is virtual and owned by the gateway, so the gateway acts as the victim's carrier. It classifies each message, then **delivers** it to the inbox or **blocks** it (quarantine log). Blocking needs no outbound SMS, so Twilio trial and A2P 10DLC limits don't apply to it.
+**How interception works:** Photon sends every iMessage addressed to the victim line to our webhook (`POST /webhooks/photon`). No victim phone sits behind that line. The victim's inbox is virtual and owned by the gateway, so the gateway acts as the victim's carrier. It classifies each message, then **delivers** it to the inbox or **blocks** it (quarantine log). Blocking needs no outbound message. The gateway has no Photon send code, so it can never reply to a sender.
 
 **Stack:**
-- **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Twilio webhook and query API, built with **Hono**), the perpetrator simulator and the web app.
+- **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Photon webhook and query API, built with **Hono**), the perpetrator simulator and the web app.
 - **Python:** the model training and inference service.
 - **Web app (Tuan's decision):** Next.js with **React Three Fiber** for the 3D scene and **Motion** (`motion/react`) for DOM animation (bubbles, panel, toasts). Don't use the deprecated `framer-motion-3d`, which doesn't support React 19. Animate 3D objects in R3F (`useFrame` with damping).
 - **Hosting (Tuan, 2026-11-07):** the gateway runs as a **separate TypeScript service on a Vultr VM**, not on Vercel. Vercel can't keep its SQLite file or its classify-after-reply work, and a web deploy must never be able to break interception. Only the web app (`apps/web`) deploys to **Vercel**, through the repo-root `vercel.json` (one service, `web`, no bindings). The browser reaches the gateway at `NEXT_PUBLIC_API_URL`. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
 
 **Components** (each separately runnable):
 
-1. **Perpetrator simulator:** picks messages from the message bank (or takes typed ones) and POSTs signed, Twilio-format inbound-SMS requests straight to the gateway's webhook. No second Twilio number and no outbound SMS. Has a dry-run mode that prints instead of sending.
-2. **Interception gateway:** inbound webhook for the victim number. Verifies the Twilio signature, dedupes on `MessageSid`, classifies through a classifier interface, applies the deliver/block policy, stores the result, publishes events and returns empty TwiML (never auto-replies to the sender).
+1. **Perpetrator simulator:** picks messages from the message bank (or takes typed ones) and POSTs signed, Photon-format inbound-iMessage webhooks straight to the gateway. Nothing goes through Photon or Apple. Has a dry-run mode that prints instead of sending.
+2. **Interception gateway:** inbound Photon webhook for the victim line. Verifies `X-Spectrum-Signature` and the timestamp, dedupes on `message.id`, classifies through a classifier interface, applies the deliver/block policy, stores the result, publishes events and returns `200 ok` (never replies to the sender).
 3. **Classifier service:** a separate Python inference service on **Vultr** (agreed; see [Classifier](#classifier-agreed-minilm-on-vultr)). The gateway calls it over HTTPS (`POST /classify` → `{ label, score, category, model, highlights }`) through a classifier interface, with a strict timeout, so the model choice or host can change without touching the gateway. Vultr returns only a verdict. The block/deliver policy (thresholds, fail-safe) stays in the gateway. Only message text and an opaque id are sent, never phone numbers.
 4. **Event stream and query API:** versioned JSON events (`message.received`, `message.classified`, `message.delivered`, `message.blocked`, `victim.notified`, `participant.joined`) over WebSocket or SSE (TBD), plus a read-only query API (`GET /api/blocked`, `GET /api/blocked/:id`) for the panel.
 5. **Block log:** every blocked message is recorded with **why** it was blocked: scam category, score, model version, reason (`model_verdict` or `classifier_unavailable`) and time. The categories would likely come from the 7 FTC-derived scam groups in `data/scam_categories.csv`, which depends on the still-TBD label scheme. `message.blocked` events carry the category so displays can show it.
@@ -86,10 +87,10 @@ Planned after the MVP works, not part of the MVP:
 **Decoupling rules (firm requirement from Tuan).** Follow these in any implementation:
 
 - The gateway and the web app share **only the versioned contract** (event schema, query API schema and sample fixtures), never code. TypeScript types generated from the schemas are fine. Neither imports from the other.
-- Data flows **one way**. The web app subscribes to events and may **read** the query API, but never writes to the gateway or calls Twilio or the classifier.
+- Data flows **one way**. The web app subscribes to events and may **read** the query API, but never writes to the gateway or calls Photon or the classifier.
 - Interception behaves identically with zero, one or many displays connected. Publishing is fire-and-forget, so a crashed or slow display can never delay or change a block decision or the webhook response.
 - Each side runs and is testable alone. The gateway uses recorded webhook payloads and a fake classifier. The web app uses a mock event source and mock query responses from fixture files, and the live URLs are configuration, not code.
-- Events never contain raw phone numbers, Twilio SIDs or credentials. They use opaque participant IDs and masked display strings.
+- Events never contain raw phone numbers or iMessage handles, Photon message/space ids, or credentials. They use opaque participant IDs and masked display strings.
 - The web app contains no business logic. It renders the event's `action`, category and highlights, and never re-decides scam vs. legitimate.
 
 **Initial scene (Tuan, 2026-11-07):** built early with fake data ([#14](https://github.com/lytx02/HackUTD/pull/14)), then moved onto the home page `/` above the message lists ([#19](https://github.com/tuann72/HackUTD/pull/19)). It animates the same polled `GET /api/messages` data as the lists (or the mock replay when no gateway URL is set), so it no longer has its own fake messages. The projectile is a flat 2D chat-bubble image (`apps/web/public/scene/`), not a 3D ball. The rest of the scene (crowds, event stream) is still parked. It's one pink victim blob and one sender blob that shoots messages at it. Red messages are flagged as a **potential scam** (always say "potential scam", not "scam"), and each message either goes through or is blocked and pops. Plan: [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
@@ -100,8 +101,8 @@ Everything above except the two firm requirements is a proposal. Open items stay
 
 ## Open questions — do not guess
 
-- **Message type:** the MVP assumes text messages to the victim number. Whether voice calls are in scope for the Twilio MVP is TBD.
-- **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
+- **Message type (Tuan, 2026-11-08):** iMessage text, rich links and albums are classified. Attachments, reactions and contact cards are shown in the UI and delivered as "not checked" (`not_classified`). Group chats are shown with a badge. Voice is out of scope.
+- **Gateway architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** the CLI supports all three (scripted `scenario` files, `random` bank draws, typed `send`). Which mix the demo uses is TBD.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
 - **Classifier:** MiniLM on Vultr is agreed (see above). Still open: label scheme (binary spam/ham or the 8-class scam categories), thresholds, whether fine-tuning is needed, and evaluation measures.
@@ -191,10 +192,10 @@ Split work into tasks small enough to land in one focused PR, and prefer splits 
 
 - **Stay in scope.** Do the task you claimed. Note other problems in the feature plan or PR description instead of fixing them on the side.
 - **Make small, focused commits** with messages that say what changed and why.
-- **Never commit secrets.** Twilio account SIDs, auth tokens, API keys, and phone-number credentials go in a local `.env` (ignored by git) or a secrets manager. Commit a `.env.example` with placeholder values instead.
+- **Never commit secrets.** Photon project secrets and webhook signing secrets, API keys, and phone-number credentials go in a local `.env` (ignored by git) or a secrets manager. Commit a `.env.example` with placeholder values instead.
 - **Do not commit large generated files** (models, datasets, build output) without agreeing on where they live.
 - **Verify your work.** Run the code, tests, or a manual check before calling a task done. Report failures honestly, with output; do not claim something works if you did not run it.
-- **Ask instead of guessing** on product decisions, external actions (sending real messages, spending Twilio credit, deleting data), and anything marked TBD.
+- **Ask instead of guessing** on product decisions, external actions (sending real messages, spending Photon or Vultr credit, deleting data), and anything marked TBD.
 - **Preserve other people's changes.** Do not reformat or rewrite files you did not need to touch, and do not force-push shared branches.
 
 ### 6. Keep the docs current

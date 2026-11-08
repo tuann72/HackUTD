@@ -110,12 +110,12 @@ describe('config and masking', () => {
   });
 
   it('applies defaults and refuses debug without a token', () => {
-    const c = loadConfig({ TWILIO_AUTH_TOKEN: 't' });
+    const c = loadConfig({ PHOTON_WEBHOOK_SECRET: 't' });
     expect(c).toMatchObject({ port: 8787, blockThreshold: 0.5, classifierTimeoutMs: 2500, corsOrigins: ['http://localhost:3000'], debug: false, classifierUrl: null });
-    expect(() => loadConfig({})).toThrow(/TWILIO_AUTH_TOKEN/);
-    expect(() => loadConfig({ TWILIO_AUTH_TOKEN: 't', GATEWAY_DEBUG: '1' })).toThrow(/DEBUG_TOKEN/);
-    expect(loadConfig({ TWILIO_AUTH_TOKEN: 't', GATEWAY_DEBUG: '1', DEBUG_TOKEN: 'd' }).debug).toBe(true);
-    expect(() => loadConfig({ TWILIO_AUTH_TOKEN: 't', BLOCK_THRESHOLD: '2' })).toThrow(/BLOCK_THRESHOLD/);
-    expect(loadConfig({ TWILIO_AUTH_TOKEN: 't', CORS_ORIGINS: 'http://a, http://b' }).corsOrigins).toEqual(['http://a', 'http://b']);
+    expect(() => loadConfig({})).toThrow(/PHOTON_WEBHOOK_SECRET/);
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', GATEWAY_DEBUG: '1' })).toThrow(/DEBUG_TOKEN/);
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', GATEWAY_DEBUG: '1', DEBUG_TOKEN: 'd' }).debug).toBe(true);
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', BLOCK_THRESHOLD: '2' })).toThrow(/BLOCK_THRESHOLD/);
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', CORS_ORIGINS: 'http://a, http://b' }).corsOrigins).toEqual(['http://a', 'http://b']);
   });
 });

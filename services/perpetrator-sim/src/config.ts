@@ -2,15 +2,15 @@ import { existsSync } from "node:fs";
 
 export interface SimConfig {
   webhookUrl: string;
-  authToken: string;
-  accountSid: string;
+  /** Photon webhook signing secret. Must match the gateway's PHOTON_WEBHOOK_SECRET. */
+  webhookSecret: string;
+  /** The protected victim line (`space.phone` in the payload). */
   victimNumber: string;
 }
 
 export const DEFAULTS: SimConfig = {
-  webhookUrl: "http://localhost:8787/twilio/sms",
-  authToken: "dev-auth-token-change-me",
-  accountSid: "AC00000000000000000000000000000000",
+  webhookUrl: "http://localhost:8787/webhooks/photon",
+  webhookSecret: "dev-photon-webhook-secret-change-me",
   victimNumber: "+15555550100",
 };
 
@@ -22,8 +22,7 @@ export function loadDotEnv(path = ".env"): void {
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): SimConfig {
   return {
     webhookUrl: env.GATEWAY_WEBHOOK_URL || DEFAULTS.webhookUrl,
-    authToken: env.TWILIO_AUTH_TOKEN || DEFAULTS.authToken,
-    accountSid: env.TWILIO_ACCOUNT_SID || DEFAULTS.accountSid,
+    webhookSecret: env.PHOTON_WEBHOOK_SECRET || DEFAULTS.webhookSecret,
     victimNumber: env.VICTIM_NUMBER || DEFAULTS.victimNumber,
   };
 }

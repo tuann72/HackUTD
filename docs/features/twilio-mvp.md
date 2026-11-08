@@ -1,5 +1,7 @@
 # Feature: Twilio MVP
 
+> **Superseded in part (Tuan, 2026-11-08):** the webhook is now Photon iMessage, not Twilio SMS. See [`photon-imessage.md`](photon-imessage.md). Twilio-specific tasks here (number setup, `X-Twilio-Signature`, TwiML) no longer apply. The UI, storage, fail-open, message bank and simulator tasks still do.
+
 - **Slug:** `twilio-mvp`
 - **Phase:** MVP
 - **Status:** In progress

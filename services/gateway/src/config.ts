@@ -1,8 +1,9 @@
 export interface GatewayConfig {
   port: number;
-  twilioAuthToken: string;
-  /** Exact URL Twilio signs against. Null = use the URL the request arrived on. */
-  publicWebhookUrl: string | null;
+  /** Photon webhook signing secret (shown once when the webhook is registered). */
+  photonWebhookSecret: string;
+  /** Reject deliveries whose X-Spectrum-Timestamp is further than this from now. */
+  signatureToleranceSeconds: number;
   dbPath: string;
   classifierUrl: string | null;
   classifierToken: string | null;
@@ -37,9 +38,9 @@ function num(env: Env, key: string, fallback: number, check: (n: number) => bool
 }
 
 export function loadConfig(env: Env = process.env): GatewayConfig {
-  const twilioAuthToken = str(env, 'TWILIO_AUTH_TOKEN');
-  if (!twilioAuthToken) {
-    throw new Error('TWILIO_AUTH_TOKEN is required (see .env.example). The signature check cannot be disabled.');
+  const photonWebhookSecret = str(env, 'PHOTON_WEBHOOK_SECRET');
+  if (!photonWebhookSecret) {
+    throw new Error('PHOTON_WEBHOOK_SECRET is required (see .env.example). The signature check cannot be disabled.');
   }
 
   const debug = str(env, 'GATEWAY_DEBUG') === '1';
@@ -59,8 +60,8 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
 
   return {
     port: num(env, 'PORT', 8787, (n) => Number.isInteger(n) && n > 0 && n < 65536, 'a TCP port'),
-    twilioAuthToken,
-    publicWebhookUrl: str(env, 'PUBLIC_WEBHOOK_URL'),
+    photonWebhookSecret,
+    signatureToleranceSeconds: num(env, 'SIGNATURE_TOLERANCE_SECONDS', 300, (n) => Number.isInteger(n) && n > 0, 'a positive integer'),
     dbPath: str(env, 'DB_PATH') ?? './data/gateway.sqlite',
     classifierUrl: str(env, 'CLASSIFIER_URL'),
     classifierToken: str(env, 'CLASSIFIER_TOKEN'),

@@ -15,7 +15,7 @@ export function assertSafeNumber(number: string, field: string, allowReal: boole
   }
 }
 
-/** The simulator only ever talks to the gateway. Refuse anything that points at Twilio itself. */
+/** The simulator only ever talks to the gateway. Refuse anything that points at Photon itself. */
 export function assertSafeUrl(url: string): void {
   let parsed: URL;
   try {
@@ -27,7 +27,7 @@ export function assertSafeUrl(url: string): void {
     throw new Error(`GATEWAY_WEBHOOK_URL must be http(s), got ${parsed.protocol}`);
   }
   const host = parsed.hostname.toLowerCase();
-  if (host === "twilio.com" || host.endsWith(".twilio.com")) {
-    throw new Error("GATEWAY_WEBHOOK_URL points at Twilio. The simulator only sends to the gateway.");
+  if (host === "photon.codes" || host.endsWith(".photon.codes")) {
+    throw new Error("GATEWAY_WEBHOOK_URL points at Photon. The simulator only sends to the gateway.");
   }
 }

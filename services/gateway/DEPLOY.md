@@ -1,23 +1,23 @@
 # Deploy the gateway on a Vultr VM
 
-Runbook for task 3.1 of [`docs/features/twilio-mvp.md`](../../docs/features/twilio-mvp.md). The gateway runs on a Vultr VM (Tuan, 2026-11-07). The web app is already on Vercel and is not part of this guide. See [`CHANGELOG.md`, "Gateway on a Vultr VM, web app on Vercel"](../../CHANGELOG.md).
+Runbook for task 3.1 of [`docs/features/twilio-mvp.md`](../../docs/features/twilio-mvp.md), updated for Photon iMessage ([`photon-imessage.md`](../../docs/features/photon-imessage.md)). The gateway runs on a Vultr VM (Tuan, 2026-11-07). The web app is already on Vercel and is not part of this guide. See [`CHANGELOG.md`, "Gateway on a Vultr VM, web app on Vercel"](../../CHANGELOG.md).
 
 The end result:
 
 ```
-phone ──SMS──> Twilio ──HTTPS POST /twilio/sms──┐
-                                                ▼
+iPhone ──iMessage──> Photon line ──HTTPS POST /webhooks/photon──┐
+                                                                 ▼
 browser (Vercel site) ──HTTPS GET /api/messages──> Caddy :443 ──> gateway :8787 (systemd) ──> SQLite file
 ```
 
-**Why HTTPS is required:** the Vercel site is served over HTTPS, so browsers block calls to a plain-HTTP gateway (mixed content). Twilio also needs a public URL to send webhooks to.
+**Why HTTPS is required:** the Vercel site is served over HTTPS, so browsers block calls to a plain-HTTP gateway (mixed content). Photon only delivers webhooks to public HTTPS URLs (no plain HTTP, private IPs or redirects).
 
 ## Decide before you start
 
 These are still **TBD**. Record what you choose in `CHANGELOG.md`, in the "Gateway on a Vultr VM" entry.
 
 - **Domain:** you need a hostname for the gateway, for example `gateway.<team-domain>`, with an `A` record pointing at the VM's IP. Caddy can't get a certificate for a bare IP.
-- **VM size and region:** the smallest Cloud Compute plan is enough. A region close to Twilio's US-East is a reasonable default.
+- **VM size and region:** the smallest Cloud Compute plan is enough. A US region is a reasonable default.
 - **HTTPS:** this guide uses **Caddy**, which gets and renews the certificate automatically. Any reverse proxy with TLS works if the team prefers another one.
 
 ## 1. Create the VM
@@ -99,8 +99,7 @@ Set at least these:
 | Variable | Value on the VM |
 |---|---|
 | `PORT` | `8787` |
-| `TWILIO_AUTH_TOKEN` | The Twilio account's auth token, from the Twilio console. To test with the simulator before Twilio is connected, keep the dev placeholder for now, then switch |
-| `PUBLIC_WEBHOOK_URL` | `https://<gateway-host>/twilio/sms`, **exactly** what you'll enter in the Twilio console. The signature check fails if they differ by even a trailing slash |
+| `PHOTON_WEBHOOK_SECRET` | The signing secret Photon returns when you register the webhook (step 9). To test with the simulator first, keep the dev placeholder for now, then switch |
 | `DB_PATH` | `./data/gateway.sqlite` (the default; it's created relative to `services/gateway`) |
 | `CORS_ORIGINS` | The Vercel site's origin, for example `https://<project>.vercel.app`, plus any custom domain, comma-separated. No trailing slash |
 | `CLASSIFIER_URL` | Leave empty for the keyword stub until task 2.3 |
@@ -164,28 +163,35 @@ If the certificate fails, check that DNS points at the VM and that ports 80 and 
 2. **Redeploy.** `NEXT_PUBLIC_*` values are fixed at build time, so changing the variable alone does nothing.
 3. Check that `CORS_ORIGINS` in the VM's `.env` includes the exact Vercel origin. Restart the gateway after any `.env` change: `sudo systemctl restart t-gate-gateway`.
 
-## 8. Test with the simulator (no Twilio yet)
+## 8. Test with the simulator (no Photon yet)
 
-From a laptop, with the VM still on the dev auth token, run the simulator against the deployed webhook ([simulator README](../perpetrator-sim/README.md)):
+From a laptop, with the VM still on the dev signing secret, run the simulator against the deployed webhook ([simulator README](../perpetrator-sim/README.md)):
 
 ```bash
 cd services/perpetrator-sim
 npm install
-GATEWAY_WEBHOOK_URL=https://<gateway-host>/twilio/sms \
-TWILIO_AUTH_TOKEN=<same token as the VM's .env> \
+GATEWAY_WEBHOOK_URL=https://<gateway-host>/webhooks/photon \
+PHOTON_WEBHOOK_SECRET=<same secret as the VM's .env> \
 npm run sim -- scenario smoke.jsonl
 ```
 
-`GATEWAY_WEBHOOK_URL` must be exactly the VM's `PUBLIC_WEBHOOK_URL`, because the signature covers that string. Each send should print status `200`.
+Each send should print status `200`. A `400` usually means the laptop's clock is more than 5 minutes off, and a `401` means the secrets differ.
 
 **Done when:** the scenario's messages show up on the Vercel `/messages` page within a few seconds, split into inbox and blocked.
 
-## 9. Connect Twilio (task 1.1) and text from a real phone
+## 9. Connect Photon (photon-imessage task 1.2) and iMessage from a real phone
 
-1. Put the real Twilio auth token in the VM's `.env`, then restart the gateway. After this, the simulator only works if it signs with the real token. Keep that token on the machine that runs the simulator, in `.env` only.
-2. In the Twilio console, open the victim number → **Messaging** → "A message comes in": choose **Webhook**, **HTTP POST**, and enter `https://<gateway-host>/twilio/sms`.
-3. Text the number from a real phone. On a trial account, the phone may need to be a verified caller ID first.
-4. Check `journalctl -u t-gate-gateway` and the `/messages` page. A `403` in the logs almost always means `PUBLIC_WEBHOOK_URL` doesn't match the console URL exactly, or the auth token is wrong.
+1. Register the webhook (dashboard at app.photon.codes, the "Webhook" tab, or the API; project id and secret are under Settings):
+
+   ```bash
+   curl -X POST "https://spectrum.photon.codes/projects/$PHOTON_PROJECT_ID/webhooks/" \
+     -u "$PHOTON_PROJECT_ID:$PHOTON_PROJECT_SECRET" -H "Content-Type: application/json" \
+     -d '{"webhookUrl":"https://<gateway-host>/webhooks/photon"}'
+   ```
+
+2. Put the returned `signingSecret` (shown once) in the VM's `.env` as `PHOTON_WEBHOOK_SECRET`, then restart the gateway. After this, the simulator only works if it signs with the real secret. Keep it in `.env` only.
+3. iMessage the Photon line from a real iPhone.
+4. Check `journalctl -u t-gate-gateway` and the `/` page. A `401` in the logs means the secret is wrong. A `400` "stale timestamp" means the VM clock is off, so check `timedatectl`.
 
 ## Updating and resetting
 
@@ -205,5 +211,5 @@ To clear stored messages before a demo, stop the gateway, run `sudo -u tgate npm
 - [ ] `systemctl status t-gate-gateway` active; `curl https://<gateway-host>/healthz` → `{"ok":true}`
 - [ ] Vercel `NEXT_PUBLIC_API_URL` set and redeployed; `CORS_ORIGINS` includes the Vercel origin
 - [ ] Simulator scenario shows up on the live `/messages` page
-- [ ] Twilio webhook URL equals `PUBLIC_WEBHOOK_URL`; a real-phone text shows up
+- [ ] Photon webhook registered, `PHOTON_WEBHOOK_SECRET` set; a real iMessage shows up
 - [ ] Domain, VM size/region and HTTPS choice recorded in `CHANGELOG.md`
