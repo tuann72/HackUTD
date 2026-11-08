@@ -5,3 +5,4 @@ artifacts/
 .venv-tfidf/
 __pycache__/
 deploy/.env
+.venv-test/
