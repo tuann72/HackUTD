@@ -11,9 +11,16 @@ import {
 } from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
+import type { Guard } from "@/components/scene/Scene";
 import { SimPanel } from "@/components/sim/SimPanel";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
+
+/** The scene's guard switch: the pink shield or the slapping hand. */
+const GUARDS: { id: Guard; label: string }[] = [
+  { id: "shield", label: "Shield" },
+  { id: "hand", label: "Hand" },
+];
 
 /** Counters read like the prototype's "000". */
 const pad3 = (n: number) => String(n).padStart(3, "0");
@@ -100,6 +107,7 @@ function Column({
  */
 export function MessagesView() {
   const [feed] = useState(createShotFeed);
+  const [guard, setGuard] = useState<Guard>("shield");
   // Each message fires a shot once the gateway has decided it.
   const onChanges = useCallback(
     (changes: MessageChange[]) => {
@@ -184,18 +192,33 @@ export function MessagesView() {
             </div>
           )}
 
-          <div className="flex justify-between gap-2 pb-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
+          <div className="flex items-center justify-between gap-2 pb-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
             <span>Live demonstration</span>
-            <span role="status" className="flex items-center gap-1.5 text-ink">
-              <i aria-hidden className={`inline-block size-1.5 rounded-full ${error ? "bg-muted" : "bg-hot"}`} />
-              {mode == null ? "Waking up" : error ? "Reconnecting" : "On guard"}
-            </span>
+            <div role="group" aria-label="What guards the Receiver" className="flex border border-ink">
+              {GUARDS.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  aria-pressed={guard === g.id}
+                  onClick={() => setGuard(g.id)}
+                  className={`px-2.5 py-1 font-label text-[9px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot ${
+                    guard === g.id ? "bg-ink text-paper" : "text-ink hover:bg-hot hover:text-white"
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
           </div>
           <section
-            aria-label="Animation: each message flies toward the Receiver; blocked ones bounce off the T-Guard shield"
+            aria-label={
+              guard === "shield"
+                ? "Animation: each message flies toward the Receiver; blocked ones bounce off the T-Guard shield"
+                : "Animation: each message flies to T-Guard's hand; blocked ones are slapped away"
+            }
             className="h-[45dvh] min-h-64 overflow-hidden sm:h-[60dvh] sm:min-h-80"
           >
-            <SceneClient feed={feed} />
+            <SceneClient feed={feed} guard={guard} />
           </section>
           <div className="flex justify-between gap-2 pt-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
             <span>01 / The protector</span>

@@ -101,16 +101,14 @@ export function scenarioSteps(id: string): Step[] {
   return steps.map((s) => ({ ...s }));
 }
 
-/** The steps a preset button runs. Random presets with n > 1 take count, ratio and interval from the settings. */
+/**
+ * The steps a preset button runs. Random presets use their own count, scam
+ * ratio and interval (the panel no longer has settings for them); `s` supplies
+ * the seed and sender.
+ */
 export function presetSteps(p: Preset, s: RunSettings): Step[] {
   if (p.kind === "scenario") return scenarioSteps(p.scenario);
-  const tunable = p.n > 1;
-  return randomSteps({
-    ...s,
-    n: tunable ? s.n : p.n,
-    scamRatio: tunable ? s.scamRatio : p.scamRatio,
-    intervalMs: tunable ? s.intervalMs : p.intervalMs,
-  });
+  return randomSteps({ ...s, n: p.n, scamRatio: p.scamRatio, intervalMs: p.intervalMs });
 }
 
 /** Total wait of a run, for the panel's "about N s". */

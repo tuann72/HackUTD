@@ -19,7 +19,7 @@ describe("simulation plan", () => {
   it("clamps count and interval, and uses a fixed sender when given", () => {
     const s = randomSteps({ ...base, n: 999, intervalMs: 1, from: "+15555550150" });
     expect(s).toHaveLength(50);
-    expect(s[1]!.delayMs).toBe(250);
+    expect(s[1]!.delayMs).toBe(100);
     expect(new Set(s.map((x) => x.from))).toEqual(new Set(["+15555550150"]));
   });
 
@@ -29,11 +29,16 @@ describe("simulation plan", () => {
     expect(SENDER_POOL).not.toContain("+15555550142");
   });
 
-  it("single-message presets ignore the burst settings", () => {
+  it("presets use their own count, ratio and interval", () => {
     const scam = PRESETS.find((p) => p.id === "one-scam")!;
     const steps = presetSteps(scam, { ...base, n: 30, scamRatio: 0 });
     expect(steps).toHaveLength(1);
     expect(steps[0]!.expected).toBe("block");
+
+    const rapid = presetSteps(PRESETS.find((p) => p.id === "rapid")!, base);
+    expect(rapid).toHaveLength(50);
+    expect(rapid.slice(1).every((s) => s.delayMs === 100)).toBe(true);
+    expect(rapid.filter((s) => s.expected === "block")).toHaveLength(30);
   });
 
   it("every scenario preset exists in the copied bank", () => {
