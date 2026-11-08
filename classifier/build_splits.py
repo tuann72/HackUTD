@@ -139,6 +139,8 @@ def main() -> None:
 
     base = pd.read_csv(data / "scam_categories_100k_full.csv", usecols=COLUMNS)
     threats = pd.read_csv(data / "potential_threat_synthetic.csv", usecols=COLUMNS + ["scenario"])
+    money = pd.read_csv(data / "money_request_synthetic.csv", usecols=COLUMNS + ["scenario"])  # calm money asks; split like the threat rows
+    threats = pd.concat([threats, money], ignore_index=True)
     threat_eval = pd.read_csv(data / "potential_threat_eval.csv", usecols=COLUMNS + ["scenario"])
     train_val, test, held_threats, stats = clean_splits(base, threats, threat_eval)
 

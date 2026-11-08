@@ -41,6 +41,7 @@ export function makeApp(
       photonWebhookSecret: SECRET,
       signatureToleranceSeconds: 300,
       blockThreshold: 0.5,
+      moneyWarnAmount: 500,
       corsOrigins: ['http://localhost:3000'],
       debug: false,
       debugToken: null,

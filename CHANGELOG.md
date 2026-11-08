@@ -6,6 +6,16 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Calm money requests: more data, a warning rule, block threshold 0.70
+
+- **Problem (Timothy):** "Can you lend me $6000 for the bus fare?" scored 0%. "lend me" appeared in no training row, and the model can't weigh amounts. Separately, ordinary texts like "Free at last!" were blocked because "free" alone read as a scam cue.
+- **Models:** `stacked-lr-category@0.3` added Tuan's 300 harmless "free" texts. `@0.4` adds `data/money_request_synthetic.csv`: polite large asks, the "new number" scam, strangers asking for money and government threats as label 1, small everyday asks and talk about large amounts as ham. "Bus fare" is deliberately absent from the templates. 843 of its 1,302 rows survive `build_splits.py`, because amounts normalize to the same text.
+- **Same cleaned test, 3,068 real messages, cutoff 0.5, v0.2 → v0.3 → v0.4:** false blocks 27 → 27 → 24, missed scams 33 → 32 → 29, SMS F1 0.952 → 0.955 → 0.959, ECE 0.007 → 0.006 → 0.008. Threat check file, blocked: 95% → 97% → 97%; hard negatives blocked 0% throughout.
+- **Hand-written check, none in training, small and agent-written (v0.4):** 12 of 12 scams caught, including the IRS warrant text the earlier models missed. Of 18 ordinary "free" texts, 2 are over 0.5 and none over 0.77.
+- **Warning rule (`services/gateway/src/money-rule.ts`, `MONEY_WARN_AMOUNT`, default $500):** a delivered message that asks the reader for at least that amount gets `verdict.warning: "large_money_request"`, and the web card shows a note. It never blocks, since real family ask for money too. Additive to query API v1.
+- **Threshold (Timothy):** the VM's `BLOCK_THRESHOLD` is **0.70**, a stopgap for false blocks that lowering would bring back. The repo default stays 0.5.
+- **Known limits:** "Can you lend me $6000 for the bus fare?" still scores 19% and is delivered with the warning. "my car broke down, can you zelle me $2500 asap" dropped from 76% to 37%, also delivered with the warning. "Your order is ready for pickup at the pharmacy" scores 72%, so it's a false block at 0.70.
+
 ### 2026-11-08: A slapping hand replaces the Receiver blob
 
 Tuan: replace the right blob in the scene with a hand that slaps, after the T-GUARD offline prototype. The Receiver is now the prototype's pink box with its photographic hand (the two WebP images, about 340 KB) standing in it, cut off at the box top by a clipping plane. A blocked potential scam stops within reach; during the hand's wind-up it drifts to where the palm will be at contact, then it is knocked back toward the sender, spinning and fading. The strikes reuse the prototype's slap-left, backhand and delayed timings (`components/scene/slap.ts`, unit-tested). This replaces the shield flash and the bubble pop; the "Potential scam · Blocked" stamp stays. Not ported: the box lid animation, the notification cards and the synthesized sound. The scene still only animates the gateway's decision.

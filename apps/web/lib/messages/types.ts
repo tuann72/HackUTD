@@ -51,6 +51,8 @@ export interface Verdict {
   category: string | null;
   model: string;
   highlights: Highlight[];
+  /** Set by the gateway on a delivered message that deserves a second look. */
+  warning?: "large_money_request";
 }
 
 export interface Message {

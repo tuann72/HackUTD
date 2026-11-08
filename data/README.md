@@ -147,6 +147,12 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 
 ---
 
+## 6. Calm money requests (`money_request_synthetic.csv`)
+
+1,302 template rows from `build_money_request_synthetic.py` (seeded, stdlib only): label 1 for polite large asks, the "new number" scam, strangers asking for money and government threats; label 0 for small asks, shared costs and talk about large amounts. `classifier/build_splits.py` merges them and sends 15% of each scenario to val. Amounts normalize to the same text, so about a third are dropped as duplicates. Same caveat as the other templates: judge on real messages, not on these.
+
+---
+
 ## Where the data comes from
 
 | `source` value | origin | style |

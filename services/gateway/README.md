@@ -43,7 +43,8 @@ curl -s localhost:8787/api/messages | jq
 | `CLASSIFIER_URL` | empty | Empty = built-in keyword stub (`stub@0`). Set = call `POST ${CLASSIFIER_URL}/classify` |
 | `CLASSIFIER_TOKEN` | empty | Sent as `Authorization: Bearer ...` when set |
 | `CLASSIFIER_TIMEOUT_MS` | `2500` | Abort the classifier call after this long |
-| `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold` (TBD, to be tuned on `val`) |
+| `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold`. The VM uses `0.7` |
+| `MONEY_WARN_AMOUNT` | `500` | Add `verdict.warning` to a delivered message asking the reader for at least this many dollars. Never blocks. `0` turns it off |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to `GET /api/*` |
 | `GATEWAY_DEBUG` | `0` | `1` registers `POST /debug/reset`. Startup fails if `DEBUG_TOKEN` is empty |
 | `DEBUG_TOKEN` | empty | Required `X-Debug-Token` value for debug routes |

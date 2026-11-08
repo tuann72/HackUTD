@@ -6,6 +6,7 @@ import type { Blocklist, Fingerprinter } from './blocklist.js';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
+import { asksForLargeSum } from './money-rule.js';
 import { EVENT_HEADER, SIGNATURE_HEADER, STANDARD_ID_HEADER, STANDARD_SIGNATURE_HEADER, STANDARD_TIMESTAMP_HEADER, TIMESTAMP_HEADER, isClassifiable, parsePhotonEvent, verifySpectrumRequest, verifyStandardRequest, type InboundMessage } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
@@ -25,6 +26,7 @@ export interface AppDeps {
     | 'photonWebhookSecret'
     | 'signatureToleranceSeconds'
     | 'blockThreshold'
+    | 'moneyWarnAmount'
     | 'corsOrigins'
     | 'debug'
     | 'debugToken'
@@ -125,8 +127,11 @@ export function createApp({
       return;
     }
     const action = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
+    if (action === 'delivered' && asksForLargeSum(body, config.moneyWarnAmount)) {
+      verdict = { ...verdict, warning: 'large_money_request' };
+    }
     store.applyDecision(id, action, 'model_verdict', verdict);
-    logger.info(`${id} from ${display}: ${action} (score ${verdict.score}, ${verdict.category ?? 'no category'}, ${verdict.model})`);
+    logger.info(`${id} from ${display}: ${action} (score ${verdict.score}, ${verdict.category ?? 'no category'}, ${verdict.model})${verdict.warning ? `, warning: ${verdict.warning}` : ''}`);
     // 4. Fingerprint every model block; strikes or a very high score put the sender on the blocklist.
     if (action === 'blocked') await recordScam(id, senderFp, body, verdict);
   }

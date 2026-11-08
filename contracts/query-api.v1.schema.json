@@ -89,6 +89,7 @@
         "score": { "type": "number", "minimum": 0, "maximum": 1 },
         "category": { "type": ["string", "null"] },
         "model": { "type": "string" },
+        "warning": { "enum": ["large_money_request"] },
         "highlights": {
           "type": "array",
           "items": {
