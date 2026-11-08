@@ -16,6 +16,9 @@ Rules:
   * Threat rows are templates and exist only for train and val. 15% of each scenario goes to val,
     because the stacker is fit on val and the real val split has no threat messages.
     Test stays 100% real; threat rows never enter it.
+  * The 600 government-threat, IRS, ID-request and health scam templates
+    (data/gov_health_id_scam_synthetic.csv) are handled exactly like the threat rows: 15% of each
+    scenario goes to val.
   * The 300 harmless "free" ham texts (data/free_ham_synthetic.csv) are already appended to
     scam_categories_100k_full.csv as train rows, so they arrive with the base file.
 """
@@ -79,7 +82,7 @@ def clean_splits(base: pd.DataFrame, threats: pd.DataFrame, threat_eval: pd.Data
     held_exact = set(test["_exact"]) | set(threat_eval["_exact"])
     held_bag = (set(test["_bag"]) | set(threat_eval["_bag"])) - {""}
 
-    # Validation rows: real val, then a held-out share of each threat scenario.
+    # Validation rows: real val, then a held-out share of each template scenario (threats and the other template files).
     val = base[base.split == "val"]
     leaked = _matches(val, held_exact, held_bag)
     stats["val_removed_matching_held_out"] = int(leaked.sum())
@@ -120,7 +123,7 @@ def clean_splits(base: pd.DataFrame, threats: pd.DataFrame, threat_eval: pd.Data
     stats["output"] = {
         "train": len(train),
         "val_real": len(val),
-        "val_threat_templates": len(threat_val),
+        "val_templates": len(threat_val),
         "test": len(test),
         "threat_eval": len(threat_eval),
     }
@@ -138,7 +141,10 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     base = pd.read_csv(data / "scam_categories_100k_full.csv", usecols=COLUMNS)
-    threats = pd.read_csv(data / "potential_threat_synthetic.csv", usecols=COLUMNS + ["scenario"])
+    # Template rows: split by scenario, 15% to val.
+    threats = pd.concat([pd.read_csv(data / name, usecols=COLUMNS + ["scenario"])
+                         for name in ("potential_threat_synthetic.csv", "gov_health_id_scam_synthetic.csv")],
+                        ignore_index=True)
     threat_eval = pd.read_csv(data / "potential_threat_eval.csv", usecols=COLUMNS + ["scenario"])
     train_val, test, held_threats, stats = clean_splits(base, threats, threat_eval)
 

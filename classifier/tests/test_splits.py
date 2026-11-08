@@ -44,5 +44,5 @@ def test_threat_eval_text_never_trains():
 def test_some_of_each_threat_scenario_reaches_val_and_test_stays_real():
     threats = [row(f"th{i}", f"unique threat number {chr(97 + i % 26)}{chr(97 + i // 26)}", "train", 8, True, scenario="a") for i in range(40)]
     tv, test, _, stats = build([row("t", "held test", "test"), row("v", "val text", "val")], threats)
-    assert stats["output"]["val_threat_templates"] == 6
+    assert stats["output"]["val_templates"] == 6
     assert not test.is_synthetic.any()
