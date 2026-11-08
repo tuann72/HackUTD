@@ -38,14 +38,22 @@ export function SimPanel() {
   const busy = run !== null;
 
   return (
-    <aside aria-label="Simulations" className="flex flex-col gap-3 lg:sticky lg:top-6 lg:pt-6">
+    <aside
+      aria-label="Simulations"
+      className={`flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain border-t border-rule p-4 lg:border-t-0 lg:border-l ${
+        open ? "lg:w-72 xl:w-80" : "lg:w-12 lg:items-center lg:px-0"
+      }`}
+    >
       <h2 className="font-label text-[11px] uppercase tracking-[0.08em] text-muted">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((o) => !o)}
-          className="-mx-1 flex items-center gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          title={open ? "Hide Simulate" : "Show Simulate"}
+          className={`-mx-1 flex items-center gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot ${
+            open ? "" : "lg:mx-0 lg:py-1 lg:[writing-mode:vertical-rl]"
+          }`}
         >
           <svg aria-hidden viewBox="0 0 16 16" className={`size-3 transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`}>
             <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
