@@ -4,6 +4,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: MVP UI is a basic Next.js message list; 3D scene parked
+
+- **Decision (Tuan):** the MVP UI is a basic Next.js page that shows delivered and blocked messages, polling a read-only `GET /api/messages`. The React Three Fiber scene, event stream, scam notice and blocked-scams panel move to later scope.
+- **Why:** focus on getting the Twilio path working end to end first.
+- **Also recorded:** a tunnel is needed only when a real phone texts a gateway running on a laptop; the simulator posts to `localhost`, and a deployed gateway has a public URL. Recommended: deploy the gateway early. Gateway hosting (separate service vs. Next.js route handlers on Vercel) is still TBD, with a separate service recommended.
+- **Details:** [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md).
+
 Newest first. Each entry: date, decision, rationale, and what it replaces.
 
 ### 2026-11-07: React Three Fiber and Motion for the web app

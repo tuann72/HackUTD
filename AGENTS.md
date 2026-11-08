@@ -2,6 +2,12 @@
 
 This file is the shared source of truth for every coding agent (Claude Code, Codex, Cursor, Copilot, Gemini, etc.) and for human contributors. `CLAUDE.md` imports this file; Codex and most other agents read `AGENTS.md` directly. Put project rules here, not in tool-specific files.
 
+> **Feature plans live in [`docs/features/`](docs/features/).** Before working on a feature, read its plan there: it has the concrete design, ordered tasks, what can run in parallel, and who's on what. Current plans:
+>
+> - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (Twilio webhook, gateway, simulator, basic message UI).
+>
+> New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
+
 ## Project summary
 
 - **Name:** **T-Gate** (renamed from the earlier working name "Gate Guardian"). The repository folder and GitHub repo are still called `HackUTD`.
@@ -14,7 +20,10 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 
 ### MVP: Twilio scam-message simulation
 
-The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app: the victim-facing experience is a scam notice plus the Next.js web app.
+The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. The full plan is in [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md).
+
+- **MVP UI (Tuan, 2026-11-07):** a **basic Next.js page** that lists messages as delivered (inbox) or blocked. It polls the gateway's read-only query API (`GET /api/messages`); there's no event stream or WebSocket in the MVP. The **3D scene is parked** for later, along with the scam notice and blocked-scams panel. Don't build them for the MVP.
+- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. Recommendation: deploy the gateway early. Hosting is TBD.
 
 - The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `DESIGN.md`, "One Twilio number, simulated perpetrator".)
 - **The perpetrator is simulated with API calls**, not a second Twilio number. A perpetrator simulator sends HTTP requests to the gateway's webhook in exactly the format Twilio uses for an inbound SMS to the victim number (`From`, `To`, `Body`, `MessageSid`, …), signed with a valid `X-Twilio-Signature`. The gateway handles simulated and real messages the same way.
@@ -49,7 +58,7 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 ## Proposed architecture: interception gateway and demo scene (not agreed)
 
-**Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** No code exists for it, and scaffolding is on hold. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`DESIGN.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](DESIGN.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
+**Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** For the MVP, only the gateway, simulator, classifier interface and a read-only query API are in play; the event stream, scene, notice and panel below are later scope (see [MVP](#mvp-twilio-scam-message-simulation)). No code exists for it, and scaffolding is on hold. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`DESIGN.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](DESIGN.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
 
 **How interception works:** Twilio sends every SMS addressed to the victim number to our webhook. No phone sits behind that number. The victim's inbox is virtual and owned by the gateway, so the gateway acts as the victim's carrier. It classifies each message, then **delivers** it to the inbox or **blocks** it (quarantine log). Blocking needs no outbound SMS, so Twilio trial and A2P 10DLC limits don't apply to it.
 
