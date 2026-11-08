@@ -4,27 +4,44 @@ import { motion, useReducedMotion } from "motion/react";
 
 /**
  * The color-block composition on the right of the landing page: a "T" built
- * from flat pink blocks (crossbar, a serif under its left end, the stem with a
- * deep-pink foot) beside a black slab, with thin grid rules. Every block and
+ * from flat pink blocks (crossbar, a serif under each end, the stem with a
+ * deep-pink foot), two small squares in their own shades of pink on either side
+ * of the stem, and thin grid rules. Every block and
  * rule is placed in percent of the panel, so it scales with it.
  */
 const HOT = "#e1346f";
 const LIGHT = "#ec4f8e";
 const DEEP = "#b5225a";
-const INK = "#100f0d";
+/** The two small squares beside the stem: a paler and a darker pink. */
+const DOT_LEFT = "#f483b0";
+const DOT_RIGHT = "#d81b6a";
 
-const BLOCKS = [
+interface Block {
+  id: string;
+  left: number;
+  top: number;
+  width: number;
+  /** Percent of the panel's height; left out for a square block. */
+  height?: number;
+  square?: boolean;
+  color: string;
+}
+
+const BLOCKS: Block[] = [
   // Crossbar: one long block, then a lighter block and a deep-pink end cap.
   { id: "bar", left: 8, top: 6, width: 53, height: 28, color: HOT },
   { id: "bar-light", left: 61, top: 6, width: 19, height: 28, color: LIGHT },
   { id: "bar-cap", left: 80, top: 6, width: 12, height: 28, color: DEEP },
-  // Serif hanging under the crossbar's left end.
+  // Serifs hanging under both ends of the crossbar.
   { id: "serif", left: 8, top: 34, width: 12, height: 12, color: LIGHT },
+  { id: "serif-right", left: 80, top: 34, width: 12, height: 12, color: LIGHT },
   // Stem, centered under the crossbar, with a deep-pink foot.
   { id: "stem", left: 39, top: 34, width: 22, height: 42, color: HOT },
   { id: "foot", left: 39, top: 76, width: 22, height: 24, color: DEEP },
-  // Black slab to the right of the stem.
-  { id: "slab", left: 61, top: 46, width: 39, height: 54, color: INK },
+  // Two small squares beside the stem, a small gap from it on each side
+  // (square: their height follows their width, whatever the panel's shape).
+  { id: "dot-left", left: 30, top: 52, width: 6, square: true, color: DOT_LEFT },
+  { id: "dot-right", left: 64, top: 52, width: 6, square: true, color: DOT_RIGHT },
 ];
 
 /** Thin grid rules: horizontal ones have a width, vertical ones a height. */
@@ -51,7 +68,8 @@ export function Blocks() {
             left: pct(b.left),
             top: pct(b.top),
             width: pct(b.width),
-            height: pct(b.height),
+            height: b.height === undefined ? undefined : pct(b.height),
+            aspectRatio: b.square ? "1" : undefined,
             background: b.color,
             transformOrigin: "left top",
           }}
