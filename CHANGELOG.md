@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Nemotron always reviews large money asks, new decision prompt
+
+- **Rule:** a message asking for at least `MONEY_WARN_AMOUNT` now goes to Nemotron even when its score is below `REVIEW_BAND_LOW`, because the classifier can't weigh amounts. Scores at or above `REVIEW_BAND_HIGH` stay blocked without review.
+- **Why the prompt changed first:** run on the live model, the old prompt blocked every money ask it reviewed, including "Can you venmo me $600 for your half of the flights", and blocked "free cinnamon rolls!". Its reasons were often just "no bank data". The new `DECIDE_PROMPT` says a request for money alone is not a scam sign, lists the warning signs (rushed, secret, new number, emergency, an amount that doesn't fit the reason) and says missing bank data means nothing for a personal message.
+- **Checks (hand-written, small, real Nemotron, mock bank):** in the texts the prompt was tuned on, "Free at last! No more school!", the $600 flights text and "free cinnamon rolls!" reach the inbox, and the $6000 bus fare is blocked. In a batch of 24 written before the final prompt (one wording tweak followed its first run): every harmless text that was reviewed was delivered (6 of 6), and 2 of 3 reviewed scams were blocked.
+- **Known limits:** "can you please help me with $1800, i got stranded and nobody else can help" is delivered with the money warning. Some harmless money asks score at or above 0.77 and are blocked without review ("can you transfer $900 for your share of rent", 88%). "the $800 for the security deposit like we talked about" is still blocked, with an inaccurate reason ("Urgent request for a large sum"). Nemotron has a rate limit; a 429 keeps the model's decision.
+
 ### 2026-11-08: A "T" on the shield instead of the check mark; shield moved left
 
 - **Decision (Tuan):** put a "T" on the shield instead of the check mark, and move the shield a few pixels left. The T is a raised white block letter (crossbar over a stem) extruded on the shield's face. It is an original letterform, not T-Mobile's logo (the T with small squares beside it), which is their trademark; the magenta shield keeps the T-Mobile feel. The shield moved from x 2.2 to 1.9 world units (about 25 to 35 px).

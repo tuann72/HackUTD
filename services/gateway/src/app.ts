@@ -133,8 +133,9 @@ export function createApp({
       return;
     }
     let action: 'blocked' | 'delivered' = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
-    // Unsure score: ask Nemotron. Any failure keeps the model's decision.
-    if (reviewer && verdict.score >= config.reviewBandLow && verdict.score < config.reviewBandHigh) {
+    // Unsure score, or a large money ask the model can't weigh: ask Nemotron. Any failure keeps the model's decision.
+    const unsure = verdict.score >= config.reviewBandLow;
+    if (reviewer && verdict.score < config.reviewBandHigh && (unsure || asksForLargeSum(body, config.moneyWarnAmount))) {
       try {
         const review = await reviewer.review(body, verdict);
         // The label follows the final decision, so the UI never shows a cleared message as a potential scam.

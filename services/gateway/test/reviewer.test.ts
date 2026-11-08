@@ -29,9 +29,9 @@ function fakeReviewer(result: Review | Error = REVIEW) {
   return { reviewer, calls };
 }
 
-async function run(score: number, reviewer?: Reviewer) {
+async function run(score: number, reviewer?: Reviewer, text?: string) {
   const app = makeApp({ classifier: fixed(score), reviewer, config: { reviewBandLow: 0.22, reviewBandHigh: 0.77, blockThreshold: 0.5 } });
-  const res = await app.request(signedRequest(payload({ id: 'r1', text: 'Your Comcast bill is overdue' })));
+  const res = await app.request(signedRequest(payload({ id: 'r1', text: text ?? 'Your Comcast bill is overdue' })));
   expect(res.status).toBe(200);
   await app.idle();
   const body = (await (await app.request('/api/messages')).json()) as MessagesResponse;
@@ -73,6 +73,25 @@ describe('gateway review band', () => {
     const m = await run(score as number, fakeReviewer(new Error('down')).reviewer);
     expect(m.action).toBe(action);
     expect(m.verdict?.review).toBeUndefined();
+  });
+
+  it('reviews a large money ask below the band, and Nemotron can block it', async () => {
+    const { reviewer, calls } = fakeReviewer();
+    const m = await run(0.05, reviewer, 'Can you lend me $6000 for the bus fare?');
+    expect(calls).toHaveLength(1);
+    expect(m.action).toBe('blocked');
+  });
+
+  it('keeps the money warning when Nemotron delivers a large ask', async () => {
+    const m = await run(0.05, fakeReviewer({ ...REVIEW, decision: 'deliver' }).reviewer, 'Can you lend me $6000 for the bus fare?');
+    expect(m.action).toBe('delivered');
+    expect(m.verdict?.warning).toBe('large_money_request');
+  });
+
+  it.each([[0.05, 'can you venmo me $20 for pizza'], [0.9, 'Can you lend me $6000 for the bus fare?']])('does not review score %d for %s', async (score, text) => {
+    const { reviewer, calls } = fakeReviewer();
+    await run(score as number, reviewer, text as string);
+    expect(calls).toEqual([]);
   });
 
   it('behaves as before with no reviewer', async () => {
