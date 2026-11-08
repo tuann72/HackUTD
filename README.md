@@ -33,7 +33,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Initial 3D scene | Fast-slow-fast message flight (fast first 30%, slow middle 40%, fast last 30% of the distance) | `feat/scene-flight-easing` | Claude (agent) | In review | [#47](https://github.com/tuann72/HackUTD/pull/47) |
+| Initial 3D scene | Fast-slow-fast message flight (fast first 30%, slow middle 40%, fast last 30% of the distance) | `feat/scene-flight-easing` | Claude (agent) | Done | [#47](https://github.com/tuann72/HackUTD/pull/47) |
 | Message UI | Remove the "Live" source pill from the T-Gate header | `fix/web-remove-live-indicator` | Claude (agent) | Done | [#49](https://github.com/tuann72/HackUTD/pull/49) |
 | Initial 3D scene | Remove the legend overlay (Potential scam / Message) from the scene | `fix/scene-remove-legend` | Claude (agent) | Done | [#46](https://github.com/tuann72/HackUTD/pull/46) |
 | Message UI | "Clear chats" deletes every message (`DELETE /api/messages` on the gateway and the Vercel backup) instead of hiding them | `feat/web-clear-deletes` | Tuan + Claude Code | Done | [#45](https://github.com/tuann72/HackUTD/pull/45) |
