@@ -15,8 +15,12 @@ Stdlib only, no network, fixed seed: two runs give byte-identical files.
     python3 -I data/build_free_ham_synthetic.py            # writes next to this script
     python3 -I data/build_free_ham_synthetic.py <out_dir>
 
-Output (same columns as potential_threat_synthetic.csv, so build_splits.py merges it the same way):
+Output (same columns as potential_threat_synthetic.csv):
   free_ham_synthetic.csv  300 rows, all label 0, split=train, is_synthetic=True
+
+These rows are also appended to scam_categories_100k_full.csv and scam_categories_100k.csv
+(source synthetic_free_ham), which is how training gets them. If you change this script, replace
+those 300 rows in both files too.
 """
 
 from __future__ import annotations
@@ -258,11 +262,12 @@ def row(message: str, scenario: str) -> dict:
 def existing_keys(data_dir: Path) -> set[str]:
     """Normalized texts already in the dataset, so no generated row repeats one."""
     seen: set[str] = set()
-    for name in ("scam_categories_100k.csv", "potential_threat_synthetic.csv", "potential_threat_eval.csv"):
+    for name in ("scam_categories_100k_full.csv", "potential_threat_synthetic.csv", "potential_threat_eval.csv"):
         path = data_dir / name
         if path.exists():
             with path.open(encoding="utf-8", newline="") as f:
-                seen.update(norm(r["message"]) for r in csv.DictReader(f))
+                # Skip this script's own rows, which are already appended to the 100k files.
+                seen.update(norm(r["message"]) for r in csv.DictReader(f) if r.get("source") != SOURCE)
     return seen
 
 

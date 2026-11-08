@@ -2,7 +2,7 @@
 
 - **Slug:** `nemotron-review`
 - **Phase:** Stretch (hackathon demo)
-- **Status:** In progress
+- **Status:** In review
 - **Owner:** Timothy + Claude Code
 
 ## Goal
@@ -36,6 +36,6 @@ Nessie is used when `NESSIE_API_KEY` and `NESSIE_ACCOUNT_ID` are set and it answ
 
 | # | Task | Depends on | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|
-| 1 | Reviewer, bank checks, wiring, tests | — | In progress | `feat/nemotron-review` | Timothy + Claude Code | TBD |
-| 2 | Contract field and UI reason line | 1 | In progress | `feat/nemotron-review` | Timothy + Claude Code | TBD |
+| 1 | Reviewer, bank checks, wiring, tests | — | Done | `feat/nemotron-review` | Timothy + Claude Code | [#59](https://github.com/tuann72/HackUTD/pull/59) |
+| 2 | Contract field and UI reason line | 1 | Done | `feat/nemotron-review` | Timothy + Claude Code | [#59](https://github.com/tuann72/HackUTD/pull/59) |
 | 3 | Live test with real keys, then deploy | 1, 2 | Not started | — | — | — |
