@@ -4,5 +4,10 @@
 # Photon delivers to https://GATEWAY_HOST/webhooks/photon; the web app reads /api/messages.
 GATEWAY_HOST {
 	encode gzip
-	reverse_proxy localhost:8787
+	handle /classify {
+		reverse_proxy 127.0.0.1:8000
+	}
+	handle {
+		reverse_proxy localhost:8787
+	}
 }
