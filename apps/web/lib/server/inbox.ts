@@ -149,8 +149,23 @@ const g = globalThis as { __tgateClient?: Promise<MongoClient>; __tgateMemory?: 
 export async function getStore(env: NodeJS.ProcessEnv = process.env): Promise<Store> {
   if (!env.MONGODB_URI) return (g.__tgateMemory ??= new MemoryStore());
   g.__tgateClient ??= new MongoClient(env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 }).connect();
-  const col = (await g.__tgateClient).db(env.MONGODB_DB || "tgate").collection<Doc>("inbox");
-  return new MongoStore(col);
+  try {
+    const col = (await g.__tgateClient).db(env.MONGODB_DB || "tgate").collection<Doc>("inbox");
+    return new MongoStore(col);
+  } catch (err) {
+    g.__tgateClient = undefined; // retry on the next request instead of reusing a failed connect
+    throw err;
+  }
+}
+
+/**
+ * 503 with the error's class name only (e.g. MongoServerSelectionError), never its message, which
+ * can include hostnames. Photon retries 503s. The full error goes to the Vercel function log.
+ */
+export function storeUnavailable(where: string, err: unknown): Response {
+  const name = err instanceof Error ? err.name : "Error";
+  console.error(`[${where}] store unavailable:`, err);
+  return new Response(`store unavailable: ${name}`, { status: 503 });
 }
 
 // --- Webhook handler ------------------------------------------------------------------
