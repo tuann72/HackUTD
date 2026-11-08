@@ -62,11 +62,6 @@ export function SimPanel() {
               Simulation is off. {status.reason}
             </p>
           )}
-          {enabled && (
-            <p className="text-xs leading-relaxed text-muted">
-              Sends signed, simulated iMessages from fictional numbers to <span className="font-mono">{status.target}</span>.
-            </p>
-          )}
 
           <div className="flex flex-col gap-2">
             {PRESETS.map((p) => {
