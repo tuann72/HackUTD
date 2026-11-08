@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Suspense, useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
-import { MathUtils, PerspectiveCamera, Vector3 } from "three";
+import { MathUtils, PerspectiveCamera, Vector3, type Object3D } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
 import { MessageShot } from "./MessageShot";
 import type { SceneMessage, ShotFeed } from "./feed";
@@ -130,6 +130,46 @@ function FitCamera() {
   return null;
 }
 
+const projected = new Vector3();
+
+/**
+ * Moves a DOM label to its blob's anchor every frame. Labels are plain
+ * elements over the canvas, not drei <Html>: the Sender's <Html> label never
+ * appeared (twice), while the same code showed the Receiver's.
+ */
+function TrackLabel({
+  anchorRef,
+  labelRef,
+}: {
+  anchorRef: RefObject<Object3D | null>;
+  labelRef: RefObject<HTMLSpanElement | null>;
+}) {
+  useFrame(({ camera, size }) => {
+    const anchor = anchorRef.current;
+    const el = labelRef.current;
+    if (!anchor || !el) return;
+    anchor.getWorldPosition(projected).project(camera);
+    const x = ((projected.x + 1) / 2) * size.width;
+    const y = ((1 - projected.y) / 2) * size.height;
+    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    el.style.visibility = "visible";
+  });
+  return null;
+}
+
+/** A blob's name, positioned by TrackLabels; hidden until the first frame places it. */
+function BlobLabel({ text, className, ref }: { text: string; className: string; ref: RefObject<HTMLSpanElement | null> }) {
+  return (
+    <span
+      ref={ref}
+      style={{ visibility: "hidden" }}
+      className={`pointer-events-none absolute left-0 top-0 z-10 whitespace-nowrap rounded-md bg-slate-900/70 px-2 py-0.5 text-sm font-medium ${className}`}
+    >
+      {text}
+    </span>
+  );
+}
+
 /**
  * The scene band on the home page: every message the page receives flies from
  * the sender to the victim; blocked ones pop in front of the victim's shield.
@@ -137,6 +177,10 @@ function FitCamera() {
  */
 export default function Scene({ feed }: { feed: ShotFeed }) {
   const [hits] = useState(createHitClock);
+  const senderAnchor = useRef<Object3D>(null);
+  const victimAnchor = useRef<Object3D>(null);
+  const senderLabel = useRef<HTMLSpanElement>(null);
+  const victimLabel = useRef<HTMLSpanElement>(null);
 
   return (
     <div className="relative h-full w-full bg-[#0b1020]">
@@ -144,6 +188,8 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           ground shadow on its own. */}
       <Canvas camera={CAMERA} dpr={DPR}>
         <FitCamera />
+        <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
+        <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
         <color attach="background" args={["#0b1020"]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 6, 5]} intensity={1.6} />
@@ -155,8 +201,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           facing={1}
           hitAt={hits.at.sender}
           phase={1.3}
-          label="Sender"
-          labelClass="text-slate-100"
+          labelAnchor={senderAnchor}
         />
         <Blob
           position={[VICTIM_X, 0, 0]}
@@ -164,8 +209,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           facing={-1}
           hitAt={hits.at.victim}
           shieldAt={hits.at.shield}
-          label="Receiver"
-          labelClass="text-pink-300"
+          labelAnchor={victimAnchor}
         />
 
         {/* The bubble images load once; nothing else waits on them. */}
@@ -175,6 +219,8 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
 
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} resolution={256} />
       </Canvas>
+      <BlobLabel ref={senderLabel} text="Sender" className="text-slate-100" />
+      <BlobLabel ref={victimLabel} text="Receiver" className="text-pink-300" />
     </div>
   );
 }
