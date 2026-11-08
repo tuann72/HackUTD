@@ -6,6 +6,16 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Stacked model option built (`train.py --model stacked`)
+
+- **What (Timothy + Claude Code, task 1.4):** the stacked flow recommended in the entry below is now a third model kind. `train.py --model stacked` trains TF-IDF + LR and MiniLM + LR on `train`, then the stacker (a small LR on both models' 16 class log-probabilities) on the real `val` split, and writes `head.joblib` (the stacker), `tfidf_head.joblib`, `minilm_head.joblib`, `vectorizer.joblib` and `keywords.json`. The service loads `kind: stacked-lr` from `model.json` and needs no API change, so the gateway can't tell which model is behind it.
+- **Highlights:** by occlusion through the whole stack (drop a word, re-score both models), so they explain the score actually returned. TF-IDF-only coefficient highlights would have been cheaper but would ignore the MiniLM half.
+- **Val does double duty, handled:** the stacker is fit on all of `val`, but the suggested thresholds in `metrics.json` are picked from 5-fold out-of-fold stacker scores on `val`, then checked on `test`. Val metrics for a stacked model are in-sample; judge it on test.
+- **Verified (laptop RTX 3050, full data, 8-class):** featurize 328 s, fit 168 s. Run through the service's own code path, the saved model reproduces the comparison exactly: at score ≥ 0.5 on test, 26 false blocks, 33 missed scams, SMS F1 0.952, ECE 0.008. `tests/test_service.py` passes (4/4). CPU latency on the laptop: about 70 ms for a scam with highlights, 29 ms for a legit message.
+- **Suggested thresholds** (picked on val, checked on test): **0.19** gives 97.1% precision and 99.3% recall; **0.75** gives 98.9% precision and 96.9% recall. These are inputs for the gateway's `BLOCK_THRESHOLD` (and a possible Nemotron review band), not a decision.
+- **Note on `train.py` metrics:** they count a message as scam when its top class isn't Ham, while the service uses P(scam) ≥ 0.5. For the stacked model that gives 22 false blocks / 39 missed on test instead of the service's 26 / 33. This was already true for the other kinds; the gateway sees the service's numbers.
+- **Still TBD:** whether stacked replaces MiniLM as the agreed model (proposed), the block threshold, binary vs. 8-class labels, and a stacked run on the Vultr GPU (the steps are the same as MiniLM with `--model stacked`).
+
 ### 2026-11-07: TF-IDF vs. MiniLM, combined flows and zero-day test
 
 - **What ran (Timothy, laptop RTX 3050):** classifier task 2.1's full training runs on `data/scam_categories_100k_full.csv`, 8-class labels, for both models, then two experiments: [`classifier/experiments/compare.py`](classifier/experiments/compare.py) and [`zeroday.py`](classifier/experiments/zeroday.py). Everything tuned or fit is fit on the real `val` split; numbers below are the real `test` split (3,155 messages, 607 of them SMS). Both models pass `tests/test_service.py`. Binary-label runs are not done yet.

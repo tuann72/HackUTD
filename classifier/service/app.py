@@ -7,6 +7,8 @@ GET  /healthz
 Serves whichever model `train.py` wrote to the artifacts dir (model.json "kind"):
     minilm-lr  MiniLM embeddings + LR; highlights by occlusion (drop a word, re-score)
     tfidf-lr   TF-IDF + LR; highlights straight from the coefficients (exact, no re-scoring)
+    stacked-lr both of the above, combined by a small LR on their log-probabilities;
+               highlights by occlusion through the whole stack (so they explain the real score)
 
 Returns a verdict only. Block/deliver policy and thresholds live in the gateway.
 Auth: `Authorization: Bearer $CLASSIFIER_TOKEN`. The service refuses to start without a token
@@ -43,13 +45,31 @@ label_names: list[str] = meta["label_names"]
 classes = [int(c) for c in head.classes_]
 ham_col = classes.index(0)
 
-if KIND == "minilm-lr":
+if KIND in ("minilm-lr", "stacked-lr"):
     from sentence_transformers import SentenceTransformer
 
     encoder = SentenceTransformer(meta["encoder"], device=os.environ.get("CLASSIFIER_DEVICE", "cpu"))
 
-    def featurize(texts: list[str]):
+    def embed(texts: list[str]):
         return encoder.encode(texts, batch_size=64, normalize_embeddings=True, convert_to_numpy=True)
+
+if KIND == "minilm-lr":
+    featurize = embed
+
+elif KIND == "stacked-lr":
+    # head is the stacker; its input is both base models' class log-probabilities.
+    vectorizer = joblib.load(ARTIFACTS / "vectorizer.joblib")
+    tfidf_head = joblib.load(ARTIFACTS / "tfidf_head.joblib")
+    minilm_head = joblib.load(ARTIFACTS / "minilm_head.joblib")
+    STACK_EPS = float(meta["stack_eps"])
+    if meta.get("stack_order") != ["tfidf", "minilm"]:
+        raise SystemExit(f"Unexpected stack_order {meta.get('stack_order')!r} in model.json")
+
+    def featurize(texts: list[str]):
+        # Must match stack_features() in train.py.
+        p_tf = tfidf_head.predict_proba(vectorizer.transform(texts))
+        p_mn = minilm_head.predict_proba(embed(texts))
+        return np.hstack([np.log(p_tf + STACK_EPS), np.log(p_mn + STACK_EPS)])
 
 elif KIND == "tfidf-lr":
     vectorizer = joblib.load(ARTIFACTS / "vectorizer.joblib")
@@ -111,7 +131,7 @@ def logit(p):
 
 
 def occlusion_highlights(text: str, base_scam: float) -> list[Highlight]:
-    """MiniLM: drop each word, re-score, and keep the words whose removal lowers P(scam) most.
+    """MiniLM and stacked: drop each word, re-score, keep the words whose removal lowers P(scam) most.
 
     These are associations, not proof (labels were partly keyword-rule-derived).
     """
