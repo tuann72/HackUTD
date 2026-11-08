@@ -50,13 +50,14 @@ Planned after the MVP works, not part of the MVP:
 
 ### Classifier (agreed: MiniLM on Vultr)
 
-**Decision (Tuan, 2026-11-07):** use **MiniLM**, trained and hosted on **Vultr** (the team has Vultr credits, and it covers the Vultr track). TF-IDF + logistic regression is no longer the plan. Its binary baseline (F1 ≈ 0.98 on the real test split, `data/README.md`) is the bar MiniLM is compared against.
+**Decision (Tuan, 2026-11-07):** use **MiniLM**, trained and hosted on **Vultr** (the team has Vultr credits, and it covers the Vultr track). TF-IDF + logistic regression is no longer the plan. Its binary baseline (F1 ≈ 0.98 on the real test split, `data/README.md`) is the bar MiniLM is compared against. **Full runs (Timothy, 2026-11-07):** TF-IDF beats MiniLM alone, but the two combined ("stacked") catch the most never-seen scam types. Proposed: ship the stacked flow. See `CHANGELOG.md`, "TF-IDF vs. MiniLM, combined flows and zero-day test".
 
 - **Model:** frozen `sentence-transformers/all-MiniLM-L6-v2` embeddings with a logistic-regression head. Fine-tuning MiniLM is a fallback only if the head-only model falls clearly short of the baseline.
 - **Training:** on a **Vultr Cloud GPU** instance, destroyed after each run. Code and runbook: [`classifier/`](classifier/README.md). Plan: [`docs/features/classifier-service.md`](docs/features/classifier-service.md).
 - **Inference:** a Python FastAPI service in a Docker image on **Vultr Cloud Compute** (CPU). The gateway calls `POST /classify` over HTTPS with a bearer token.
 - **Highlights:** by occlusion (drop each word, re-score), not coefficients. See component 8 below.
 - **TF-IDF + LR is also implemented** (`train.py --model tfidf`) as the comparison baseline and a fallback. It trains on a CPU in minutes, and the same service serves it with exact coefficient-based highlights. Whichever model is in `classifier/artifacts/` is the one served. MiniLM stays the planned model unless the team decides otherwise after comparing both on the real test split.
+- **Stacked is also implemented** (`train.py --model stacked`, 2026-11-08): both models trained on `train`, combined by a small LR trained on `val`, served by the same service with occlusion highlights. It is the **proposed** production model (best SMS F1, calibration and unseen-scam recall), not yet agreed. `metrics.json` lists suggested thresholds; the block threshold is still the gateway's. See `CHANGELOG.md`, "Stacked model option built".
 - **Still TBD:** label scheme (8-class is the `train.py` default because it gives the block category, binary is the alternative), thresholds, Vultr instance sizes, region, registry and HTTPS setup.
 
 **Training data (agreed, Tuan):** train on [`data/scam_categories_100k_full.csv`](data/README.md#scam_categories_100k_fullcsv), the most aggregated labeled file. It has the 8-class `label_class`, the binary `is_spam`, and the `split`/`style`/`is_synthetic`/`label_confidence` metadata, so it supports either label scheme. Evaluate only on the real `val`/`test` splits. The message bank is separate demo input, not training data.

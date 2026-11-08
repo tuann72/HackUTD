@@ -11,6 +11,8 @@ It uses a small language model called **MiniLM**. We **train** it on a rented Vu
 
 There's also a second, simpler model, **TF-IDF + logistic regression**. It counts which words appear, needs no GPU, and trains in a couple of minutes. MiniLM is the plan; TF-IDF is the baseline to beat (it scored F1 ≈ 0.98 on the old spam/ham test) and a fallback. Both run in the same service with the same API, so the gateway can't tell which one is behind it. To use TF-IDF, see [Option B](#option-b-the-tf-idf-model-no-gpu).
 
+A third option, **stacked**, runs both models and lets a small logistic regression combine their scores. In the 2026-11-07 comparison it had the best SMS F1, the best-calibrated scores and the best catch rate on scam types it never saw (see `CHANGELOG.md`). It is proposed, not yet the agreed model. It trains like MiniLM (step 1), with one extra flag: `bash classifier/scripts/vultr_gpu_train.sh --model stacked`.
+
 ```
  your laptop ──copy code + data──▶ Vultr GPU server (rent ~30 min, then delete)
      ▲                                  │ trains the model (~5 min)
@@ -120,6 +122,7 @@ The GPU server is billed every hour it exists, so **delete it when you're done**
    cd tgate
    tmux                                         # keeps training alive if your Wi-Fi drops (reattach: tmux attach)
    bash classifier/scripts/vultr_gpu_train.sh   # 8 scam categories (the default)
+   # or: bash classifier/scripts/vultr_gpu_train.sh --model stacked   # TF-IDF + MiniLM combined
    ```
 
    It installs Python packages (a few minutes), then trains (a few minutes more). At the end it prints a report. The numbers to look at are:
@@ -133,6 +136,7 @@ The GPU server is billed every hour it exists, so **delete it when you're done**
    ```bash
    scp -r root@GPU_IP:tgate/classifier/artifacts classifier/
    ls classifier/artifacts                       # head.joblib  metrics.json  model.json
+                                                 # (stacked adds tfidf_head, minilm_head, vectorizer, keywords)
    ```
 
    These files are small and gitignored. Don't commit them.
@@ -301,11 +305,11 @@ Rules:
 
 ## How it works (short version)
 
-- **Training (`train.py`):** with `--model minilm` (the default), MiniLM turns each message into 384 numbers that capture its meaning. With `--model tfidf`, each message becomes a score for every word and word pair it contains (TF-IDF), and words common across all messages count for less. Either way, a simple logistic-regression model learns which patterns mean which scam type. It trains on [`data/scam_categories_100k_full.csv`](../data/README.md) and is scored only on the real `val` and `test` messages, never on synthetic ones. MiniLM reads the first ~256 tokens (about 1,000 characters), so long emails are cut off. SMS always fits. TF-IDF reads the whole message.
+- **Training (`train.py`):** with `--model minilm` (the default), MiniLM turns each message into 384 numbers that capture its meaning. With `--model tfidf`, each message becomes a score for every word and word pair it contains (TF-IDF), and words common across all messages count for less. Either way, a simple logistic-regression model learns which patterns mean which scam type. It trains on [`data/scam_categories_100k_full.csv`](../data/README.md) and is scored only on the real `val` and `test` messages, never on synthetic ones. MiniLM reads the first ~256 tokens (about 1,000 characters), so long emails are cut off. SMS always fits. TF-IDF reads the whole message. With `--model stacked`, both are trained on `train`, and then a small logistic regression (the stacker) learns from the real `val` split how much to trust each one. Because the stacker learns from `val`, judge a stacked model by its **test** numbers. `metrics.json` also lists suggested block thresholds (for 97% and 99% precision), picked on `val` and checked on `test`.
 - **Labels:** `--labels category` (the default) predicts one of 8 classes: Ham plus 7 scam groups, which gives the block log its "why". `--labels binary` predicts scam or not. Which one we ship is still TBD.
 - **The service (`service/app.py`):**
   - `score` is the chance the message is a scam (0 to 1). `label` is `scam` when `score ≥ 0.5`, but the **gateway** decides what to block using its own thresholds.
-  - `highlights`: for MiniLM, the service removes each word and sees how much the scam score drops. For TF-IDF, it reads each word's contribution straight from the model (word score × learned weight), which is exact and faster. They're hints, not proof. The training labels were partly made by keyword rules, so highlights can echo those rules.
+  - `highlights`: for MiniLM, the service removes each word and sees how much the scam score drops. For TF-IDF, it reads each word's contribution straight from the model (word score × learned weight), which is exact and faster. For stacked, it removes words like MiniLM does, re-scoring through both models, so the highlights explain the score that was actually returned. They're hints, not proof. The training labels were partly made by keyword rules, so highlights can echo those rules.
   - It only ever receives message text and an opaque id, never phone numbers.
 - **Security:** every `/classify` call needs `Authorization: Bearer <token>`, and the service refuses to start without a token. HTTPS comes from Caddy. The container runs as a non-root user.
 
@@ -314,7 +318,7 @@ Rules:
 ```
 classifier/
   README.md                  you are here
-  train.py                   training script: --model minilm (GPU) or --model tfidf (CPU)
+  train.py                   training script: --model minilm (GPU), tfidf (CPU) or stacked (GPU)
   requirements-train.txt     training packages (MiniLM)
   requirements-train-tfidf.txt  training packages (TF-IDF only; no PyTorch)
   scripts/vultr_gpu_train.sh one-command MiniLM training on the GPU server
@@ -357,6 +361,7 @@ python3 -m venv classifier/.venv && source classifier/.venv/bin/activate
 pip install -r classifier/requirements-train.txt -r classifier/requirements-dev.txt
 python classifier/train.py --limit 5000                         # quick sample training (~2 min on a Mac)
 python classifier/train.py --model tfidf                        # TF-IDF on the full data (CPU, minutes)
+python classifier/train.py --model stacked                      # both + stacker (GPU recommended)
 cd classifier && pytest tests                                   # needs artifacts/
 CLASSIFIER_ALLOW_NO_AUTH=1 uvicorn service.app:app --port 8000  # local only; never deploy without a token
 ```

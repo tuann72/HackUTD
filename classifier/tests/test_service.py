@@ -1,4 +1,4 @@
-"""Service tests. Need trained artifacts in classifier/artifacts/ (skipped otherwise).
+"""Service tests. Need trained artifacts in classifier/artifacts/ or $CLASSIFIER_ARTIFACTS (skipped otherwise).
 
     cd classifier && pytest tests
 """
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-ARTIFACTS = Path(__file__).resolve().parent.parent / "artifacts"
+ARTIFACTS = Path(os.environ.get("CLASSIFIER_ARTIFACTS", Path(__file__).resolve().parent.parent / "artifacts"))
 pytestmark = pytest.mark.skipif(not (ARTIFACTS / "head.joblib").exists(), reason="no trained artifacts")
 
 os.environ.setdefault("CLASSIFIER_TOKEN", "test-token")
