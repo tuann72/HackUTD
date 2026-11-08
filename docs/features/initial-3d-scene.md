@@ -72,6 +72,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 |---|---|---|---|---|---|---|---|
 | 3.1 | Mock event source → client store → scene: each fixture event fires a projectile, with color and outcome taken from the event | 1.2, 2.1, 2.2 | — | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
 | 3.2 | Fix runtime warnings on `/scene`: duplicate shot keys, drei `<Html>` root unmounted during render, removed `PCFSoftShadowMap` | 3.1 | 4.1 | Done | `fix/initial-3d-scene-runtime-warnings` | Tuan + Claude Code | [#15](https://github.com/lytx02/HackUTD/pull/15) |
+| 3.3 | Make `/scene` smoother: cut wasted render work (unused shadow map, re-renders, per-shot geometry) | 3.2 | 4.1 | Done | `fix/initial-3d-scene-perf` | Tuan + Claude Code | [#17](https://github.com/tuann72/HackUTD/pull/17) |
 
 ### Stage 4: Live (after the gateway exists)
 
