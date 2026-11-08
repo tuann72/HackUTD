@@ -13,8 +13,8 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 - **Name:** **T-Gate** (renamed from the earlier working name "Gate Guardian"). The repository folder and GitHub repo are still called `HackUTD`.
 - **Problem:** Scam calls and messages pressure people, especially older adults, into rash decisions that cause financial, personal, or emotional harm.
 - **Concept:** Detect likely scam activity, warn the recipient, and potentially help respond on their behalf while keeping the recipient in control.
-- **Hackathon track:** **Safe Signal (T-Mobile)** only, for now (Tuan, 2026-11-07). Photon, listed in the SRS, is dropped.
-- **Current project state:** Planning. There is no app code yet, and scaffolding is on hold. The only content beyond docs is a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
+- **Hackathon tracks:** **Safe Signal (T-Mobile)** and **Vultr** (Tuan, 2026-11-07). The Vultr track is covered by training and serving the classifier on Vultr. Photon, listed in the SRS, is dropped.
+- **Current project state:** Planning. Beyond docs, the repo has a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)) and the MiniLM classifier's training script and inference service in [`classifier/`](classifier/README.md). There is no gateway, simulator or web app code yet, and scaffolding for those is on hold. Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
 
 ## Current scope (agreed)
 
@@ -29,7 +29,7 @@ The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. 
 - **The perpetrator is simulated with API calls**, not a second Twilio number. A perpetrator simulator sends HTTP requests to the gateway's webhook in exactly the format Twilio uses for an inbound SMS to the victim number (`From`, `To`, `Body`, `MessageSid`, …), signed with a valid `X-Twilio-Signature`. The gateway handles simulated and real messages the same way.
 - **Message bank:** the simulator draws its messages from a bank of labeled scam and legitimate examples, so demos and tests are repeatable and show both outcomes. Candidate sources: a subset of the real `test` split in `data/` (SMS-style rows), plus generated messages (templates or LLM-written). The exact mix is TBD.
 - **Real path check:** a teammate texts the victim number from their own phone to confirm the real Twilio → gateway path works. That's the same path the later public demo uses.
-- Messages that arrive at the victim number are classified as scam or legitimate (see [Classifier](#classifier-direction-not-final)).
+- Messages that arrive at the victim number are classified as scam or legitimate (see [Classifier](#classifier-agreed-minilm-on-vultr)).
 
 ### Later: live public demo
 
@@ -43,18 +43,17 @@ Planned after the MVP works, not part of the MVP:
 - **Live in-call (voice) detection, alerts, and a voice response for the recipient:** stretch scope from the SRS.
 - **User confirmation step** before a response flow: mentioned in the SRS. The action, consent model, and interaction are undecided.
 
-### Classifier direction (not final)
+### Classifier (agreed: MiniLM on Vultr)
 
-Two approaches are under consideration. Both still need to be fleshed out (features, training data, label scheme, evaluation, latency, and where the model runs):
+**Decision (Tuan, 2026-11-07):** use **MiniLM**, trained and hosted on **Vultr** (the team has Vultr credits, and it covers the Vultr track). TF-IDF + logistic regression is no longer the plan. Its binary baseline (F1 ≈ 0.98 on the real test split, `data/README.md`) is the bar MiniLM is compared against.
 
-1. **TF-IDF + logistic regression:** the current leading approach. `data/README.md` reports a binary spam/ham baseline with this method (F1 ≈ 0.98 on the real test split).
-2. **MiniLM-based model:** for example, MiniLM sentence embeddings with a classifier on top, or a fine-tuned MiniLM. Being considered as an alternative or upgrade.
-
-Do not commit to one approach in code or docs until the team chooses. **Keyword highlighting** (see below) is much simpler and more faithful with TF-IDF + LR, which counts in its favor.
+- **Model:** frozen `sentence-transformers/all-MiniLM-L6-v2` embeddings with a logistic-regression head. Fine-tuning MiniLM is a fallback only if the head-only model falls clearly short of the baseline.
+- **Training:** on a **Vultr Cloud GPU** instance, destroyed after each run. Code and runbook: [`classifier/`](classifier/README.md). Plan: [`docs/features/classifier-service.md`](docs/features/classifier-service.md).
+- **Inference:** a Python FastAPI service in a Docker image on **Vultr Cloud Compute** (CPU). The gateway calls `POST /classify` over HTTPS with a bearer token.
+- **Highlights:** by occlusion (drop each word, re-score), not coefficients. See component 8 below.
+- **Still TBD:** label scheme (8-class is the `train.py` default because it gives the block category, binary is the alternative), thresholds, Vultr instance sizes, region, registry and HTTPS setup.
 
 **Training data (agreed, Tuan):** train on [`data/scam_categories_100k_full.csv`](data/README.md#scam_categories_100k_fullcsv), the most aggregated labeled file. It has the 8-class `label_class`, the binary `is_spam`, and the `split`/`style`/`is_synthetic`/`label_confidence` metadata, so it supports either label scheme. Evaluate only on the real `val`/`test` splits. The message bank is separate demo input, not training data.
-
-**Where the model runs (under consideration, not agreed):** the team is considering [Vultr](https://www.vultr.com/) to train the model and host it as an inference service. The gateway would send each intercepted message to the Vultr-hosted model and block or deliver based on the verdict it returns. See [`CHANGELOG.md`, "Classifier service on Vultr"](CHANGELOG.md#classifier-service-on-vultr-under-consideration).
 
 ## Proposed architecture: interception gateway and demo scene (not agreed)
 
@@ -72,12 +71,12 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 1. **Perpetrator simulator:** picks messages from the message bank (or takes typed ones) and POSTs signed, Twilio-format inbound-SMS requests straight to the gateway's webhook. No second Twilio number and no outbound SMS. Has a dry-run mode that prints instead of sending.
 2. **Interception gateway:** inbound webhook for the victim number. Verifies the Twilio signature, dedupes on `MessageSid`, classifies through a classifier interface, applies the deliver/block policy, stores the result, publishes events and returns empty TwiML (never auto-replies to the sender).
-3. **Classifier service:** a separate Python inference service, likely on **Vultr** (under consideration). The gateway calls it over HTTPS (`POST /classify` → `{ label, score, category, model, highlights }`) through a classifier interface, with a strict timeout, so the model choice or host can change without touching the gateway. Vultr returns only a verdict. The block/deliver policy (thresholds, fail-safe) stays in the gateway. Only message text and an opaque id are sent, never phone numbers.
+3. **Classifier service:** a separate Python inference service on **Vultr** (agreed; see [Classifier](#classifier-agreed-minilm-on-vultr)). The gateway calls it over HTTPS (`POST /classify` → `{ label, score, category, model, highlights }`) through a classifier interface, with a strict timeout, so the model choice or host can change without touching the gateway. Vultr returns only a verdict. The block/deliver policy (thresholds, fail-safe) stays in the gateway. Only message text and an opaque id are sent, never phone numbers.
 4. **Event stream and query API:** versioned JSON events (`message.received`, `message.classified`, `message.delivered`, `message.blocked`, `victim.notified`, `participant.joined`) over WebSocket or SSE (TBD), plus a read-only query API (`GET /api/blocked`, `GET /api/blocked/:id`) for the panel.
 5. **Block log:** every blocked message is recorded with **why** it was blocked: scam category, score, model version, reason (`model_verdict` or `classifier_unavailable`) and time. The categories would likely come from the 7 FTC-derived scam groups in `data/scam_categories.csv`, which depends on the still-TBD label scheme. `message.blocked` events carry the category so displays can show it.
 6. **Scam notice (proposed):** when a message is blocked, the gateway sends the victim a short notice, for example "T-Gate blocked a potential scam from ***-***-4821 (Imposter & Phishing). View: <link>". It never includes the scam's text or links. It always goes to the virtual victim inbox. Also sending it as a real SMS to a protected handset (for example, a verified teammate phone) is TBD, and that would be outbound SMS.
 7. **Blocked-scams panel (proposed):** the notice link opens `/blocked/<id>` in the web app. The panel lists all blocked messages with why they were blocked, the **category highlighted** as a badge, and the **scam keywords highlighted** in the message text. Links and numbers inside scam text are shown defanged and non-clickable.
-8. **Keyword highlighting (proposed):** with TF-IDF + LR, each word's contribution (TF-IDF value × coefficient) gives per-message highlight spans, and the top coefficients give a "words to watch" list per category. MiniLM needs occlusion or attribution methods instead. Highlights are associations, not proof, and the labels were partly keyword-rule-derived, so they may echo those rules. Optionally, soft highlights on borderline messages that get delivered help victims judge scams that slip through (TBD).
+8. **Keyword highlighting (proposed):** the MiniLM service computes highlights by occlusion: it drops each word, re-scores, and returns the words whose removal lowers the scam log-odds most, as character spans with weights. Highlights are associations, not proof, and the labels were partly keyword-rule-derived, so they may echo those rules. Optionally, soft highlights on borderline messages that get delivered help victims judge scams that slip through (TBD).
 9. **Web app (Next.js on Vercel):** the 3D scene (`/`, React Three Fiber) and the panel (`/blocked`) are separate routes in one Next.js app. R3F runs client-side. Vercel can't host a WebSocket server, so the browser connects straight to the gateway's stream hosted elsewhere, through `NEXT_PUBLIC_EVENTS_URL` and `NEXT_PUBLIC_API_URL`. With no URLs set, it falls back to mock fixtures. The web app holds no secrets.
 
 **Decoupling rules (firm requirement from Tuan).** Follow these in any implementation:
@@ -91,7 +90,7 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 **Scene (firm requirement from Tuan: keep it simple):** blob people (R3F meshes) wander and bob. When one sends a message, a chat bubble (HTML via drei `<Html>`, animated with Motion) appears above its head. Delivered messages float to the victim. A scam bubble turns red with a "Blocked" stamp and pops before it reaches the victim. New public senders spawn as new blobs (later scope).
 
-Everything above except the two firm requirements is a proposal. Open items stay **TBD**: where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, the highlight method if MiniLM is chosen, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
+Everything above except the two firm requirements is a proposal. Open items stay **TBD**: where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
 
 ## Open questions — do not guess
 
@@ -99,7 +98,7 @@ Everything above except the two firm requirements is a proposal. Open items stay
 - **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** whether it sends scripted conversations, random draws from the message bank, messages typed by a teammate, or a mix.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
-- **Classifier:** final approach (see above), label scheme (binary spam/ham or the 8-class scam categories), thresholds, and evaluation measures.
+- **Classifier:** MiniLM on Vultr is agreed (see above). Still open: label scheme (binary spam/ham or the 8-class scam categories), thresholds, whether fine-tuning is needed, and evaluation measures.
 - **Live public demo:** moderation, rate limits, privacy of numbers texting in, and cost controls.
 - **Privacy, storage, latency, and fail-safe behavior.**
 - **User journey:** alert design, what "respond on the recipient's behalf" means, and when confirmation is required.
