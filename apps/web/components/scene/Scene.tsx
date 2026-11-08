@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { ContactShadows, Html } from "@react-three/drei";
+import { ContactShadows } from "@react-three/drei";
 import { Vector3 } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
 import { MessageShot } from "./MessageShot";
@@ -20,8 +20,6 @@ const SHOT_GAP_MS = 600;
  * can return many messages at once, and only the newest are worth animating.
  */
 const MAX_QUEUED = 5;
-/** Name labels sit just under each blob, so they follow it at any width. */
-const LABEL_Y = -(BLOB_RADIUS + 0.55);
 const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
 /** Capped below 2 so Retina screens don't render 4x the pixels. */
 const DPR: [number, number] = [1, 1.5];
@@ -101,15 +99,6 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
   ));
 }
 
-/** A name centered under a blob, positioned in the scene rather than the page. */
-function BlobLabel({ x, className, children }: { x: number; className: string; children: string }) {
-  return (
-    <Html position={[x, LABEL_Y, 0]} center zIndexRange={[5, 0]} style={{ pointerEvents: "none" }}>
-      <span className={`whitespace-nowrap text-sm font-medium ${className}`}>{children}</span>
-    </Html>
-  );
-}
-
 /**
  * The scene band on the home page: every message the page receives flies from
  * the sender to the victim; blocked ones pop in front of the victim's shield.
@@ -128,14 +117,24 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
         <directionalLight position={[3, 6, 5]} intensity={1.6} />
         <pointLight position={[-4, 2, 3]} intensity={8} color="#93c5fd" />
 
-        <Blob position={[SENDER_X, 0, 0]} color="#94a3b8" facing={1} hitAt={hits.at.sender} phase={1.3} />
-        <Blob position={[VICTIM_X, 0, 0]} color="#f472b6" facing={-1} hitAt={hits.at.victim} shieldAt={hits.at.shield} />
-        <BlobLabel x={SENDER_X} className="text-slate-300">
-          Sender
-        </BlobLabel>
-        <BlobLabel x={VICTIM_X} className="text-pink-300">
-          Receiver
-        </BlobLabel>
+        <Blob
+          position={[SENDER_X, 0, 0]}
+          color="#94a3b8"
+          facing={1}
+          hitAt={hits.at.sender}
+          phase={1.3}
+          label="Sender"
+          labelClass="text-slate-100"
+        />
+        <Blob
+          position={[VICTIM_X, 0, 0]}
+          color="#f472b6"
+          facing={-1}
+          hitAt={hits.at.victim}
+          shieldAt={hits.at.shield}
+          label="Receiver"
+          labelClass="text-pink-300"
+        />
 
         {/* The bubble images load once; nothing else waits on them. */}
         <Suspense fallback={null}>
