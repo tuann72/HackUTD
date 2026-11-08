@@ -6,6 +6,16 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: /messages fills the screen, with a filterable message panel
+
+Tuan asked to move the inbox and blocked lists into a left panel with filters, make the page fit the screen, and use Motion (motion.dev) for UI animation (#88).
+
+- **/messages layout:** on wide screens (`lg`, 1024 px and up) the page is exactly one window tall, with no page scroll. Three columns each scroll on their own: the message panel on the left, the 3D scene in the middle (the Shield | Hand switch and the Threats blocked and Delivered counters sit on top of it), and Simulate on the right, which now collapses to a thin strip. On phones they stack: scene, messages, Simulate.
+- **Message panel:** All, Inbox and Blocked tabs with counts, a search box (sender, text or category; every word must match), and a Filters drawer with a scam-category menu (only the categories present, plus "Known scam sender"), a sort (newest, oldest, highest scam score) and chips (Not checked, Money request, Restored, Group chat). Pending messages always stay on top. Clear chats and Clear blocks moved to the panel's footer. The filters are display only (`components/messages/filter.ts`, tested); they never change a verdict.
+- **Header:** `/messages` and `/dashboard` share one header (`components/brand/AppHeader.tsx`) with Messages, Dashboard and Voice results tabs instead of separate buttons. Notices (after Unblock or Clear blocks) are a toast at the bottom.
+- **Dashboard:** the totals sit beside the title, the six panels are in three columns on wide screens, and the bars and score columns grow to their new values with Motion springs.
+- **Motion:** used only where something answers a person's action or new data arrives (tab indicator, filter drawer, cards entering or leaving the list, counters ticking, bars growing). `MotionConfig reducedMotion="user"` turns it off for people who ask for reduced motion.
+
 ### 2026-11-08: Sender blocklist on, with Unblock and Clear blocks buttons
 
 Tuan reversed the morning's parking decision: the gateway now blocks repeat scam senders by default (`SENDER_BLOCKLIST` defaults to `on`; Atlas when `MONGODB_URI` is set, else in memory). To keep a person in control, the web UI gets two buttons, both behind a password the user types (`4321`, set by `UI_ACTION_PASSWORD`): **Unblock** on a blocked message restores it and allowlists the sender, and **Clear blocks** deletes every sender record so everyone blocked is unblocked. The password is checked on the gateway (and on the Vercel backup), never in browser code. These are the third kind of write the web app makes, after Clear chats and Simulate. Blocked messages stay in the log after Clear blocks, and text fingerprints are kept. Open: the strike/score/TTL defaults, and the 4-digit password is only a demo guard. See `contracts/README.md`, "Unblock and Clear blocks".
