@@ -13,7 +13,7 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 
 ## Scene design (Tuan, 2026-11-07)
 
-- **Victim:** one **pink** blob in the scene. It idles (gentle bob) and reacts with a small bounce when a message reaches it.
+- **Victim:** one **pink** blob in the scene. It idles (gentle bob) and reacts with a small bounce when a message reaches it. On screen it's labeled **Receiver** (Tuan, 2026-11-08), and the Sender/Receiver labels are drawn in the scene under each blob so they stay aligned at any width.
 - **Sender:** one blob that shoots messages at the victim. It isn't colored red itself (Tuan dropped that idea). Built as neutral slate grey (`#94a3b8`).
 - **Messages:** each message is a small projectile that flies from the sender toward the victim. Since task 3.4 it's a **flat 2D chat-bubble image** (Tuan), not a 3D orb.
   - **Red** = flagged as a **potential scam**.

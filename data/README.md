@@ -106,6 +106,8 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 - **Self-harm coercion:** rows in that scenario all demand money. A real person in distress who also asks for money could be flagged. Blocking such a message is a worse error than delivering it, so the gateway may want to warn instead of block for this class (TBD).
 - **Not in any 100k file and not read by `train.py` yet.** Training on it needs `train.py` changes; see the plan.
 
+---
+
 ## Where the data comes from
 
 | `source` value | origin | style |
