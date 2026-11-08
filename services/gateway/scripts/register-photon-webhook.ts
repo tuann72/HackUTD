@@ -159,7 +159,7 @@ export function betaRegisterRequest(c: Credentials, url: string, apiVersion: str
     method: 'POST',
     url: `${betaBase(c)}/destinations`,
     headers: betaHeaders(c, true),
-    body: JSON.stringify({ apiVersion, name: 'T-Gate gateway', url, enabledEvents: BETA_EVENTS }),
+    body: JSON.stringify({ apiVersion, name: 'T-Guard gateway', url, enabledEvents: BETA_EVENTS }),
   };
 }
 

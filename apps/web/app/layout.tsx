@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "T-Gate",
+  title: "T-Guard",
   description: "Potential-scam interception for the victim number",
 };
 

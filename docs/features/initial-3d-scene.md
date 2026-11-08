@@ -7,7 +7,7 @@
 
 ## Goal
 
-Make the simplest possible 3D scene that shows T-Gate working. It has two blobs: a **pink blob for the victim** and a **sender blob that shoots messages** at it. Each message is a small projectile. **Red** means the gateway flagged it as a **potential scam**. Each message either **goes through** to the victim or gets **blocked** before it arrives. Anyone watching can see at a glance that T-Gate stops potential scams before they reach the victim and lets everything else through.
+Make the simplest possible 3D scene that shows T-Guard working. It has two blobs: a **pink blob for the victim** and a **sender blob that shoots messages** at it. Each message is a small projectile. **Red** means the gateway flagged it as a **potential scam**. Each message either **goes through** to the victim or gets **blocked** before it arrives. Anyone watching can see at a glance that T-Guard stops potential scams before they reach the victim and lets everything else through.
 
 This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (simple, React Three Fiber)"](../../CHANGELOG.md#3d-scene-simple-react-three-fiber). It follows the stack and decoupling rules in [`AGENTS.md`](../../AGENTS.md#proposed-architecture-interception-gateway-and-demo-scene-not-agreed): Next.js, React Three Fiber, `motion/react` for the DOM layer. The scene consumes events only and contains no business logic.
 
@@ -37,7 +37,7 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 
 - Several senders, wandering crowds, or public senders spawning (later scope: [live public demo](../../AGENTS.md#later-live-public-demo)).
 - Chat bubbles with the full message text. Showing a short preview on hover or as a label is TBD (see open questions).
-- A with/without T-Gate comparison view (possible follow-up). Counters were added in #14.
+- A with/without T-Guard comparison view (possible follow-up). Counters were added in #14.
 - The blocked-scams panel (`/blocked`), the scam notice, and keyword highlights. Those are separate features.
 - Anything on the gateway, simulator or classifier side.
 

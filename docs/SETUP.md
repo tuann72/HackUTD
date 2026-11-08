@@ -1,6 +1,6 @@
 # Accounts and credentials setup
 
-Every account, key and secret T-Gate needs, in the order to create them, and where each value goes. Nothing here is set up yet (Tuan, 2026-11-08).
+Every account, key and secret T-Guard needs, in the order to create them, and where each value goes. Nothing here is set up yet (Tuan, 2026-11-08).
 
 **Twilio is no longer needed.** The gateway takes iMessages through Photon (see [`docs/features/photon-imessage.md`](features/photon-imessage.md)). Don't create a Twilio account, and ignore any `TWILIO_*` variable in older docs.
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "t-gate/query-api.v1.schema.json",
-  "title": "T-Gate query API v1: GET /api/messages response",
+  "title": "T-Guard query API v1: GET /api/messages response",
   "type": "object",
   "required": ["schema", "version", "messages"],
   "additionalProperties": false,

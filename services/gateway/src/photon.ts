@@ -232,7 +232,7 @@ export function parseSpectrumEvent(raw: unknown): ParseResult {
   };
 }
 
-/** Maps one Beta content block; null for types T-Gate doesn't handle (voice, read receipts, typing, ...). */
+/** Maps one Beta content block; null for types T-Guard doesn't handle (voice, read receipts, typing, ...). */
 function parseBetaContent(content: unknown): Content | null {
   if (!isObj(content)) return null;
   const empty = { body: '', attachments: [], reaction: null, contact: null };

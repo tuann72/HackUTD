@@ -1,10 +1,15 @@
-# T-Gate Changelog
+# T-Guard Changelog
 
 The team's decision log (newest first) and the detailed design spec behind it. Renamed from `DESIGN.md` on 2026-11-07.
 
 The detailed, evolving design document. `AGENTS.md` holds the current summary; this file holds the reasoning. Mark anything undecided as **TBD**.
 
 ## Decision log
+
+### 2026-11-08: Project renamed to T-Guard
+
+- **Decision (Tuan):** the project is called **T-Guard**, not T-Gate. Every user-facing and written mention (web page title and header, UI strings, docs, comments, service descriptions, the Photon webhook destination name) now says T-Guard.
+- **Kept on purpose:** technical identifiers that the running deploy and stored data depend on still say `t-gate`/`tgate`: the query-API contract value `t-gate.query-api` (gateway and web must change together), npm package names, the VM's `/opt/t-gate` path, `tgate` system user and `t-gate-gateway` systemd unit, the `tgate` MongoDB database, the `TGATE_DOMAIN` variable, and the Vultr instance and SSH-key names. Renaming them needs a coordinated redeploy and data migration; whether to do it is TBD.
 
 ### 2026-11-08: Retrained with a 9th category, Threats & Extortion, on leak-free splits
 
@@ -102,7 +107,7 @@ Adding MiniLM catches about 2.5 points more of a brand-new scam type (about 40 m
 
 - **User request:** explore a call guard that transcribes the caller, sends transcript text to the classifier, and shows a warning in the Vercel app. Keep it separate from the current iMessage MVP.
 - **Interview direction:** first have a human tester call the Photon voice number, capture caller speech, classify after hangup, and retain transcript plus verdict without retaining raw audio. The main follow-up is live classification and a warning during the call. A later stage bridges the caller to a human victim while the guard monitors the caller's audio. The exact victim endpoint remains TBD.
-- **Feasibility:** Photon voice is routed through SIP to a voice application; a normal Photon message webhook does not carry call audio. Photon Stable Spectrum currently marks voice webhooks as coming soon and says calls are not available in `app.messages` or `app.webhook()` ([voice docs](https://photon.codes/docs/spectrum-ts/providers/voice)). Photon 2.0/Beta documents routing inbound calls over SIP into a LiveKit room ([LiveKit cookbook](https://photon.codes/docs/beta/cookbooks/voice/livekit)), where an app can process the audio track. Therefore this is feasible if the call is routed through the Photon voice line and SIP media path; direct calls that bypass this route are not observable by T-Gate.
+- **Feasibility:** Photon voice is routed through SIP to a voice application; a normal Photon message webhook does not carry call audio. Photon Stable Spectrum currently marks voice webhooks as coming soon and says calls are not available in `app.messages` or `app.webhook()` ([voice docs](https://photon.codes/docs/spectrum-ts/providers/voice)). Photon 2.0/Beta documents routing inbound calls over SIP into a LiveKit room ([LiveKit cookbook](https://photon.codes/docs/beta/cookbooks/voice/livekit)), where an app can process the audio track. Therefore this is feasible if the call is routed through the Photon voice line and SIP media path; direct calls that bypass this route are not observable by T-Guard.
 - **Recommended path (inference):** Photon 2.0/Beta Voice profile → SIP → LiveKit → speech-to-text → existing `POST /classify` → read-only call-result API/contract → Vercel UI. This matches the repository's Photon 2.0/Beta webhook integration and the published LiveKit cookbook; confirm the team's line and product version before implementation.
 - **Important line constraint:** Photon 2.0/Beta docs say shared iMessage assignments do not support Voice. The repository's existing iMessage number is shared-pool; the voice number the user set up must be verified separately. No call audio or raw phone handles should be sent to the classifier.
 - **Classifier limitation:** the existing model is trained on text messages, not call transcripts. The MiniLM inference path truncates at 256 tokens, so long-call windowing, aggregation, and call-level evaluation are required before live thresholds can be trusted.
@@ -214,7 +219,7 @@ Adding MiniLM catches about 2.5 points more of a brand-new scam type (about 40 m
 ### 2026-11-07: Initial 3D scene is two blobs and message shots (later scope)
 
 - **Decision (Tuan):** when the parked scene is picked up, start with one **pink victim blob** and one **sender blob that shoots messages** at it. **Red** messages are flagged as a **potential scam**. Each message goes through to the victim or gets blocked and pops before it arrives. On-screen wording says "potential scam", never "scam".
-- **Why:** it's the simplest picture that shows T-Gate stopping potential scams while letting other messages through.
+- **Why:** it's the simplest picture that shows T-Guard stopping potential scams while letting other messages through.
 - **Doesn't change:** the scene stays parked until the MVP works. The fuller scene below (crowd of blobs, chat bubbles) stays proposed.
 - **Details:** [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
 - **Update:** built early in #14 at `/scene` with fake messages, before the MVP was finished. Live data is still to come.
@@ -265,7 +270,7 @@ Newest first. Each entry: date, decision, rationale, and what it replaces.
 ### 2026-11-07: Leaning TypeScript; proposed scam notice, blocked-scams panel and keyword highlights
 
 - **Stack (Tuan's lean, not final):** TypeScript for the gateway, the perpetrator simulator and the Next.js web app. The model training and inference service stays Python. See [Technology stack](#technology-stack-typescript).
-- **Proposed:** when a scam is blocked, the victim gets a short notice ("T-Gate blocked a potential scam… View: <link>"). The link opens a **blocked-scams panel** in the Next.js app that lists every blocked message, why it was blocked and its category. The panel **highlights the keywords** that pushed the model toward "scam", so the victim learns to spot them in messages that get through.
+- **Proposed:** when a scam is blocked, the victim gets a short notice ("T-Guard blocked a potential scam… View: <link>"). The link opens a **blocked-scams panel** in the Next.js app that lists every blocked message, why it was blocked and its category. The panel **highlights the keywords** that pushed the model toward "scam", so the victim learns to spot them in messages that get through.
 - **Details:** [Scam notice to the victim](#scam-notice-to-the-victim), [Blocked-scams panel](#blocked-scams-panel), [Keyword highlighting](#keyword-highlighting).
 
 ### 2026-11-07: One Twilio number, simulated perpetrator
@@ -309,6 +314,7 @@ Newest first. Each entry: date, decision, rationale, and what it replaces.
 ### 2026-11-07: Project renamed to T-Gate
 
 - **Decision:** the project is called T-Gate, replacing the working name "Gate Guardian".
+- **Superseded:** renamed to T-Guard on 2026-11-08 (see "Project renamed to T-Guard" above).
 
 ## Architecture
 
@@ -523,13 +529,13 @@ TypeScript is agreed (Tuan, 2026-11-07), since the web app is Next.js. One excep
 
 When the gateway blocks a message, the Notifier sends the victim a short notice. Proposed text (one SMS segment, under 160 characters):
 
-> T-Gate blocked a potential scam from \*\*\*-\*\*\*-4821 (Imposter & Phishing). View: https://&lt;web-app&gt;/blocked/b_7Kq2
+> T-Guard blocked a potential scam from \*\*\*-\*\*\*-4821 (Imposter & Phishing). View: https://&lt;web-app&gt;/blocked/b_7Kq2
 
 - **Never include the scam's text or links in the notice.** The victim shouldn't be one tap away from the scammer's link. The notice names the category and links to our panel only.
 - **Where the notice goes (TBD):** the victim number is ours, and no phone sits behind it. Options:
-  1. **Virtual victim inbox (always):** the notice is added to the victim's inbox and published as `victim.notified`. The web app can show it in a phone-style view, and the scene can show it as a bubble from a "T-Gate" blob.
+  1. **Virtual victim inbox (always):** the notice is added to the victim's inbox and published as `victim.notified`. The web app can show it in a phone-style view, and the scene can show it as a bubble from a "T-Guard" blob.
   2. **Real SMS to a protected handset (optional):** the gateway texts a configured phone (for example, a teammate's) from the victim number. This is outbound SMS. A trial account can send only to **verified** numbers, with a trial prefix, which is fine for a teammate's phone. An upgraded account needs A2P 10DLC or toll-free verification.
-- **Real-product framing (Safe Signal):** in production, T-Gate would sit at the carrier. The notice would come from the carrier to the subscriber's own phone, and the link would open the subscriber's blocked-scams view.
+- **Real-product framing (Safe Signal):** in production, T-Guard would sit at the carrier. The notice would come from the carrier to the subscriber's own phone, and the link would open the subscriber's blocked-scams view.
 - **Rate limit:** batch notices if many scams arrive at once (for example, "3 potential scams blocked"). Threshold TBD.
 - **Link format:** `/blocked/<blockId>` with an unguessable id (for example, 128-bit random). The MVP has no login. The panel shows only masked numbers. Whether real accounts are needed is TBD.
 

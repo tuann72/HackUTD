@@ -1,4 +1,4 @@
-# T-Gate web app (`apps/web`)
+# T-Guard web app (`apps/web`)
 
 Next.js 16 (App Router, React 19, Tailwind 4). It hosts:
 

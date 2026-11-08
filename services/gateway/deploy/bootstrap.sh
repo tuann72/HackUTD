@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sets up (or updates) the T-Gate gateway on a fresh Ubuntu 24.04 VM. Safe to re-run.
+# Sets up (or updates) the T-Guard gateway on a fresh Ubuntu 24.04 VM. Safe to re-run.
 #
 #   curl -fsSL <raw bootstrap.sh url> -o bootstrap.sh   # or scp it from services/gateway/deploy/
 #   sudo bash bootstrap.sh --host gateway.example.com [--branch main] [--ufw]

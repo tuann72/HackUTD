@@ -1,6 +1,6 @@
 # Installed to /etc/systemd/system/ by bootstrap.sh.
 [Unit]
-Description=T-Gate interception gateway (Photon iMessage webhook + query API)
+Description=T-Guard interception gateway (Photon iMessage webhook + query API)
 After=network-online.target
 Wants=network-online.target
 

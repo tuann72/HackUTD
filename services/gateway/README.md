@@ -1,4 +1,4 @@
-# T-Gate interception gateway
+# T-Guard interception gateway
 
 The gateway is the victim line's "carrier". Photon (Spectrum), or the perpetrator simulator, POSTs every inbound **iMessage** for the victim line to `POST /webhooks/photon`. The gateway verifies the signature, dedupes, stores the message, answers `200 ok` right away, then classifies the message in the background and either **delivers** it to the virtual inbox or **blocks** it. The web app reads the result from `GET /api/messages`.
 
