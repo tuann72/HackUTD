@@ -27,7 +27,7 @@ const CHECK = "m9 12 2 2 4-4";
 export const SHIELD_PINK = "#e20074";
 
 /** Where T-Guard's shield stands (where the box and hand were) and how big it is. */
-export const SHIELD = { x: 2.2, y: 0.05, height: 2.1 };
+export const SHIELD = { x: 1.9, y: 0.05, height: 2.1 };
 /** World units per icon unit: the outline is 20 units tall (y 2 to 22). */
 const SCALE = SHIELD.height / 20;
 /** Half the shield's depth after extrusion and bevel, in world units. */
