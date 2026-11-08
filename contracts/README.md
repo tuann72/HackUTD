@@ -26,6 +26,8 @@ Each message:
 | `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified) or `null` while pending |
 | `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending or unavailable |
 
+Highlight spans are character offsets into `body` with `0 <= start < end <= body.length` (JSON Schema can't express this; the gateway drops spans that don't fit). Consumers should still guard against bad spans.
+
 Display rule: `action == "delivered"` with `reason == "classifier_unavailable"` shows as **unverified**. The UI never re-decides scam vs. legitimate.
 
 ## Webhook signing (gateway and simulator)

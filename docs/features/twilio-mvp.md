@@ -71,21 +71,27 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 
 ```json
 {
+  "schema": "t-gate.query-api",
+  "version": 1,
   "messages": [
     {
       "id": "msg_51a0",
       "from": { "participantId": "p_3f1c", "display": "***-***-0142" },
       "body": "I'm in trouble, I need $800 in gift cards, please don't tell mom",
       "receivedAt": "2026-11-07T21:14:03.120Z",
-      "verdict": { "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "stub@0" },
-      "action": "blocked"
+      "action": "blocked",
+      "reason": "model_verdict",
+      "verdict": {
+        "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "stub@0",
+        "highlights": [{ "start": 31, "end": 41, "text": "gift cards", "weight": 0.8 }]
+      }
     }
   ]
 }
 ```
 
 - No raw phone numbers, Twilio SIDs or credentials in responses.
-- `verdict` is `null` while classification is pending, and `action` is `"pending"`.
+- While classification is pending, `action` is `"pending"` and `reason` and `verdict` are `null`. If the classifier is down, the message is delivered with `reason: "classifier_unavailable"` and `verdict: null` (fail open).
 - CORS must allow the UI's origin.
 
 ### Simulator
@@ -159,7 +165,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 1.1 | Twilio setup and a recorded webhook fixture. **Partly done:** a synthetic fixture and the contract are in `contracts/`; the real number and recording need a person | — | 1.2–1.5 | In progress | `feat/twilio-mvp-contract` | Tuan + Claude Code | [#4](https://github.com/lytx02/HackUTD/pull/4) |
-| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | In progress | `feat/twilio-mvp-gateway` | Tuan + Claude Code | |
+| 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API (plus the HTTP classifier client for 2.3) | contract | 1.1, 1.3–1.5 | In review | `feat/twilio-mvp-gateway` | Tuan + Claude Code | [#8](https://github.com/lytx02/HackUTD/pull/8) |
 | 1.3a | `apps/web` scaffold with the 3D-scene packages and the shared `lib/messages` data layer (done first, so the scene can start in parallel) | contract | all | In review | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | [#5](https://github.com/lytx02/HackUTD/pull/5) |
 | 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | In progress | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | |
 | 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | In review | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#7](https://github.com/lytx02/HackUTD/pull/7) |
@@ -235,6 +241,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 
 ## Progress notes
 
+- **2026-11-07:** Local end-to-end check passed: the simulator (#7) played `grandparent.jsonl` against the gateway (#8). All 5 outcomes matched `expected` (3 delivered, 2 blocked as Imposter & Phishing), no raw numbers or SIDs appeared in `/api/messages`, and a wrong auth token got 403. Not yet tried with real Twilio traffic.
 - **2026-11-07:** Implementation started (Tuan). Decided: SQLite with debug reset, fail open, JSONL, UI at `apps/web` `/messages`. The query API contract is in `contracts/`. The gateway, UI and simulator are built in parallel on separate branches stacked on `feat/twilio-mvp-contract`. The classifier is PR #3's work; the gateway calls its `POST /classify` (`{messageId, text}` → `{messageId, label, score, category, model, highlights}`, bearer token). The query API dropped `since`: the UI re-fetches the list, because pending messages change.
 - **2026-11-07:** Hono chosen as the gateway framework (Tuan).
 - **2026-11-07:** TypeScript confirmed for the gateway and simulator (Tuan). Framework and hosting still TBD.
