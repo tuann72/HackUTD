@@ -2,7 +2,7 @@
 
 - **Slug:** `sender-blocklist`
 - **Phase:** MVP
-- **Status:** In progress (plan)
+- **Status:** In progress (plan and task 1.2 merged)
 - **Owner:** Timothy
 
 ## Goal
