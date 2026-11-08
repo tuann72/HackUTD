@@ -20,7 +20,7 @@ The dev placeholder secrets already match each other. Accounts are needed only f
 
 | # | What | Who (likely) | Cost | Needed for | Optional? |
 |---|---|---|---|---|---|
-| 1 | [Photon project and line](#1-photon-project-and-line) | Tuan | See below: **a dedicated line needs Photon's Business plan** | Real iMessages | Required for the real demo |
+| 1 | [Photon project and line](#1-photon-project-and-line) | Tuan | Free/Pro plan; the shared-pool number is the victim number | Real iMessages | Required for the real demo |
 | 2 | [Vultr account and API key](#2-vultr-account-and-api-key) | Tuan | Team credits. CPU VMs are billed monthly (check `vultr-cli plans list`), the GPU is billed hourly | Gateway VM, classifier VM, training | Required |
 | 3 | [Domain and DNS](#3-domain-and-dns) | Tuan | A domain the team owns, or a cheap new one | HTTPS for the gateway (and the classifier) | Required |
 | 4 | [Generated secrets](#4-generated-secrets) | Whoever deploys | Free | Gateway, classifier | Required |
@@ -32,7 +32,10 @@ The dev placeholder secrets already match each other. Accounts are needed only f
 
 1. Sign up at [app.photon.codes](https://app.photon.codes) and create a project.
 2. Get the **project id** and **project secret** from the dashboard's Settings page, or from `photon projects show` in the [`@photon-ai/cli`](https://photon.codes/docs/cli/overview).
-3. Get an iMessage line on the project. **Decision needed:** per [Photon's line model](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing), only the **Business** plan gives a **dedicated** line, meaning one fixed number that also supports group chats. Free and Pro route each user through a **shared pool** number, with no group-chat events. The team decided on a dedicated line, so that means Business. If that's too expensive, the gateway also works on a shared pool for DMs, but group chats won't arrive.
+3. Use the project's iMessage number. **Decided (Tuan, 2026-11-08):** the team is on Free/Pro, so it's a **shared-pool** number ([line model](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing)). That number is the victim number. What a shared pool means:
+   - no group chats
+   - at most **50 new conversations per line per day**, which matters if many judges text in (ask help@photon.codes to raise it)
+   - Photon's docs don't say whether any iPhone can reach the project or only linked users, so check with a phone that has never texted it.
 4. Register the webhook once the gateway has a public HTTPS URL. [`DEPLOY.md`](../services/gateway/DEPLOY.md) step 6 runs:
 
    ```bash
