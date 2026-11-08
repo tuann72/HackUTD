@@ -7,6 +7,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 > - [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md): the gateway takes iMessages through Photon (Spectrum) webhooks, replacing the Twilio webhook (in progress).
 > - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (gateway, simulator, basic message UI). Its Twilio webhook parts are superseded by the Photon plan.
 > - [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md): sender blocklist and scam fingerprints in MongoDB Atlas (in progress).
+> - [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md): proposed later feature for SIP-routed call transcription, classification, and warnings.
 >
 > New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
 
@@ -43,7 +44,8 @@ Planned after the MVP works, not part of the MVP:
 
 ### Deferred or stretch
 
-- **Live in-call (voice) detection, alerts, and a voice response for the recipient:** stretch scope from the SRS.
+- **Voice scam guard (proposed, later; not part of the iMessage MVP):** route calls to a Photon voice number through SIP to a media application, transcribe caller audio, classify transcript text, and show a warning in the Vercel app. The requested first proof classifies after a tester hangs up; live warnings are the main follow-up. See [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md) and the [master plan](.plans/voice-scam-guard-spec.md). This is a SIP/media path; the Photon message webhook does not carry call audio. The exact Photon product/line, speech-to-text provider, victim endpoint, transcript retention, and live warning transport are TBD.
+- **Voice response or automatic call control:** stretch scope from the SRS. No automatic hangup, blocking, or spoken response is included in the first two voice-guard stages.
 - **User confirmation step** before a response flow: mentioned in the SRS. The action, consent model, and interaction are undecided.
 
 ### Classifier (agreed: MiniLM on Vultr)
@@ -102,13 +104,14 @@ Everything above except the two firm requirements is a proposal. Open items stay
 
 ## Open questions — do not guess
 
-- **Message type (Tuan, 2026-11-08):** iMessage text, rich links and albums are classified. Attachments, reactions and contact cards are shown in the UI and delivered as "not checked" (`not_classified`). Group chats are shown with a badge. Voice is out of scope.
+- **Message type (Tuan, 2026-11-08):** iMessage text, rich links and albums are classified. Attachments, reactions and contact cards are shown in the UI and delivered as "not checked" (`not_classified`). Group chats are shown with a badge. Voice calls remain out of scope for the message MVP; the separate proposed voice guard uses SIP/media, not the message webhook. See [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md).
 - **Gateway architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** the CLI supports all three (scripted `scenario` files, `random` bank draws, typed `send`). Which mix the demo uses is TBD.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
 - **Classifier:** MiniLM on Vultr is agreed (see above). Still open: label scheme (binary spam/ham or the 8-class scam categories), thresholds, whether fine-tuning is needed, and evaluation measures.
 - **Live public demo:** moderation, rate limits, privacy of numbers texting in, and cost controls.
 - **Sender blocklist:** parked, off by default (Tuan, 2026-11-08: block the message, not the sender). Whether to ever turn on `SENDER_BLOCKLIST`, and its strikes, score and expiry defaults, are TBD. See [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md).
+- **Voice scam guard:** whether the voice number is assigned to the team's Photon 2.0/Beta project and is eligible for Voice, STT service, classifier call-level evaluation/windowing, victim bridge endpoint, transcript retention period, warning transport/thresholds, and consent/disclosure requirements are TBD. Never infer voice call media from the Photon messaging webhook. See [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md).
 - **Privacy, storage, latency, and fail-safe behavior.**
 - **User journey:** alert design, what "respond on the recipient's behalf" means, and when confirmation is required.
 - **Team:** roster, ownership (the SRS mentions Jev for scam classification; confirm before treating it as current), demo narrative, success criteria, and submission checklist.
@@ -122,6 +125,7 @@ Keep these items marked **TBD** until the team resolves them. Distinguish agreed
 - **Design specification:** [`CHANGELOG.md`](CHANGELOG.md). Detailed decisions, rationale, and the decision log.
 - **Work tracker:** [`README.md`](README.md#active-work). Lists every feature and every branch an agent or person is currently working on.
 - **Feature plans:** [`docs/features/`](docs/features/). One file per feature, with ordered tasks and parallelization notes. Start new ones from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md).
+- **Interview master specs:** [`.plans/`](.plans/) holds interview-led master specs when a feature needs a broader product/technical design; the feature tracker remains in `docs/features/`.
 - **Dataset reference:** [`data/README.md`](data/README.md).
 - **Demo script:** [`docs/DEMO.md`](docs/DEMO.md). The judge walkthrough, setup, live iPhone moment and fallbacks.
 
