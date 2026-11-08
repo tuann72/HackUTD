@@ -214,3 +214,12 @@ Split work into tasks small enough to land in one focused PR, and prefer splits 
 2. Confirm the checks above pass and the docs are updated.
 3. Mark the PR ready for review and describe what changed, how it was verified, and any follow-ups.
 4. Set the task to **In review**, then **Done** when merged, and clean up the worktree.
+
+**Merging PRs (Tuan, 2026-11-08):** agents may merge PRs themselves, their own or ones a person asked them to merge, with `gh pr merge <n> --merge` (merge commits, not squash). Before merging:
+
+- The PR is not a draft and GitHub says it's mergeable (`gh pr view <n> --json mergeable,mergeStateStatus`), with no conflicts.
+- The tests for every package it touches pass on the PR branch after merging the latest `origin/main`, and you ran them yourself.
+- Its base is `main`, or the PR it's stacked on is already merged.
+- A teammate's PR: only when that person or Tuan asks you to.
+
+After merging, delete the branch only if no open PR uses it as its base (`gh pr list --state open --json number,baseRefName`). Deleting a base branch auto-closes the PRs stacked on it. Claude Code's project settings (`.claude/settings.json`) allow `gh pr merge` without a prompt; other agents follow the same rule.
