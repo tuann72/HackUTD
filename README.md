@@ -28,6 +28,7 @@ flowchart LR
     end
 
     subgraph LiveKit["LiveKit Cloud"]
+        trunk["SIP trunk + dispatch rule<br/>(T-Gate Voice)"]
         voice["voice-guard worker<br/>(LiveKit Agents, TypeScript)"]
         stt["AssemblyAI STT<br/>(LiveKit Inference)"]
     end
@@ -57,7 +58,7 @@ flowchart LR
     imsg -- "signed webhook" --> caddy
     imsg -. "backup destination" .-> backup
     cli -- "signed Photon-format webhook" --> caddy
-    caller --> sip -- "SIP" --> voice
+    caller --> sip -- "SIP over TLS" --> trunk -- "dispatch to voice-guard" --> voice
     voice <--> stt
     voice -- "transcript as signed<br/>Photon-format webhook" --> caddy
 
@@ -79,6 +80,16 @@ flowchart LR
 - **Only text leaves the gateway.** The classifier gets message text and an opaque id, never phone numbers. Nemotron sees only found flags, counts and short labels from the bank checks.
 - **Fail open.** If the classifier is down, the gateway delivers the message marked unverified.
 - **Web app.** It reads whichever gateway `NEXT_PUBLIC_API_URL` points at (the VM by default, or the Vercel backup). Its only writes are Clear chats and Simulate (see `AGENTS.md`, "Decoupling rules"). Training runs separately on a Vultr Cloud GPU instance (`classifier/`); the trained artifacts are copied to the VM.
+
+## Tech stack
+
+- **Gateway:** TypeScript + Hono on a Vultr VM behind Caddy; SQLite inbox and blocked log.
+- **Classifier:** Python + FastAPI in Docker on the VM; stacked TF-IDF + MiniLM (`all-MiniLM-L6-v2`), trained on a Vultr Cloud GPU.
+- **Web app:** Next.js on Vercel, React Three Fiber (3D scene), Motion (animation); backup webhook stores to MongoDB Atlas.
+- **Messaging:** Photon (Spectrum) iMessage webhooks.
+- **Voice:** Photon voice line over SIP to LiveKit Cloud; `voice-guard` worker on LiveKit Agents (TypeScript), AssemblyAI STT through LiveKit Inference.
+- **Simulator:** TypeScript CLI sending signed Photon-format webhooks.
+- **Optional services:** NVIDIA Nemotron review, Capital One Nessie (mock bank), MongoDB Atlas sender blocklist (all off by default).
 
 ## Feature board
 
@@ -105,6 +116,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Project docs | Add LiveKit to the tech stack (AGENTS.md, README) and the diagram | `docs/livekit-stack` | Tuan + Claude Code | Done | [#85](https://github.com/tuann72/HackUTD/pull/85) |
 | Project docs | Architecture diagram in the README; sync docs with #82 | `docs/architecture-diagram` | Tuan + Claude Code | Done | — |
 | Project docs | Sync `AGENTS.md` and the README trackers with merges #63 to #81 | `docs/sync-agents-readme` | Tuan + Claude Code | Done | — |
 | Voice scam guard | Send each call transcript to the VM gateway as a signed Photon-format message, like the simulator | `feat/voice-scam-detection` | JP | Done | [#82](https://github.com/tuann72/HackUTD/pull/82) |
