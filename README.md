@@ -34,6 +34,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 |---|---|---|---|---|---|
 | Voice scam guard | Photon inbound route and cost/consent checks; local call reached active media through LiveKit | `feat/voice-scam-detection` | Codex | In progress | [#36](https://github.com/tuann72/HackUTD/pull/36) |
 | Voice scam guard | Caller-only worker, AssemblyAI STT, and LiveKit Cloud container/deployment (tasks 1.1–1.2, 1.6) | `feat/voice-scam-guard-stt` | Codex | In progress | [#51](https://github.com/tuann72/HackUTD/pull/51) |
+| Voice scam guard | Submit post-call transcripts to the classifier and show versioned call results in Vercel (tasks 1.3–1.4) | `feat/voice-guard-call-results` | Codex (agent) | In progress | Draft PR pending |
 | Photon iMessage gateway | Photon 2.0 / Beta webhooks: registration script (`pho_prj_` → destinations API, `rotate`) and Standard Webhooks + `message.received` on the Vercel route | `feat/photon-beta-webhooks` | Tuan + Claude Code | Done | — |
 | Photon iMessage gateway | Photon webhook on the Vercel site (`/webhooks/photon` + `/api/messages`, Atlas store), backup to the VM gateway | `feat/web-photon-webhook` | Tuan + Claude Code | In review | — |
 | Sender blocklist | `DNS_SERVERS` for Atlas on Windows; drop deprecated `timeoutMS` | `fix/sender-blocklist-dns` | Timothy + Claude Code | Done | [#29](https://github.com/tuann72/HackUTD/pull/29) |
