@@ -12,6 +12,7 @@ This is **demo input, not training data**. The classifier trains on `data/scam_c
 | `generated.jsonl` | 27 hand-written SMS-style messages for categories the test split lacks, plus some legit texts |
 | `scenarios/grandparent.jsonl` | The main demo story (5 steps, about 25 s) |
 | `scenarios/smoke.jsonl` | 3 quick messages, 500 ms apart, for smoke tests |
+| `scenarios/imessage-demo.jsonl` | The iMessage demo (10 steps, about 80 s): family texts, a group-chat album and a reaction, the grandparent scam, a scammer's photo, a phishing link, a fake "Bank Fraud Dept" contact card and a final bank scam. See [`docs/DEMO.md`](../../docs/DEMO.md) |
 | `build_bank.py` | Rebuilds `bank.jsonl` from the CSV |
 
 ## Fields
@@ -33,8 +34,21 @@ Scenario files, one step per line:
 |---|---|
 | `delayMs` | Wait before this step, relative to the previous step |
 | `from` | Fictional sender, `+15555550101` to `+15555550199` |
-| `body` | Message text |
-| `expected` | `deliver` or `block` |
+| `body` | Message text. Omit it when `content` is given |
+| `content` | Optional non-text iMessage content (see below). Replaces `body` |
+| `group` | Optional group chat id, e.g. `"family-chat"`. The message arrives in that group (`space.type: "group"`) instead of a DM |
+| `expected` | `deliver` or `block`. Content with no text (attachment, reaction, contact card) is always `deliver`, shown as "Not checked" |
+
+`content` follows Photon's inbound `message.content` shapes. It's metadata only: no files are sent.
+
+| `content.type` | Fields | Example |
+|---|---|---|
+| `text` | `text` | `{"type": "text", "text": "hi"}` (same as `body`; used inside albums) |
+| `richlink` | `url` | `{"type": "richlink", "url": "https://bit.ly/acct-verify"}` |
+| `attachment` | `name`, optional `mimeType` (guessed from the extension) and `size` | `{"type": "attachment", "name": "IMG_1.HEIC", "size": 2483112}` |
+| `reaction` | `emoji`, optional `targetPreview` (the message reacted to, max 80 chars) | `{"type": "reaction", "emoji": "❤️", "targetPreview": "See you!"}` |
+| `contact` | optional `name`, `phones` (fictional `+1555…` unless `--allow-real-numbers`) | `{"type": "contact", "name": "Bank Fraud Dept", "phones": ["+15555550199"]}` |
+| `group` | `items`: `text`, `richlink` or `attachment` blocks (an album) | `{"type": "group", "items": [{"type": "text", "text": "Lake!"}, {"type": "attachment", "name": "a.jpg"}]}` |
 
 ## How `bank.jsonl` was built
 
@@ -65,4 +79,5 @@ Counts in `generated.jsonl`: Imposter & Phishing 8 (grandparent/family emergency
 - **Don't tune block thresholds on these rows.** `bank.jsonl` comes from the `test` split; tuning on it makes the reported test metrics dishonest. Tune on `val`.
 - **`expected` / `expected_label` are for checking only.** The simulator never sends them; the gateway never sees them.
 - Many real scam rows come from Philippine SMS sources (peso amounts, local banks and wallets, some Tagalog), so they may not read as US texts. They contain real scam links and brand names: don't open the links.
+- Group chat ids and attachment names in scenarios are made up. Attachments carry no file.
 - Generated rows use fictional brands and `bit.ly/...` or `example.com` links, and no real people.
