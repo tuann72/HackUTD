@@ -54,17 +54,17 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Choose and connect the victim endpoint (handset via SIP or browser participant) | 1.5 | — | Not started | — | TBD | — |
-| 2.2 | Bridge both sides while the guard scores only the caller's participant track | 2.1 | — | Not started | — | TBD | — |
+| 2.1 | Connect the victim: the agent dials the victim's real phone into the call room through a LiveKit outbound SIP trunk (decision: real phone, LacsJP27 2026-11-08) | 1.5 | 3.2 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| 2.2 | Bridge both sides while the guard scores only the caller's participant track; hanging up either side ends the other | 2.1 | 3.2 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
 | 2.3 | Verify two-way call quality and caller-only transcript attribution with after-call scoring | 2.2 | — | Not started | — | TBD | — |
 
 ### Stage 3: live classification and warning
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Define transcript windows, utterance finalization, score aggregation, and warning thresholds | 2.3 | — | Not started | — | TBD | — |
-| 3.2 | Score finalized transcript segments while the bridged call is active | 3.1 | 3.3 | Not started | — | TBD | — |
-| 3.3 | Deliver versioned live call status/warnings to the Vercel app | 1.4, 3.1 | 3.2 | Not started | — | TBD | — |
+| 3.1 | Windows and thresholds: score the caller's whole transcript so far after each finalized utterance, at most every 5 s; warn once per call when the gateway says `warn` | 2.3 | — | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| 3.2 | Gateway `POST /voice/score` (bearer token, no storage) and live scoring in the agent | 3.1 | 2.1 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| 3.3 | Deliver the live warning: a spoken whisper (TTS) only the victim hears (decision: whisper, LacsJP27 2026-11-08). Vercel display is not part of this task | 3.1 | 3.2 | In review | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | [#87](https://github.com/tuann72/HackUTD/pull/87) |
 | 3.4 | Measure warning latency, missed scam cues, and false warnings during bridged scripted calls | 3.2, 3.3 | — | Not started | — | TBD | — |
 
 ## Task details
@@ -113,6 +113,16 @@ Implementation details for tasks 1.3–1.4:
 - **What:** Prefer finalized utterances or stable transcript segments; suppress duplicate warnings; show a “potential scam” warning while leaving the call connected. Measure latency and false positives before selecting thresholds.
 - **Files:** Voice service, call-result contract/API, and `apps/web/` warning UI.
 - **Done when:** A controlled bridged call shows a warning before hangup and records latency and false-warning results.
+
+### Live call design (tasks 2.1, 2.2, 3.1–3.3, branch `feat/voice-guard-live-call`)
+
+- **Flow:** the scammer calls the Photon voice number. The call lands in a LiveKit room and the `voice-guard` agent joins. The agent answers (silence track, as before), then dials the victim's real phone into the same room with `SipClient.createSipParticipant` over a LiveKit **outbound SIP trunk** (identity `tguard-victim`). LiveKit SIP participants hear every audio track in the room, so caller and victim talk normally.
+- **Caller-only scoring:** the agent transcribes only the inbound caller's track (never `tguard-victim`). After each finalized utterance, at most once every `VOICE_SCORE_INTERVAL_MS` (default 5000), it POSTs the caller's transcript so far to the gateway's `POST /voice/score`.
+- **Gateway `/voice/score`:** exists only when `VOICE_SCORE_TOKEN` is set. Bearer token, body `{ callId, text }`. It runs the classifier and returns `{ callId, action: 'warn' | 'none', label, score, category, model }`, with `warn` when `score >= VOICE_WARN_THRESHOLD` (default: the block threshold). Stores nothing, logs only the id and score, skips the Nemotron reviewer for latency, and returns 503 when the classifier is down (the agent then just carries on).
+- **Whisper:** at call start the agent publishes a second, silent "whisper" track and unsubscribes the caller from it server-side (`RoomServiceClient.updateSubscriptions`), so only the victim receives it. On the first `warn`, it speaks a fixed warning through LiveKit Inference TTS into that track. One warning per call. The text says "potential scam".
+- **Hangup:** when either the caller or the victim leaves, the agent removes the other from the room. The full caller transcript then goes to `/webhooks/photon` exactly as in task 1.7.
+- **Off by default:** without `VOICE_GUARD_VICTIM_PHONE` and `LIVEKIT_SIP_OUTBOUND_TRUNK_ID`, no victim is dialed and the worker behaves exactly as before. Without `VOICE_SCORE_URL` and `VOICE_SCORE_TOKEN`, there is no live scoring or whisper.
+- **TBD:** whether Photon accepts outbound SIP from the voice line (otherwise use a separate SIP provider for the trunk); measured latency; false-warning rate; caller disclosure and consent wording.
 
 ## Progress notes
 

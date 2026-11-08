@@ -38,7 +38,8 @@ export interface AppDeps {
     | 'uiActionPassword'
     | 'reviewBandLow'
     | 'reviewBandHigh'
-  >;
+  > &
+    Partial<Pick<GatewayConfig, 'voiceScoreToken' | 'voiceWarnThreshold'>>;
   /**
    * Sender blocklist (docs/features/sender-blocklist.md), on by default since 2026-11-08. Used only when
    * `config.senderBlocklist` is true and both are given; otherwise never called, and every message
@@ -362,6 +363,42 @@ export function createApp({
       if (!res.ok) return c.json({ error: res.error }, res.status);
       logger.warn(`admin restore: ${messageId} moved to the inbox${res.allowlisted === null ? '' : ` (sender allowlisted=${res.allowlisted})`}`);
       return c.json({ ok: true, messageId, allowlisted: res.allowlisted });
+    });
+  }
+
+  // Live-call scoring for the voice guard's LiveKit agent. Exists only when VOICE_SCORE_TOKEN is set.
+  // Synchronous verdict on the transcript so far; no reviewer, no storage, no blocklist. Never logs the text.
+  if (config.voiceScoreToken) {
+    const token = config.voiceScoreToken;
+    const threshold = config.voiceWarnThreshold ?? config.blockThreshold;
+    app.post('/voice/score', async (c) => {
+      const auth = c.req.header('Authorization');
+      if (!auth || !auth.startsWith('Bearer ')) return c.json({ error: 'missing bearer token' }, 401);
+      if (!safeEqual(auth.slice(7), token)) return c.json({ error: 'bad bearer token' }, 403);
+      let body: { callId?: unknown; text?: unknown };
+      try {
+        body = (await c.req.json()) as typeof body;
+      } catch {
+        return c.json({ error: 'body must be JSON: {"callId": "...", "text": "..."}' }, 400);
+      }
+      const { callId, text } = body ?? {};
+      if (typeof callId !== 'string' || callId.length < 1 || callId.length > 128) {
+        return c.json({ error: 'callId must be a string of 1 to 128 characters' }, 400);
+      }
+      if (typeof text !== 'string' || !text.trim() || text.length > 20000) {
+        return c.json({ error: 'text must be a non-empty string of at most 20000 characters' }, 400);
+      }
+      let verdict: Verdict;
+      try {
+        verdict = await classifier.classify({ messageId: callId, text });
+      } catch (err) {
+        logger.warn(`voice ${callId}: classifier unavailable (${(err as Error).message})`);
+        return c.json({ error: 'classifier unavailable' }, 503);
+      }
+      const action: 'warn' | 'none' = verdict.score >= threshold ? 'warn' : 'none';
+      logger.info(`voice ${callId}: score ${verdict.score}, ${action}`);
+      c.header('Cache-Control', 'no-store');
+      return c.json({ callId, action, label: verdict.label, score: verdict.score, category: verdict.category, model: verdict.model });
     });
   }
 

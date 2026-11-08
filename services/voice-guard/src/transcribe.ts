@@ -5,7 +5,14 @@ function getTranscriptText(event: stt.SpeechEvent): string {
   return event.alternatives?.[0]?.text?.trim() ?? '';
 }
 
-export async function transcribeCallerTrack(track: RemoteTrack): Promise<string> {
+/**
+ * Transcribes the caller's track until it ends and returns the whole transcript.
+ * `onUtterance`, when given, is called with each finalized utterance as it completes (live scoring).
+ */
+export async function transcribeCallerTrack(
+  track: RemoteTrack,
+  onUtterance?: (utterance: string) => void,
+): Promise<string> {
   const model = new inference.STT({
     model: 'assemblyai/universal-streaming',
     language: 'en',
@@ -25,7 +32,14 @@ export async function transcribeCallerTrack(track: RemoteTrack): Promise<string>
           pendingFinalFragments.push(text);
         } else if (event.type === stt.SpeechEventType.END_OF_SPEECH) {
           const utterance = text || pendingFinalFragments.join(' ').trim();
-          if (utterance) completedUtterances.push(utterance);
+          if (utterance) {
+            completedUtterances.push(utterance);
+            try {
+              onUtterance?.(utterance);
+            } catch {
+              // A listener failure must not stop transcription.
+            }
+          }
           pendingFinalFragments = [];
         }
       }

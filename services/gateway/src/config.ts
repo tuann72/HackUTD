@@ -46,6 +46,10 @@ export interface GatewayConfig {
   nessieApiKey: string | null;
   nessieAccountId: string | null;
   nessieBaseUrl: string;
+  /** Bearer token for POST /voice/score (live-call scoring). Null = route off. */
+  voiceScoreToken: string | null;
+  /** Warn the call when verdict.score >= this. Defaults to blockThreshold. */
+  voiceWarnThreshold: number;
 }
 
 type Env = Record<string, string | undefined>;
@@ -113,6 +117,8 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
   const reviewBandHigh = num(env, 'REVIEW_BAND_HIGH', 0.77, unit, 'a number between 0 and 1');
   if (reviewBandLow >= reviewBandHigh) throw new Error('REVIEW_BAND_LOW must be below REVIEW_BAND_HIGH');
 
+  const blockThreshold = num(env, 'BLOCK_THRESHOLD', 0.5, (n) => n >= 0 && n <= 1, 'a number between 0 and 1');
+
   return {
     port: num(env, 'PORT', 8787, (n) => Number.isInteger(n) && n > 0 && n < 65536, 'a TCP port'),
     photonWebhookSecret,
@@ -121,7 +127,7 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     classifierUrl: str(env, 'CLASSIFIER_URL'),
     classifierToken: str(env, 'CLASSIFIER_TOKEN'),
     classifierTimeoutMs: num(env, 'CLASSIFIER_TIMEOUT_MS', 2500, (n) => Number.isInteger(n) && n > 0, 'a positive integer'),
-    blockThreshold: num(env, 'BLOCK_THRESHOLD', 0.5, (n) => n >= 0 && n <= 1, 'a number between 0 and 1'),
+    blockThreshold,
     moneyWarnAmount: num(env, 'MONEY_WARN_AMOUNT', 500, (n) => n >= 0, 'a number, 0 or more'),
     corsOrigins: (str(env, 'CORS_ORIGINS') ?? 'http://localhost:3000')
       .split(',')
@@ -150,5 +156,7 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     nessieApiKey: str(env, 'NESSIE_API_KEY'),
     nessieAccountId: str(env, 'NESSIE_ACCOUNT_ID'),
     nessieBaseUrl: str(env, 'NESSIE_BASE_URL') ?? 'https://api.nessieisreal.com',
+    voiceScoreToken: str(env, 'VOICE_SCORE_TOKEN'),
+    voiceWarnThreshold: num(env, 'VOICE_WARN_THRESHOLD', blockThreshold, unit, 'a number between 0 and 1'),
   };
 }

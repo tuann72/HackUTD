@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Live call with the victim on a real phone and a whisper warning
+
+- **Decision (LacsJP27):** the victim joins the call on a **real phone**: the scammer calls the Photon voice number, and the voice-guard worker dials the victim into the same LiveKit room over an outbound SIP trunk. The warning is a **spoken whisper** only the victim hears, not a text.
+- **Gateway:** new `POST /voice/score` (exists only with `VOICE_SCORE_TOKEN`). Bearer token, `{ callId, text }` in, `{ callId, action: warn|none, label, score, category, model }` out. `warn` when the score is at least `VOICE_WARN_THRESHOLD` (defaults to the block threshold). No storage, no reviewer (latency), 503 when the classifier is down.
+- **Worker:** transcribes only the caller. After each finalized utterance, at most every 5 s, it scores the caller's transcript so far and warns once per call. The whisper track is published silent and the caller is unsubscribed from it server-side before the victim is dialed; if that fails, there is no whisper. Hanging up either side ends the other. The after-call transcript still goes to `/webhooks/photon`.
+- **Why:** live warnings are the main follow-up from the voice plan, and the server-side score keeps one policy (threshold, classifier) for messages and calls.
+- **TBD:** outbound trunk provider (Photon outbound SIP is unverified), whether `updateSubscriptions` holds for SIP participants, latency, false-warning rate, and caller disclosure.
 ### 2026-11-08: Clear chats needs the password too
 
 Tuan asked for a password on Clear chats, the same `4321` as Unblock and Clear blocks. On a live source the button now opens the password prompt instead of a browser confirm. `DELETE /api/messages` on the VM gateway and on the Vercel backup checks `X-Action-Password` against `UI_ACTION_PASSWORD` (default `4321`) and answers `401` without deleting anything when it's missing or wrong. The demo replay (no gateway URL) has no server to check a password, so it keeps the plain confirm. The VM gateway needs a redeploy for the check to take effect there; until then the old gateway ignores the header and still clears.

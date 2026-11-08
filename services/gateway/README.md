@@ -115,6 +115,10 @@ It moves only that message from blocked to the inbox, with reason `override`, ke
 npm run message:restore -- msg_0123abcd...
 ```
 
+### `POST /voice/score` (voice guard live-call scoring, not part of the contract)
+
+Exists only when `VOICE_SCORE_TOKEN` is set (otherwise 404). The voice guard's LiveKit agent calls it every few seconds with the caller's transcript so far: `Authorization: Bearer <VOICE_SCORE_TOKEN>`, body `{"callId": "...", "text": "..."}` (`callId` 1–128 chars, `text` non-empty, at most 20000 chars). Returns `{ callId, action: "warn" | "none", label, score, category, model }` with `Cache-Control: no-store`; `warn` when `score >= VOICE_WARN_THRESHOLD` (default `BLOCK_THRESHOLD`). 401 missing token, 403 wrong token, 400 bad body, 503 classifier unavailable. It skips the reviewer, stores nothing, never touches the blocklist, and never logs the text.
+
 ### `POST /debug/reset` (developer tool, not part of the contract)
 
 Clears all messages and participants. Only exists when `GATEWAY_DEBUG=1` (otherwise `404`). Needs `X-Debug-Token: <DEBUG_TOKEN>`: missing → `401`, wrong → `403`.

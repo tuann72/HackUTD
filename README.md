@@ -116,6 +116,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Voice scam guard | Live call: dial the victim's real phone into the call, score the caller every few seconds through a new gateway `/voice/score`, whisper a "potential scam" warning only the victim hears (tasks 2.1, 2.2, 3.1–3.3) | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | In review | [#87](https://github.com/tuann72/HackUTD/pull/87) |
 | Message UI | Password (4321) on Clear chats, checked by the gateway and the Vercel backup | `feat/clear-chats-password` | Tuan + Claude Code | Done | [#91](https://github.com/tuann72/HackUTD/pull/91) |
 | Message UI | Collapse buttons on the /messages side panels (messages left, Simulate right) | `feat/web-panel-collapse` | Tuan + Claude Code | Done | [#90](https://github.com/tuann72/HackUTD/pull/90) |
 | Message UI | Remove the Voice results page, its API route, store and contracts | `chore/remove-voice-page` | Tuan + Claude Code | Done | [#89](https://github.com/tuann72/HackUTD/pull/89) |
