@@ -2,7 +2,16 @@
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
 import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
-import { useMessages, type Message, type MessageChange, type SourceMode } from "@/lib/messages";
+import {
+  hideCleared,
+  loadClearedBefore,
+  newestReceivedAt,
+  saveClearedBefore,
+  useMessages,
+  type Message,
+  type MessageChange,
+  type SourceMode,
+} from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
 import { categoryClass, categoryLabel } from "./category";
@@ -119,8 +128,26 @@ export function MessagesView() {
     },
     [feed],
   );
-  const { messages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
+  const { messages: allMessages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
+
+  // "Clear" hides what's on screen in this browser only; nothing is deleted on the gateway.
+  // Reading storage at init is hydration-safe: messages arrive by polling, so the first render is empty either way.
+  const [clearedBefore, setClearedBefore] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : loadClearedBefore(),
+  );
+  const messages = useMemo(() => hideCleared(allMessages, clearedBefore), [allMessages, clearedBefore]);
+  const hiddenCount = allMessages.length - messages.length;
+  const clear = () => {
+    const cutoff = newestReceivedAt(allMessages);
+    if (cutoff == null) return;
+    setClearedBefore(cutoff);
+    saveClearedBefore(cutoff);
+  };
+  const showAll = () => {
+    setClearedBefore(null);
+    saveClearedBefore(null);
+  };
 
   const { inbox, blocked, deliveredCount, pendingCount, categories } = useMemo(() => {
     const pending = messages.filter((m) => m.action === "pending");
@@ -147,7 +174,27 @@ export function MessagesView() {
         <header className="mb-6 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
-            <SourceIndicator mode={mode} />
+            <div className="flex items-center gap-2">
+              {hiddenCount > 0 && (
+                <button
+                  type="button"
+                  onClick={showAll}
+                  className="rounded-full px-2.5 py-1 text-xs font-medium text-zinc-500 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                  Show <span className="tabular-nums">{hiddenCount}</span> cleared
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={clear}
+                disabled={messages.length === 0}
+                title="Hide the current messages on this screen. Nothing is deleted on the gateway."
+                className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Clear chats
+              </button>
+              <SourceIndicator mode={mode} />
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="rounded-md bg-zinc-100 px-2 py-1 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
