@@ -1,4 +1,4 @@
-// Server-only: the password-protected Unblock and Clear blocks writes for the Vercel backup
+// Server-only: the password-protected Clear chats, Unblock and Clear blocks writes for the Vercel backup
 // (contracts/README.md, "Unblock and Clear blocks"). The VM gateway serves the same routes.
 // The Vercel backup has no sender blocklist, so its blocklist routes always report it off.
 import { createHash, timingSafeEqual } from "node:crypto";
@@ -40,6 +40,17 @@ export async function handleUnblock(
   if (m.action !== "blocked") return Response.json({ error: "message is not blocked" }, { status: 409, headers: noStore });
   await store.update(id, { action: "delivered", reason: "override", verdict: m.verdict });
   return Response.json({ ok: true, messageId: id, allowlisted: null }, { headers: noStore });
+}
+
+/** DELETE /api/messages ("Clear chats"): deletes every stored message. Needs the password. */
+export async function handleClearChats(
+  req: Request,
+  deps: { store: () => Promise<Store>; env?: NodeJS.ProcessEnv },
+): Promise<Response> {
+  const denied = checkActionPassword(req, deps.env);
+  if (denied) return denied;
+  const cleared = await (await deps.store()).clear();
+  return Response.json({ ok: true, cleared }, { headers: noStore });
 }
 
 /** GET /api/blocklist. No password. */

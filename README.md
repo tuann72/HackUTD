@@ -117,6 +117,10 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
 | Voice scam guard | Live call: dial the victim's real phone into the call, score the caller every few seconds through a new gateway `/voice/score`, whisper a "potential scam" warning only the victim hears (tasks 2.1, 2.2, 3.1–3.3) | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | In review | [#87](https://github.com/tuann72/HackUTD/pull/87) |
+| Message UI | Password (4321) on Clear chats, checked by the gateway and the Vercel backup | `feat/clear-chats-password` | Tuan + Claude Code | Done | [#91](https://github.com/tuann72/HackUTD/pull/91) |
+| Message UI | Collapse buttons on the /messages side panels (messages left, Simulate right) | `feat/web-panel-collapse` | Tuan + Claude Code | Done | [#90](https://github.com/tuann72/HackUTD/pull/90) |
+| Message UI | Remove the Voice results page, its API route, store and contracts | `chore/remove-voice-page` | Tuan + Claude Code | Done | [#89](https://github.com/tuann72/HackUTD/pull/89) |
+| Message UI | Redesign /messages (inbox and blocked in a filterable left panel, fits the screen) and /dashboard, with Motion | `feat/web-ui-revamp` | Tuan + Claude Code | Done | [#88](https://github.com/tuann72/HackUTD/pull/88) |
 | Sender blocklist | Turn the blocklist on; password-protected (4321) Unblock button per blocked message and Clear blocks button that unblocks every sender | `feat/sender-blocklist-clear` | Tuan + Claude Code (subagents) | Done | [#86](https://github.com/tuann72/HackUTD/pull/86) |
 | Project docs | Add LiveKit to the tech stack (AGENTS.md, README) and the diagram | `docs/livekit-stack` | Tuan + Claude Code | Done | [#85](https://github.com/tuann72/HackUTD/pull/85) |
 | Project docs | Architecture diagram in the README; sync docs with #82 | `docs/architecture-diagram` | Tuan + Claude Code | Done | — |

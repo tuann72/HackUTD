@@ -1,9 +1,8 @@
 "use client";
 
-import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
-import Link from "next/link";
-import { ShieldLetter } from "@/components/brand/ShieldLetter";
-import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { AppHeader } from "@/components/brand/AppHeader";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   clearBlocksText,
   useMessages,
@@ -14,7 +13,7 @@ import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
 import type { Guard } from "@/components/scene/Scene";
 import { SimPanel } from "@/components/sim/SimPanel";
-import { MessageCard } from "./MessageCard";
+import { MessagePanel } from "./MessagePanel";
 import { PasswordPrompt } from "./PasswordPrompt";
 import { clearBlocksLabel, useBlocklist } from "./useBlocklist";
 import { useNow } from "./useNow";
@@ -22,7 +21,20 @@ import { useNow } from "./useNow";
 /** Tooltip on Unblock and Clear blocks when there's no gateway to check the password (mock data). */
 const MOCK_ACTIONS_OFF = "Needs a live gateway (set NEXT_PUBLIC_API_URL). The demo data can't be unblocked.";
 
-type Prompt = { kind: "clear" } | { kind: "unblock"; message: Message };
+type Prompt = { kind: "chats" } | { kind: "clear" } | { kind: "unblock"; message: Message };
+
+const PROMPT_TEXT = {
+  chats: {
+    title: "Clear chats",
+    description: "Delete every message, in the inbox and the Blocked list, for everyone. This can't be undone.",
+    confirm: "Clear chats",
+  },
+  clear: {
+    title: "Clear blocks",
+    description: "Unblock every sender T-Guard has blocked. Messages already in the Blocked list stay there.",
+    confirm: "Clear blocks",
+  },
+} as const;
 
 /** The scene's guard switch: the pink shield or the slapping hand. */
 const GUARDS: { id: Guard; label: string }[] = [
@@ -33,89 +45,33 @@ const GUARDS: { id: Guard; label: string }[] = [
 /** Counters read like the prototype's "000". */
 const pad3 = (n: number) => String(n).padStart(3, "0");
 
-function Column({
-  title,
-  count,
-  empty,
-  messages,
-  now,
-  onUnblock,
-  unblockOff,
-}: {
-  title: string;
-  count: ReactNode;
-  empty: string;
-  messages: Message[];
-  now: number | null;
-  onUnblock?: (m: Message) => void;
-  unblockOff?: string | null;
-}) {
-  const [open, setOpen] = useState(true);
-  const bodyId = useId();
+const TOOL =
+  "flex h-8 items-center gap-2 border border-ink px-2.5 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink";
+
+function Counter({ value, label, hot }: { value: number; label: string; hot?: boolean }) {
   return (
-    <section aria-label={title} className="flex min-w-0 flex-col gap-3 border-t border-rule pt-4">
-      <h2 className="font-label text-[11px] uppercase tracking-[0.08em] text-muted">
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={bodyId}
-          onClick={() => setOpen((o) => !o)}
-          className="-mx-1 flex items-baseline gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+    <div className="flex flex-col gap-1">
+      <dt className="order-last font-label text-[10px] uppercase tracking-[0.06em] text-ink">{label}</dt>
+      <dd>
+        <motion.span
+          key={value}
+          initial={{ y: -6, opacity: 0.4 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          className={`block font-display text-5xl leading-none tabular-nums sm:text-6xl ${hot ? "text-hot" : "text-ink"}`}
         >
-          <svg
-            aria-hidden
-            viewBox="0 0 16 16"
-            className={`size-3 self-center transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`}
-          >
-            <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {title}
-          <span className="tabular-nums text-ink">/ {count}</span>
-        </button>
-      </h2>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            id={bodyId}
-            key="body"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="flex flex-col gap-3 overflow-hidden"
-          >
-            {messages.length === 0 && (
-              <p className="border border-dashed border-rule px-4 py-8 text-center font-label text-[11px] uppercase tracking-[0.06em] text-muted">
-                {empty}
-              </p>
-            )}
-            <ul className="flex flex-col gap-3">
-              <AnimatePresence initial={false}>
-                {messages.map((m) => (
-                  <motion.li
-                    key={m.id}
-                    layout="position"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                  >
-                    <MessageCard message={m} now={now} onUnblock={onUnblock} unblockOff={unblockOff} />
-                  </motion.li>
-                ))}
-              </AnimatePresence>
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </section>
+          {pad3(value)}
+        </motion.span>
+      </dd>
+    </div>
   );
 }
 
 /**
- * The /messages page: the 3D scene on top, then the inbox (delivered, plus pending
- * at top) and blocked lists. One poll feeds both, so the scene animates the
- * same messages the lists show.
+ * The /messages page. On wide screens it fills the window: the message panel
+ * (All, Inbox, Blocked, with filters) on the left, the 3D scene in the middle and
+ * Simulate on the right, each scrolling on its own. On phones they stack, scene first.
+ * One poll feeds the panel and the scene, so the scene animates the same messages.
  */
 export function MessagesView() {
   const [feed] = useState(createShotFeed);
@@ -131,11 +87,16 @@ export function MessagesView() {
   const now = useNow();
 
   // "Clear chats" deletes every stored message on the gateway (or the Vercel backup), not just this screen.
+  // A live source asks for the password (the server checks it); the demo replay just confirms.
   const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
   const clear = async () => {
     if (!clearSource) return;
-    if (!window.confirm("Delete all messages? This removes them for everyone and can't be undone.")) return;
+    if (actions) {
+      setPrompt({ kind: "chats" });
+      return;
+    }
+    if (!window.confirm("Delete all messages? This can't be undone.")) return;
     setClearing(true);
     setClearError(null);
     try {
@@ -161,7 +122,12 @@ export function MessagesView() {
   const openUnblock = useCallback((message: Message) => setPrompt({ kind: "unblock", message }), []);
   const runPrompt = async (password: string) => {
     if (!actions || !prompt) return;
-    if (prompt.kind === "clear") {
+    if (prompt.kind === "chats") {
+      if (!clearSource) return;
+      await clearSource(password);
+      setClearError(null);
+      setNotice("Deleted every message.");
+    } else if (prompt.kind === "clear") {
       const r = await actions.clearBlocks(password);
       setNotice(clearBlocksText(r));
       blocklist.refresh();
@@ -173,160 +139,152 @@ export function MessagesView() {
     }
   };
 
-  const { inbox, blocked, deliveredCount } = useMemo(() => {
-    const pending = messages.filter((m) => m.action === "pending");
-    const delivered = messages.filter((m) => m.action === "delivered");
-    const blocked = messages.filter((m) => m.action === "blocked");
-    return { inbox: [...pending, ...delivered], blocked, deliveredCount: delivered.length };
-  }, [messages]);
+  const { blockedCount, deliveredCount } = useMemo(
+    () => ({
+      blockedCount: messages.filter((m) => m.action === "blocked").length,
+      deliveredCount: messages.filter((m) => m.action === "delivered").length,
+    }),
+    [messages],
+  );
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-x-8 gap-y-8 px-4 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <header className="col-span-full flex h-20 items-center justify-between gap-4 border-b border-rule">
-          <Link
-            href="/"
-            className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
-          >
-            T-G<ShieldLetter className="mx-[0.04em]" />ARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
-          </Link>
-          <span className="hidden font-label text-[10px] uppercase tracking-[0.06em] text-muted sm:block">
+      <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
+        <AppHeader>
+          <span className="hidden font-label text-[10px] uppercase tracking-[0.06em] text-muted xl:block">
             Personal space. Protected.
           </span>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
-            >
-              Dashboard
-              <span aria-hidden>▤</span>
-            </Link>
-            <Link
-              href="/voice"
-              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
-            >
-              Voice results
-            </Link>
-            <button
-              type="button"
-              onClick={clear}
-              disabled={!clearSource || clearing || messages.length === 0}
-              title="Delete all messages from the gateway. This can't be undone."
-              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
-            >
-              {clearing ? "Clearing…" : "Clear chats"}
-              <span aria-hidden>↺</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrompt({ kind: "clear" })}
-              disabled={!!actionsOff}
-              title={actionsOff ?? "Unblock every sender T-Guard has blocked. Needs the password."}
-              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
-            >
-              <span className="tabular-nums">{clearBlocksLabel(blocklist.status)}</span>
-              <span aria-hidden>⊘</span>
-            </button>
-          </div>
-        </header>
+        </AppHeader>
 
-        <div className="min-w-0">
-          {(error || clearError || notice) && (
-            <div className="mb-4 flex flex-col gap-2">
-              {error && (
-                <p role="status" className="border-l-4 border-hot bg-card px-3 py-2 text-sm text-ink">
-                  Couldn&apos;t refresh messages: {error}. Retrying…
-                </p>
-              )}
-              {clearError && (
-                <p role="alert" className="border-l-4 border-hot-deep bg-card px-3 py-2 text-sm text-ink">
-                  Couldn&apos;t clear messages: {clearError}
-                </p>
-              )}
-              {notice && (
-                <p role="status" className="border-l-4 border-ink bg-card px-3 py-2 text-sm font-bold text-ink">
-                  {notice}
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-2 pb-2 font-label text-[9px] uppercase tracking-[0.06em] text-muted">
-            <span>Live demonstration</span>
-            <div role="group" aria-label="What guards the Receiver" className="flex border border-ink">
-              {GUARDS.map((g) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  aria-pressed={guard === g.id}
-                  onClick={() => setGuard(g.id)}
-                  className={`px-2.5 py-1 font-label text-[9px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot ${
-                    guard === g.id ? "bg-ink text-paper" : "text-ink hover:bg-hot hover:text-white"
-                  }`}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <main className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]">
           <section
-            aria-label={
-              guard === "shield"
-                ? "Animation: each message flies toward the Receiver; blocked ones bounce off the T-Guard shield"
-                : "Animation: each message flies to T-Guard's hand; blocked ones are slapped away"
+            aria-label="Live demonstration"
+            className="relative order-first h-[48dvh] min-h-72 overflow-hidden border-b border-rule lg:order-none lg:col-start-2 lg:row-start-1 lg:h-auto lg:min-h-0 lg:border-b-0"
+          >
+            <div
+              className="absolute inset-0"
+              aria-label={
+                guard === "shield"
+                  ? "Animation: each message flies toward the Receiver; blocked ones bounce off the T-Guard shield"
+                  : "Animation: each message flies to T-Guard's hand; blocked ones are slapped away"
+              }
+              role="img"
+            >
+              <SceneClient feed={feed} guard={guard} />
+            </div>
+
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3 sm:p-4">
+              <span className="font-label text-[9px] uppercase tracking-[0.06em] text-muted">Live demonstration</span>
+              <div role="group" aria-label="What guards the Receiver" className="pointer-events-auto flex border border-ink bg-paper/80 backdrop-blur-sm">
+                {GUARDS.map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    aria-pressed={guard === g.id}
+                    onClick={() => setGuard(g.id)}
+                    className={`relative px-2.5 py-1 font-label text-[9px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot ${
+                      guard === g.id ? "text-paper" : "text-ink hover:text-hot"
+                    }`}
+                  >
+                    {guard === g.id && (
+                      <motion.span
+                        layoutId="guard-switch"
+                        aria-hidden
+                        className="absolute inset-0 bg-ink"
+                        transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                      />
+                    )}
+                    <span className="relative">{g.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <dl
+              aria-label="Totals"
+              className="pointer-events-none absolute bottom-0 left-0 flex items-end gap-6 p-3 sm:gap-10 sm:p-5"
+            >
+              <Counter value={blockedCount} label="Threats blocked" hot />
+              <Counter value={deliveredCount} label="Delivered" />
+            </dl>
+          </section>
+
+          <MessagePanel
+            messages={messages}
+            loading={mode == null}
+            now={now}
+            onUnblock={openUnblock}
+            unblockOff={actionsOff}
+            status={
+              (error || clearError) && (
+                <div className="flex flex-col gap-2">
+                  {error && (
+                    <p role="status" className="border-l-4 border-hot bg-card px-3 py-2 text-sm text-ink">
+                      Couldn&apos;t refresh messages: {error}. Retrying…
+                    </p>
+                  )}
+                  {clearError && (
+                    <p role="alert" className="border-l-4 border-hot-deep bg-card px-3 py-2 text-sm text-ink">
+                      Couldn&apos;t clear messages: {clearError}
+                    </p>
+                  )}
+                </div>
+              )
             }
-            className="h-[45dvh] min-h-64 overflow-hidden sm:h-[60dvh] sm:min-h-80"
-          >
-            <SceneClient feed={feed} guard={guard} />
-          </section>
+            tools={
+              <>
+                <button
+                  type="button"
+                  onClick={clear}
+                  disabled={!clearSource || clearing || messages.length === 0}
+                  title={actions ? "Delete all messages from the gateway. Needs the password." : "Delete all messages. This can't be undone."}
+                  className={TOOL}
+                >
+                  {clearing ? "Clearing…" : "Clear chats"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrompt({ kind: "clear" })}
+                  disabled={!!actionsOff}
+                  title={actionsOff ?? "Unblock every sender T-Guard has blocked. Needs the password."}
+                  className={TOOL}
+                >
+                  <span className="tabular-nums">{clearBlocksLabel(blocklist.status)}</span>
+                </button>
+              </>
+            }
+          />
 
-          <section
-            aria-label="Totals"
-            className="my-8 flex flex-wrap items-center justify-between gap-6 border-y border-rule py-6"
-          >
-            <div className="flex items-center gap-4">
-              <span className="font-display text-6xl leading-none text-hot tabular-nums">{pad3(blocked.length)}</span>
-              <span className="font-label text-xl uppercase leading-tight tracking-[0.04em]">Threats blocked</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="font-display text-6xl leading-none text-ink tabular-nums">{pad3(deliveredCount)}</span>
-              <span className="font-label text-xl uppercase leading-tight tracking-[0.04em]">Delivered</span>
-            </div>
-          </section>
+          <SimPanel />
+        </main>
+      </div>
 
-          <LayoutGroup>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-8">
-              <Column
-                title="Inbox"
-                count={deliveredCount}
-                empty={mode == null ? "Loading…" : "No messages delivered yet."}
-                messages={inbox}
-                now={now}
-              />
-              <Column
-                title="Blocked"
-                count={blocked.length}
-                empty={mode == null ? "Loading…" : "Nothing blocked yet."}
-                messages={blocked}
-                now={now}
-                onUnblock={openUnblock}
-                unblockOff={actionsOff}
-              />
-            </div>
-          </LayoutGroup>
-        </div>
-        <SimPanel />
-      </main>
+      <AnimatePresence>
+        {notice && (
+          <motion.p
+            key={notice}
+            role="status"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+            className="fixed bottom-4 left-1/2 z-40 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 border-l-4 border-hot bg-ink px-4 py-3 text-sm font-bold text-paper shadow-[5px_10px_20px_-12px_#2d233180]"
+          >
+            {notice}
+          </motion.p>
+        )}
+      </AnimatePresence>
+
       {prompt && (
         <PasswordPrompt
-          key={prompt.kind === "clear" ? "clear" : prompt.message.id}
-          title={prompt.kind === "clear" ? "Clear blocks" : "Unblock message"}
+          key={prompt.kind === "unblock" ? prompt.message.id : prompt.kind}
+          title={prompt.kind === "unblock" ? "Unblock message" : PROMPT_TEXT[prompt.kind].title}
           description={
-            prompt.kind === "clear"
-              ? "Unblock every sender T-Guard has blocked. Messages already in the Blocked list stay there."
-              : `Move this potential scam from ${prompt.message.from.display} to the inbox. It will show as restored.`
+            prompt.kind === "unblock"
+              ? `Move this potential scam from ${prompt.message.from.display} to the inbox. It will show as restored.`
+              : PROMPT_TEXT[prompt.kind].description
           }
-          confirmLabel={prompt.kind === "clear" ? "Clear blocks" : "Unblock"}
+          confirmLabel={prompt.kind === "unblock" ? "Unblock" : PROMPT_TEXT[prompt.kind].confirm}
           onSubmit={runPrompt}
           onClose={() => setPrompt(null)}
         />

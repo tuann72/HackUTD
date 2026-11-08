@@ -13,7 +13,7 @@ import type { MessagesResponse, Verdict } from './types.js';
 
 /** Path Photon delivers inbound iMessage webhooks to. */
 export const WEBHOOK_PATH = '/webhooks/photon';
-/** Header the web UI's Unblock and Clear blocks buttons send, checked against UI_ACTION_PASSWORD. */
+/** Header the web UI's Clear chats, Unblock and Clear blocks buttons send, checked against UI_ACTION_PASSWORD. */
 export const ACTION_PASSWORD_HEADER = 'X-Action-Password';
 
 export interface Logger {
@@ -279,13 +279,14 @@ export function createApp({
     return c.json(res);
   });
 
-  // The web UI's "Clear chats" button (Tuan, 2026-11-08). Deletes every stored message, unauthenticated:
-  // anyone who can reach the gateway can wipe the inbox. Fine for the hackathon demo.
+  // The web UI's "Clear chats" button (Tuan, 2026-11-08). Deletes every stored message. Needs
+  // X-Action-Password, like Unblock and Clear blocks (Tuan, 2026-11-08).
   app.delete('/api/messages', (c) => {
+    c.header('Cache-Control', 'no-store');
+    if (!passwordOk(c.req.header(ACTION_PASSWORD_HEADER))) return c.json({ error: 'wrong password' }, 401);
     const cleared = store.count();
     store.reset();
     logger.warn(`clear chats: deleted ${cleared} messages`);
-    c.header('Cache-Control', 'no-store');
     return c.json({ ok: true, cleared });
   });
 

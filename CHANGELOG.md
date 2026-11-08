@@ -13,6 +13,27 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Worker:** transcribes only the caller. After each finalized utterance, at most every 5 s, it scores the caller's transcript so far and warns once per call. The whisper track is published silent and the caller is unsubscribed from it server-side before the victim is dialed; if that fails, there is no whisper. Hanging up either side ends the other. The after-call transcript still goes to `/webhooks/photon`.
 - **Why:** live warnings are the main follow-up from the voice plan, and the server-side score keeps one policy (threshold, classifier) for messages and calls.
 - **TBD:** outbound trunk provider (Photon outbound SIP is unverified), whether `updateSubscriptions` holds for SIP participants, latency, false-warning rate, and caller disclosure.
+### 2026-11-08: Clear chats needs the password too
+
+Tuan asked for a password on Clear chats, the same `4321` as Unblock and Clear blocks. On a live source the button now opens the password prompt instead of a browser confirm. `DELETE /api/messages` on the VM gateway and on the Vercel backup checks `X-Action-Password` against `UI_ACTION_PASSWORD` (default `4321`) and answers `401` without deleting anything when it's missing or wrong. The demo replay (no gateway URL) has no server to check a password, so it keeps the plain confirm. The VM gateway needs a redeploy for the check to take effect there; until then the old gateway ignores the header and still clears.
+
+### 2026-11-08: Collapse buttons on both /messages side panels
+
+Tuan asked for buttons on each panel to collapse it left and right. On wide screens the message panel has a chevron button beside its tabs that collapses it to a thin strip at the left edge (showing the message and blocked counts), and Simulate has one that collapses it to the right edge. Clicking the chevron or the strip's label opens the panel again. The width change is a 300 ms CSS transition (off for reduced motion), and the panel's content keeps its full width while it opens, so it is revealed rather than squeezed. On phones the panels stack as before; Simulate keeps its show/hide title. Shared button: `components/brand/CollapseButton.tsx`.
+
+### 2026-11-08: Voice results page removed
+
+Tuan asked to remove the Voice results page. Since #82 the voice worker sends each call's transcript to the VM gateway, so calls already show on `/messages`, and nothing fed `/voice` any more. Removed: the `/voice` page, `POST`/`GET /api/voice/calls`, the Atlas `voiceCallResults` store (`lib/server/voiceResults.ts`), `lib/voice`, the `voice-call-result.v1` and `voice-call-results.v1` contracts and fixture, the `VOICE_GUARD_RESULTS_*` env vars and the Voice results header tab. The LiveKit worker is unchanged. Existing `voiceCallResults` documents in Atlas, if any, are left in place (their TTL index expires them).
+
+### 2026-11-08: /messages fills the screen, with a filterable message panel
+
+Tuan asked to move the inbox and blocked lists into a left panel with filters, make the page fit the screen, and use Motion (motion.dev) for UI animation (#88).
+
+- **/messages layout:** on wide screens (`lg`, 1024 px and up) the page is exactly one window tall, with no page scroll. Three columns each scroll on their own: the message panel on the left, the 3D scene in the middle (the Shield | Hand switch and the Threats blocked and Delivered counters sit on top of it), and Simulate on the right, which now collapses to a thin strip. On phones they stack: scene, messages, Simulate.
+- **Message panel:** All, Inbox and Blocked tabs with counts, a search box (sender, text or category; every word must match), and a Filters drawer with a scam-category menu (only the categories present, plus "Known scam sender"), a sort (newest, oldest, highest scam score) and chips (Not checked, Money request, Restored, Group chat). Pending messages always stay on top. Clear chats and Clear blocks moved to the panel's footer. The filters are display only (`components/messages/filter.ts`, tested); they never change a verdict.
+- **Header:** `/messages` and `/dashboard` share one header (`components/brand/AppHeader.tsx`) with Messages, Dashboard and Voice results tabs instead of separate buttons. Notices (after Unblock or Clear blocks) are a toast at the bottom.
+- **Dashboard:** the totals sit beside the title, the six panels are in three columns on wide screens, and the bars and score columns grow to their new values with Motion springs.
+- **Motion:** used only where something answers a person's action or new data arrives (tab indicator, filter drawer, cards entering or leaving the list, counters ticking, bars growing). `MotionConfig reducedMotion="user"` turns it off for people who ask for reduced motion.
 
 ### 2026-11-08: Sender blocklist on, with Unblock and Clear blocks buttons
 

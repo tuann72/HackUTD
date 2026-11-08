@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { ShieldLetter } from "@/components/brand/ShieldLetter";
+import { MotionConfig, motion } from "motion/react";
+import { AppHeader } from "@/components/brand/AppHeader";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   messageStats,
@@ -16,6 +16,8 @@ import {
 const LABEL = "font-label text-[10px] uppercase tracking-[0.06em]";
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const share = (n: number, total: number) => (total ? pct(n / total) : "0%");
+/** Bars grow to their new size instead of jumping; MotionConfig turns this off for reduced motion. */
+const GROW = { type: "spring", stiffness: 160, damping: 26 } as const;
 
 function Panel({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
@@ -59,9 +61,11 @@ function Bars({ rows, total, empty }: { rows: Count[]; total: number; empty: str
             </span>
           </div>
           <div className="h-2.5 bg-paper">
-            <div
-              className={`h-full rounded-r-[4px] transition-[width,opacity] duration-500 group-hover:opacity-80 ${r.count === max ? "bg-hot" : "bg-ink"}`}
-              style={{ width: `${Math.max(2, (r.count / max) * 100)}%` }}
+            <motion.div
+              className={`h-full rounded-r-[4px] transition-opacity group-hover:opacity-80 ${r.count === max ? "bg-hot" : "bg-ink"}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(2, (r.count / max) * 100)}%` }}
+              transition={GROW}
             />
           </div>
         </li>
@@ -77,7 +81,7 @@ function ScoreColumns({ buckets }: { buckets: Count[] }) {
   const top = buckets.findIndex((b) => b.count === max);
   return (
     <div>
-      <div className="flex h-40 items-end gap-0.5 border-b border-ink" role="list">
+      <div className="flex h-36 items-end gap-0.5 border-b border-ink" role="list">
         {buckets.map((b, i) => (
           <div
             key={b.key}
@@ -86,9 +90,11 @@ function ScoreColumns({ buckets }: { buckets: Count[] }) {
             aria-label={`Score ${b.label}: ${b.count} messages`}
             className="group relative flex h-full flex-1 items-end"
           >
-            <div
-              className={`w-full rounded-t-[4px] transition-[height,opacity] duration-500 group-hover:opacity-80 ${i === top ? "bg-hot" : "bg-ink"}`}
-              style={{ height: b.count ? `${(b.count / max) * 100}%` : "0%" }}
+            <motion.div
+              className={`w-full rounded-t-[4px] transition-opacity group-hover:opacity-80 ${i === top ? "bg-hot" : "bg-ink"}`}
+              initial={{ height: 0 }}
+              animate={{ height: b.count ? `${(b.count / max) * 100}%` : "0%" }}
+              transition={{ ...GROW, delay: i * 0.02 }}
             />
             {b.count > 0 && (
               <span className="absolute inset-x-0 -top-5 text-center text-[11px] font-bold tabular-nums opacity-0 group-hover:opacity-100">
@@ -195,7 +201,15 @@ function Senders({ senders, total }: { senders: SenderCount[]; total: number }) 
 function Tile({ value, label, sub, hot }: { value: string; label: string; sub: string; hot?: boolean }) {
   return (
     <div className="flex flex-col gap-2 border-l border-rule pl-4 first:border-l-0 first:pl-0">
-      <span className={`font-display text-5xl leading-none tabular-nums sm:text-6xl ${hot ? "text-hot" : "text-ink"}`}>{value}</span>
+      <motion.span
+        key={value}
+        initial={{ y: -6, opacity: 0.4 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className={`font-display text-5xl leading-none tabular-nums ${hot ? "text-hot" : "text-ink"}`}
+      >
+        {value}
+      </motion.span>
       <span className={`${LABEL} leading-relaxed`}>
         {label}
         <br />
@@ -219,71 +233,62 @@ export function DashboardView() {
   const loading = mode == null;
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 pb-12 sm:px-6">
-      <header className="flex h-20 items-center justify-between gap-4 border-b border-rule">
-        <Link
-          href="/"
-          className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
-        >
-          T-G<ShieldLetter className="mx-[0.04em]" />ARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
-        </Link>
-        <span className={`hidden ${LABEL} text-muted sm:block`}>Dashboard</span>
-        <Link
-          href="/messages"
-          className={`flex items-center gap-4 border border-ink px-4 py-3 ${LABEL} text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot`}
-        >
-          <span aria-hidden>←</span> Messages
-        </Link>
-      </header>
+    <MotionConfig reducedMotion="user">
+      <div className="flex min-h-dvh flex-col">
+        <AppHeader>
+          <p className={`hidden ${LABEL} text-muted md:block`} role="status">
+            {loading
+              ? "Loading…"
+              : error
+                ? `Couldn't refresh: ${error}`
+                : s.span
+                  ? `Latest ${s.total} messages, ${fmtTime(s.span.from)} to ${fmtTime(s.span.to)}`
+                  : "No messages yet"}
+          </p>
+        </AppHeader>
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-display text-6xl uppercase leading-[0.9] sm:text-7xl">
-          Overall <span className="text-hot">analytics</span>
-        </h1>
-        <p className={`${LABEL} text-muted`} role="status">
-          {loading
-            ? "Loading…"
-            : error
-              ? `Couldn't refresh: ${error}`
-              : s.span
-                ? `Latest ${s.total} messages · ${fmtTime(s.span.from)} to ${fmtTime(s.span.to)}`
-                : "No messages yet"}
-        </p>
+        <main className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+          <div className="flex flex-col gap-6 border-b border-rule pb-6 xl:flex-row xl:items-end xl:justify-between">
+            <h1 className="font-display text-5xl uppercase leading-[0.9] sm:text-6xl">Overall analytics</h1>
+            <section aria-label="Totals" className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5 xl:gap-8">
+              <Tile value={String(s.total)} label="Messages" sub="Received" />
+              <Tile value={String(s.blocked)} label="Blocked" sub="Potential scams" hot />
+              <Tile value={String(s.delivered)} label="Delivered" sub="Let through" />
+              <Tile value={s.blockRate == null ? "N/A" : pct(s.blockRate)} label="Block rate" sub="Of decided messages" />
+              <Tile value={s.avgScore == null ? "N/A" : s.avgScore.toFixed(2)} label="Avg scam score" sub="0 fine, 1 scam" />
+            </section>
+          </div>
+          <p className={`${LABEL} text-muted md:hidden`} role="status">
+            {loading ? "Loading…" : error ? `Couldn't refresh: ${error}` : s.span ? `Latest ${s.total} messages` : "No messages yet"}
+          </p>
+
+          <div className="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2 xl:grid-cols-3">
+            <Panel title="Most active numbers">
+              <Senders senders={s.senders} total={s.total} />
+            </Panel>
+            <Panel title="Scam categories" note="Blocked messages">
+              <Bars rows={s.categories} total={s.categories.reduce((a, r) => a + r.count, 0)} empty="Nothing blocked by the model yet." />
+            </Panel>
+            <Panel title="Scam score spread" note="Messages the model scored">
+              <ScoreColumns buckets={s.scores} />
+            </Panel>
+            <Panel title="Outcome">
+              <Bars rows={s.outcomes} total={s.total} empty="No messages yet." />
+            </Panel>
+            <Panel title="Why" note="How each decision was made">
+              <Bars rows={s.reasons} total={s.total} empty="No messages yet." />
+            </Panel>
+            <Panel title="What was sent" note="Message type">
+              <Bars rows={s.kinds} total={s.total} empty="No messages yet." />
+            </Panel>
+          </div>
+
+          <p className={`mt-auto border-t border-rule pt-3 ${LABEL} text-[9px] leading-relaxed text-muted`}>
+            Counts the gateway&apos;s decisions; &ldquo;potential scam&rdquo; is the classifier&apos;s verdict and can be
+            wrong. Numbers are masked. Based on the latest messages the gateway returns.
+          </p>
+        </main>
       </div>
-
-      <section aria-label="Totals" className="grid grid-cols-2 gap-6 border-y border-rule py-6 sm:grid-cols-3 lg:grid-cols-5">
-        <Tile value={String(s.total)} label="Messages" sub="Received" />
-        <Tile value={String(s.blocked)} label="Blocked" sub="Potential scams" hot />
-        <Tile value={String(s.delivered)} label="Delivered" sub="Let through" />
-        <Tile value={s.blockRate == null ? "N/A" : pct(s.blockRate)} label="Block rate" sub="Of decided messages" />
-        <Tile value={s.avgScore == null ? "N/A" : s.avgScore.toFixed(2)} label="Avg scam score" sub="0 fine · 1 scam" />
-      </section>
-
-      <div className="grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">
-        <Panel title="Most active numbers">
-          <Senders senders={s.senders} total={s.total} />
-        </Panel>
-        <Panel title="Scam categories" note="Blocked messages">
-          <Bars rows={s.categories} total={s.categories.reduce((a, r) => a + r.count, 0)} empty="Nothing blocked by the model yet." />
-        </Panel>
-        <Panel title="What was sent" note="Message type">
-          <Bars rows={s.kinds} total={s.total} empty="No messages yet." />
-        </Panel>
-        <Panel title="Scam score spread" note="Messages the model scored">
-          <ScoreColumns buckets={s.scores} />
-        </Panel>
-        <Panel title="Outcome">
-          <Bars rows={s.outcomes} total={s.total} empty="No messages yet." />
-        </Panel>
-        <Panel title="Why" note="How each decision was made">
-          <Bars rows={s.reasons} total={s.total} empty="No messages yet." />
-        </Panel>
-      </div>
-
-      <p className={`border-t border-rule pt-3 ${LABEL} text-[9px] leading-relaxed text-muted`}>
-        Counts the gateway&apos;s decisions; &ldquo;potential scam&rdquo; is the classifier&apos;s verdict and can be
-        wrong. Numbers are masked. Based on the latest messages the gateway returns.
-      </p>
-    </main>
+    </MotionConfig>
   );
 }

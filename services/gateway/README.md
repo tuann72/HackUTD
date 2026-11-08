@@ -83,7 +83,7 @@ Read-only, `limit` 1–200 (default 100), newest first. The response shape is ex
 
 ### `DELETE /api/messages`
 
-Deletes every stored message, conversation and participant (the same as `POST /debug/reset`) and returns `{ok, cleared}`. The web app's "Clear chats" button calls it (Tuan, 2026-11-08). **No token:** anyone who can reach the gateway can wipe the inbox.
+Deletes every stored message, conversation and participant (the same as `POST /debug/reset`) and returns `{ok, cleared}`. The web app's "Clear chats" button calls it (Tuan, 2026-11-08). It needs the `X-Action-Password` header to match `UI_ACTION_PASSWORD` (default `4321`), like Unblock and Clear blocks; otherwise `401` and nothing is deleted.
 
 ### `POST /api/messages/:id/unblock`
 

@@ -1,5 +1,6 @@
 // Query API v1 (contracts/query-api.v1.schema.json) for messages received by /webhooks/photon.
 // Point the page at it with NEXT_PUBLIC_API_URL=https://<this site>.
+import { handleClearChats } from "@/lib/server/actions";
 import { getStore, storeUnavailable } from "@/lib/server/inbox";
 
 export async function GET(request: Request) {
@@ -16,11 +17,10 @@ export async function GET(request: Request) {
   }
 }
 
-// The page's "Clear chats" button (Tuan, 2026-11-08): deletes every stored message. Unauthenticated by choice.
-export async function DELETE() {
+// The page's "Clear chats" button (Tuan, 2026-11-08): deletes every stored message. Needs X-Action-Password.
+export async function DELETE(request: Request) {
   try {
-    const cleared = await (await getStore()).clear();
-    return Response.json({ ok: true, cleared }, { headers: { "Cache-Control": "no-store" } });
+    return await handleClearChats(request, { store: getStore });
   } catch (err) {
     return storeUnavailable("api/messages", err);
   }

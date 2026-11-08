@@ -23,7 +23,7 @@ export interface GatewayConfig {
    * (docs/features/sender-blocklist.md). off = judge every message on its own, no blocklist calls at all.
    */
   senderBlocklist: boolean;
-  /** UI_ACTION_PASSWORD: the X-Action-Password the web UI's Unblock and Clear blocks buttons must send. Default "4321". */
+  /** UI_ACTION_PASSWORD: the X-Action-Password the web UI's Clear chats, Unblock and Clear blocks buttons must send. Default "4321". */
   uiActionPassword: string;
   /** MongoDB Atlas connection string. Null = in-process blocklist (lost on restart). */
   mongodbUri: string | null;
