@@ -5,14 +5,15 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import { MathUtils, PerspectiveCamera, Vector3, type Object3D } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
+import { Hand, type SlapState } from "./Hand";
 import { MessageShot } from "./MessageShot";
+import type { SlapName } from "./slap";
 import type { SceneMessage, ShotFeed } from "./feed";
 
 const SENDER_X = -3.2;
-const VICTIM_X = 3.2;
-/** Shots leave and land on the blob surfaces, not their centers. */
+/** Shots leave the sender blob's surface and land in the Receiver's hand, a little in front of it. */
 const SENDER_EDGE = new Vector3(SENDER_X + BLOB_RADIUS, 0.1, 0);
-const VICTIM_EDGE = new Vector3(VICTIM_X - BLOB_RADIUS, 0.1, 0);
+const RECEIVER_CATCH = new Vector3(2.5, 0.1, 0.3);
 /** Minimum gap between shots, so a burst of messages doesn't fire all at once. */
 const SHOT_GAP_MS = 600;
 /**
@@ -23,9 +24,9 @@ const MAX_QUEUED = 5;
 const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
 /**
  * Half the width and height of world space, around the origin the camera
- * looks at, that must stay in view: both blobs with the victim's shield
- * (x -4.1 to 4.65), the shot arc and "Blocked" stamp above, and the labels
- * below (y about -1.75 to 1.6), plus a margin.
+ * looks at, that must stay in view: the sender blob, the Receiver's box and
+ * hand (x -4.1 to 4.1, fingertips at y about 1.8), the shot arc and "Blocked"
+ * stamp, and the labels below (y about -1.75), plus a margin.
  */
 const FRAME_HALF_W = 5.1;
 const FRAME_HALF_H = 2.1;
@@ -39,15 +40,21 @@ interface Shot {
 }
 
 /**
- * performance.now() of the last hit on the victim and of its last shield
- * flash. Blobs read these in useFrame to animate; shots mark them.
+ * performance.now() of the last message delivered to each side, and the
+ * Receiver's current slap. The blob and hand read these in useFrame to
+ * animate; shots mark them.
  */
 function createHitClock() {
-  const at = { victim: { current: 0 }, sender: { current: 0 }, shield: { current: 0 } };
+  const at = { victim: { current: 0 }, sender: { current: 0 } };
+  const slap = { current: { at: 0, clip: "slap" } as SlapState };
   return {
     at,
+    slap,
     mark(kind: keyof typeof at) {
       at[kind].current = performance.now();
+    },
+    startSlap(clip: SlapName) {
+      slap.current = { at: performance.now(), clip };
     },
   };
 }
@@ -89,7 +96,7 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
   // Stable callbacks so memoized shots already in flight skip re-rendering
   // when a shot is added or removed.
   const onArrive = useCallback(() => hits.mark("victim"), [hits]);
-  const onBlocked = useCallback(() => hits.mark("shield"), [hits]);
+  const onBlocked = useCallback((clip: SlapName) => hits.startSlap(clip), [hits]);
   const onDone = useCallback((key: number) => {
     setShots((s) => s.filter((x) => x.key !== key));
   }, []);
@@ -100,7 +107,7 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
       shotKey={key}
       message={message}
       from={SENDER_EDGE}
-      to={VICTIM_EDGE}
+      to={RECEIVER_CATCH}
       onArrive={onArrive}
       onBlocked={onBlocked}
       onDone={onDone}
@@ -171,8 +178,8 @@ function BlobLabel({ text, className, ref }: { text: string; className: string; 
 }
 
 /**
- * The scene band on the home page: every message the page receives flies from
- * the sender to the victim; blocked ones pop in front of the victim's shield.
+ * The scene band on /messages: every message the page receives flies from the
+ * sender to the Receiver's hand; the hand slaps blocked ones away.
  * It renders the gateway's decision and never makes one.
  */
 export default function Scene({ feed }: { feed: ShotFeed }) {
@@ -186,7 +193,14 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
     <div className="relative h-full w-full bg-[#0b1020]">
       {/* No `shadows`: nothing receives a shadow map. ContactShadows draws the
           ground shadow on its own. */}
-      <Canvas camera={CAMERA} dpr={DPR}>
+      {/* Local clipping cuts the hand off at the top of its box. */}
+      <Canvas
+        camera={CAMERA}
+        dpr={DPR}
+        onCreated={({ gl }) => {
+          gl.localClippingEnabled = true;
+        }}
+      >
         <FitCamera />
         <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
         <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
@@ -203,17 +217,9 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           phase={1.3}
           labelAnchor={senderAnchor}
         />
-        <Blob
-          position={[VICTIM_X, 0, 0]}
-          color="#f472b6"
-          facing={-1}
-          hitAt={hits.at.victim}
-          shieldAt={hits.at.shield}
-          labelAnchor={victimAnchor}
-        />
-
-        {/* The bubble images load once; nothing else waits on them. */}
+        {/* The hand and bubble images load once; the sender blob doesn't wait on them. */}
         <Suspense fallback={null}>
+          <Hand hitAt={hits.at.victim} slap={hits.slap} labelAnchor={victimAnchor} />
           <Shots feed={feed} hits={hits} />
         </Suspense>
 
