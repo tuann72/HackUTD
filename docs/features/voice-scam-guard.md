@@ -35,8 +35,8 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 0.1 | Confirm Photon product version, voice-capable line type, Voice profile, and inbound SIP route | — | — | Not started | — | TBD | — |
-| 0.2 | Confirm LiveKit/STT call costs and consented test setup before provisioning resources | 0.1 | — | Not started | — | TBD | — |
+| 0.1 | Confirm Photon product version, voice-capable line type, Voice profile, and inbound SIP route | — | — | In progress | `feat/voice-scam-detection` | Codex | [#36](https://github.com/tuann72/HackUTD/pull/36) |
+| 0.2 | Confirm Photon and LiveKit/STT call costs and consented test setup before enabling the route or provisioning resources | 0.1 | — | Blocked | `feat/voice-scam-detection` | Codex | [#36](https://github.com/tuann72/HackUTD/pull/36) |
 
 ### Stage 1: caller-only capture, after-call classification
 
@@ -106,3 +106,4 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 ## Progress notes
 
 - **2026-11-08:** Master plan created after interview. User requested a caller-only test scored after hangup, then live warnings as the main follow-up. Keep transcript and verdict; do not retain audio. Victim endpoint, Photon version/line eligibility, STT choice, transcript retention duration, and warning thresholds remain TBD.
+- **2026-11-08:** Read-only account checks confirmed the team's Photon project is Beta and has one active `voip_line` with `pstn_voice` capability. Its default SIP profile covers that line, but inbound routing is disabled. The additional `T-Gate` profile has no assigned lines and inbound routing is also disabled. On LiveKit Cloud, the `T-Gate` project has one inbound SIP trunk and no dispatch rules; the project's SIP URI is available in its settings. The project is on the Build plan with no usage and a $0 current invoice. LiveKit's [published Build allowance](https://docs.livekit.io/deploy/admin/quotas-and-limits/) includes 1,000 third-party SIP minutes; Photon account billing currently exposes only a Messaging Free subscription, with voice-minute usage at zero and no voice rate shown. Photon’s [public pricing page](https://photon.codes/pricing) does not establish a rate for this Beta project's voice line. Do not enable routing until Photon voice pricing and a consented test caller are confirmed; the STT provider and its cost remain TBD. No route was changed and no test call was placed.
