@@ -11,6 +11,14 @@ export interface GatewayConfig {
   corsOrigins: string[];
   debug: boolean;
   debugToken: string | null;
+  /** MongoDB Atlas connection string. Null = in-process blocklist (lost on restart). */
+  mongodbUri: string | null;
+  mongodbDb: string;
+  /** HMAC key for sender and text fingerprints. Null = a random per-process key (only allowed without Atlas). */
+  fingerprintSecret: string | null;
+  senderBlockStrikes: number;
+  senderBlockScore: number;
+  senderBlockTtlDays: number;
 }
 
 type Env = Record<string, string | undefined>;
@@ -40,6 +48,15 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     throw new Error('GATEWAY_DEBUG=1 requires a non-empty DEBUG_TOKEN. Refusing to enable debug routes without one.');
   }
 
+  const mongodbUri = str(env, 'MONGODB_URI');
+  const fingerprintSecret = str(env, 'FINGERPRINT_SECRET');
+  if (mongodbUri && !fingerprintSecret) {
+    throw new Error('MONGODB_URI requires FINGERPRINT_SECRET (make one with: openssl rand -hex 32).');
+  }
+  if (fingerprintSecret && fingerprintSecret.length < 32) {
+    throw new Error('FINGERPRINT_SECRET must be at least 32 characters.');
+  }
+
   return {
     port: num(env, 'PORT', 8787, (n) => Number.isInteger(n) && n > 0 && n < 65536, 'a TCP port'),
     twilioAuthToken,
@@ -55,5 +72,11 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
       .filter(Boolean),
     debug,
     debugToken: debug ? debugToken : null,
+    mongodbUri,
+    mongodbDb: str(env, 'MONGODB_DB') ?? 'tgate',
+    fingerprintSecret,
+    senderBlockStrikes: num(env, 'SENDER_BLOCK_STRIKES', 3, (n) => Number.isInteger(n) && n >= 1, 'an integer of at least 1'),
+    senderBlockScore: num(env, 'SENDER_BLOCK_SCORE', 0.95, (n) => n > 0 && n <= 1, 'a number above 0 and at most 1'),
+    senderBlockTtlDays: num(env, 'SENDER_BLOCK_TTL_DAYS', 7, (n) => n > 0, 'a positive number'),
   };
 }
