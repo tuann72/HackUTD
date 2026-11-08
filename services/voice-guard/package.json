@@ -10,6 +10,7 @@
     "dev": "tsx src/agent.ts dev",
     "start": "tsx src/agent.ts start",
     "connect": "tsx src/agent.ts connect",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

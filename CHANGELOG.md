@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Verify local voice answer and transcription; select LiveKit Cloud deployment
+
+- **Verification:** the user placed a consented call after the `T-Gate Voice` SIP dispatch rule was assigned to `voice-guard`. The worker published a zero-amplitude audio track, LiveKit SIP status changed `ringing` → `active` → `hangup`, and AssemblyAI Universal-Streaming produced non-empty speech text. A one-call local log displayed the transcript at the user's request, then the logging change was removed; no transcript was persisted.
+- **Answer media:** the worker publishes a zero-amplitude audio track so the caller is answered without a spoken response. Caller audio remains the only audio sent to STT.
+- **Limit:** `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` were unset, so the worker logged `classifier_not_configured` and did not return a verdict. No call-result store or Vercel display exists yet.
+- **Deployment decision (user):** deploy the worker to LiveKit Cloud on the existing Build plan. The service now has a multi-stage Dockerfile, production build config, and `.dockerignore`. `npm run build` and `npm run typecheck` pass; the Cloud deployment itself is not yet complete.
+- **Plan:** [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md), tasks 1.1, 1.2, and 1.6.
+
 ### 2026-11-08: Add the caller-only LiveKit STT worker
 
 - **What:** add `services/voice-guard/`, a TypeScript LiveKit Agents worker that subscribes only to SIP participant audio, streams to AssemblyAI Universal-Streaming through LiveKit Inference, buffers final transcript text in memory, and calls the existing classifier after the audio track ends using a random UUID as `messageId`.

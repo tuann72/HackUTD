@@ -1,6 +1,6 @@
 # Voice guard worker
 
-This LiveKit Agents worker is the caller-only receiver for the voice scam guard. It filters for SIP participant audio, streams it to AssemblyAI Universal-Streaming through LiveKit Inference, keeps finalized transcript text in memory, and submits that text to the existing classifier after the audio track ends. It does not publish audio, generate a spoken response, persist audio/transcripts/results, or log transcript text.
+This LiveKit Agents worker is the caller-only receiver for the voice scam guard. It filters for SIP participant audio, streams it to AssemblyAI Universal-Streaming through LiveKit Inference, keeps finalized transcript text in memory, and submits that text to the existing classifier after the audio track ends when the classifier is configured. It publishes a zero-amplitude audio track to complete LiveKit's SIP answer handshake; it does not send speech or caller audio back to the caller. It does not persist audio/transcripts/results or log transcript text.
 
 The transcript is sent to `POST {CLASSIFIER_URL}/classify` as `{ messageId, text }`, where `messageId` is a random UUID. No phone number, SIP identifier, or LiveKit room name is sent to the classifier. Call-result storage and the read-only UI API are later feature tasks.
 
@@ -12,7 +12,15 @@ The transcript is sent to `POST {CLASSIFIER_URL}/classify` as `{ messageId, text
 4. Install dependencies with `npm install`.
 5. Start the worker with `npm run dev`.
 
-To make the inbound SIP dispatch rule use this worker, set its agent name to `voice-guard`. The existing dispatch rule currently has no agent attached. Do this only for an authorized, consented test call after the worker is deployed and `VOICE_GUARD_CAPTURE_ENABLED=true`; an attached, enabled worker will answer and transcribe inbound calls routed by that rule. The worker intentionally stays silent, because spoken response is out of scope.
+The `T-Gate Voice` inbound SIP dispatch rule targets agent name `voice-guard`. Set `VOICE_GUARD_CAPTURE_ENABLED=true` only for an authorized, consented call. The worker publishes silence so the caller is answered, then listens to caller audio; spoken response remains out of scope.
+
+## Container and LiveKit Cloud deployment
+
+The Dockerfile compiles TypeScript into `dist/` and runs `node dist/agent.js start` as an unprivileged user. `.dockerignore` excludes local `.env` files and build artifacts. Build locally with `npm run build`; the container image installs production dependencies only.
+
+The selected host is LiveKit Cloud. Its agent deployment injects `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` automatically. Configure `VOICE_GUARD_CAPTURE_ENABLED=true` in the deployed agent's runtime secrets. Do not upload the local LiveKit credentials. `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` are currently unset, so deployment can answer calls and transcribe them but will skip classification until those values are configured.
+
+The current Build plan includes 1,000 agent session minutes, 1,000 third-party SIP minutes, and $2.50 of LiveKit Inference allowance. Production workers can cold-start after idle, adding up to 10–20 seconds before joining a call. Stop the local worker after the Cloud deployment is verified so only the hosted worker receives production calls.
 
 ## Data handling
 
@@ -26,4 +34,4 @@ To make the inbound SIP dispatch rule use this worker, set its agent name to `vo
 - English transcription only, matching Universal-Streaming's documented language support.
 - The existing classifier is trained on text messages. Call-level accuracy, transcript windowing, and thresholds are not validated by this worker.
 - This task does not store results or expose them to the Vercel app.
-- The SIP route has not been verified with this worker. No call or inference usage test has been run.
+- A consented call verified the local route: SIP status changed from `ringing` to `active`, the worker transcribed non-empty caller speech, then the call ended. The classifier is not configured and no verdict or UI result is produced yet.
