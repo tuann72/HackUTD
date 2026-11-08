@@ -2,8 +2,8 @@ import type { Highlight } from "@/lib/messages";
 import { renderSegments } from "./highlight";
 
 const DEFANGED_TITLE = {
-  url: "Link disabled by T-Gate. Don't visit it.",
-  phone: "Number disabled by T-Gate. Don't call it.",
+  url: "Link disabled by T-Guard. Don't visit it.",
+  phone: "Number disabled by T-Guard. Don't call it.",
 } as const;
 
 /**

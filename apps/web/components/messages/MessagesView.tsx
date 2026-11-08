@@ -133,7 +133,7 @@ export function MessagesView() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
         <header className="mb-6 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">T-Guard</h1>
             <div className="flex items-center gap-2">
               <button
                 type="button"

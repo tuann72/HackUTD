@@ -1,4 +1,4 @@
-"""T-Gate classifier inference service.
+"""T-Guard classifier inference service.
 
 POST /classify  {"messageId": "...", "text": "..."}
              -> {"label", "score", "category", "model", "highlights"}
@@ -87,7 +87,7 @@ elif KIND == "tfidf-lr":
 else:
     raise SystemExit(f"Unknown model kind {KIND!r} in {ARTIFACTS / 'model.json'}")
 
-app = FastAPI(title="T-Gate classifier", version=meta["model"])
+app = FastAPI(title="T-Guard classifier", version=meta["model"])
 
 
 class ClassifyIn(BaseModel):

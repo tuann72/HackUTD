@@ -1,4 +1,4 @@
-# T-Gate classifier inference service (CPU).
+# T-Guard classifier inference service (CPU).
 # Build from the classifier/ dir after training:  docker build -t tgate-classifier .
 FROM python:3.12-slim
 

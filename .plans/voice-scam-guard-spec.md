@@ -7,7 +7,7 @@
 
 ## Goal
 
-Route calls to a Photon voice number through a voice application that can transcribe the caller, send transcript text to T-Gate's classifier, and show a potential-scam warning in the Vercel web app. The intended progression is to classify after a test caller hangs up, then move classification and warnings into the active call. A later two-party stage connects the caller to a human victim while the guard listens to the caller's audio.
+Route calls to a Photon voice number through a voice application that can transcribe the caller, send transcript text to T-Guard's classifier, and show a potential-scam warning in the Vercel web app. The intended progression is to classify after a test caller hangs up, then move classification and warnings into the active call. A later two-party stage connects the caller to a human victim while the guard listens to the caller's audio.
 
 This is a plan, not a change to the current iMessage MVP. The detailed task tracker is [`docs/features/voice-scam-guard.md`](../docs/features/voice-scam-guard.md).
 

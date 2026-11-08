@@ -1,6 +1,6 @@
 # Perpetrator simulator
 
-A CLI that pretends to be **Photon (Spectrum) delivering an inbound iMessage to the victim line**. It POSTs JSON webhooks in Photon's `messages` event format, signed with a valid `X-Spectrum-Signature`, straight to the T-Gate gateway's webhook. Nothing goes through Photon or Apple, so it costs nothing.
+A CLI that pretends to be **Photon (Spectrum) delivering an inbound iMessage to the victim line**. It POSTs JSON webhooks in Photon's `messages` event format, signed with a valid `X-Spectrum-Signature`, straight to the T-Guard gateway's webhook. Nothing goes through Photon or Apple, so it costs nothing.
 
 The gateway handles these requests exactly like real ones (verify the signature and timestamp, dedupe on `message.id`, classify, deliver or block). See [`docs/features/photon-imessage.md`](../../docs/features/photon-imessage.md).
 

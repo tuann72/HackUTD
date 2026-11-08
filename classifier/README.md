@@ -1,6 +1,6 @@
-# T-Gate classifier: getting it running on Vultr
+# T-Guard classifier: getting it running on Vultr
 
-This folder is T-Gate's scam detector. Give it a text message, and it tells you whether it looks like a scam, what kind of scam, and which words gave it away:
+This folder is T-Guard's scam detector. Give it a text message, and it tells you whether it looks like a scam, what kind of scam, and which words gave it away:
 
 ```
 "Congrats! You won a $1000 gift card. Claim at bit.ly/xx"
@@ -18,7 +18,7 @@ A third option, **stacked**, runs both models and lets a small logistic regressi
      ▲                                  │ trains the model (~5 min)
      └────────copy model back───────────┘
      │
-     └──copy code + model──▶ Vultr CPU server (stays on) ◀──HTTPS── T-Gate gateway
+     └──copy code + model──▶ Vultr CPU server (stays on) ◀──HTTPS── T-Guard gateway
                                runs the classifier 24/7
 ```
 
@@ -127,7 +127,7 @@ The GPU server is billed every hour it exists, so **delete it when you're done**
 
    It installs Python packages (a few minutes), then trains (a few minutes more). At the end it prints a report. The numbers to look at are:
    - `scam-vs-ham F1` on **test**: how well it separates scams from normal messages (1.0 is perfect). The old TF-IDF baseline scored about **0.98**.
-   - `SMS-only scam-vs-ham F1`: the same score, counting only text messages. This is what T-Gate actually sees.
+   - `SMS-only scam-vs-ham F1`: the same score, counting only text messages. This is what T-Guard actually sees.
 
    Type `exit` (twice if you're in tmux) to log out.
 
@@ -283,7 +283,7 @@ It also writes `artifacts/keywords.json`, the top 15 "words to watch" for each s
 You can hand this to Claude Code, Codex or a similar agent running in this repo. Do steps 0.1–0.3 yourself first, so your API key stays in your terminal and never goes into the chat. Then paste:
 
 ```text
-Set up the T-Gate classifier on Vultr by following classifier/README.md, steps 0.4 to 3
+Set up the T-Guard classifier on Vultr by following classifier/README.md, steps 0.4 to 3
 (for the TF-IDF model instead, follow "Option B").
 VULTR_API_KEY is already exported in my shell; never print it, echo it, or write it to a file.
 

@@ -7,7 +7,7 @@
 
 ## Goal
 
-Route calls to a Photon voice number through a SIP media application, transcribe the caller's speech, classify transcript text with T-Gate's classifier, and show a potential-scam warning in the Vercel app. The first proof scores after the tester hangs up; the main follow-up scores during the call. This feature is separate from the current iMessage MVP. See the [master plan](../../.plans/voice-scam-guard-spec.md), [AGENTS.md voice scope](../../AGENTS.md#deferred-or-stretch), and [CHANGELOG.md decision log](../../CHANGELOG.md#2026-11-08-voice-scam-guard-feasibility-and-staged-plan-proposal).
+Route calls to a Photon voice number through a SIP media application, transcribe the caller's speech, classify transcript text with T-Guard's classifier, and show a potential-scam warning in the Vercel app. The first proof scores after the tester hangs up; the main follow-up scores during the call. This feature is separate from the current iMessage MVP. See the [master plan](../../.plans/voice-scam-guard-spec.md), [AGENTS.md voice scope](../../AGENTS.md#deferred-or-stretch), and [CHANGELOG.md decision log](../../CHANGELOG.md#2026-11-08-voice-scam-guard-feasibility-and-staged-plan-proposal).
 
 ## Out of scope
 

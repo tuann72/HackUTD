@@ -1,4 +1,4 @@
-"""Train a T-Gate classifier. Three model kinds share the same data, metrics and service:
+"""Train a T-Guard classifier. Three model kinds share the same data, metrics and service:
 
     --model minilm (default)  frozen MiniLM sentence embeddings + logistic regression.
                               Wants a GPU (runs on the Vultr GPU instance; see README).
@@ -216,7 +216,7 @@ def main() -> None:
             "n": int(mask.sum()),
             "scam_vs_ham": svh,
             "macro_f1": round(f1_score(true, pred, average="macro"), 4),
-            # T-Gate handles SMS, but ~80% of val/test rows are email, so report SMS on its own.
+            # T-Guard handles SMS, but ~80% of val/test rows are email, so report SMS on its own.
             "sms_scam_vs_ham_f1": round(f1_score(true[sms] != 0, pred[sms] != 0), 4),
             "false_blocks": int(((pred != 0) & (true == 0)).sum()),
             "missed_scams": int(((pred == 0) & (true != 0)).sum()),
