@@ -32,7 +32,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Voice scam guard | Photon/LiveKit route checks: voice-capable line confirmed; inbound routing disabled; confirm Photon call pricing and consented test before enabling | `feat/voice-scam-detection` | Codex | Blocked | [#36](https://github.com/tuann72/HackUTD/pull/36) |
+| Voice scam guard | LiveKit dispatch rule created; Photon inbound control is unavailable on the assigned default profile, so inbound routing remains off | `feat/voice-scam-detection` | Codex | Blocked | [#36](https://github.com/tuann72/HackUTD/pull/36) |
 | Photon iMessage gateway | Photon 2.0 / Beta webhooks: registration script (`pho_prj_` → destinations API, `rotate`) and Standard Webhooks + `message.received` on the Vercel route | `feat/photon-beta-webhooks` | Tuan + Claude Code | Done | — |
 | Photon iMessage gateway | Photon webhook on the Vercel site (`/webhooks/photon` + `/api/messages`, Atlas store), backup to the VM gateway | `feat/web-photon-webhook` | Tuan + Claude Code | In review | — |
 | Sender blocklist | `DNS_SERVERS` for Atlas on Windows; drop deprecated `timeoutMS` | `fix/sender-blocklist-dns` | Timothy + Claude Code | Done | [#29](https://github.com/tuann72/HackUTD/pull/29) |
