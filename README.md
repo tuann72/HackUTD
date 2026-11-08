@@ -20,7 +20,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Twilio MVP: webhook gateway, simulator, classifier, basic Next.js message UI (webhook part superseded by Photon) | [twilio-mvp.md](docs/features/twilio-mvp.md) | MVP | In progress |
 | Classifier service: MiniLM trained and served on Vultr | [classifier-service.md](docs/features/classifier-service.md) | MVP | In progress |
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
-| Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | In progress (plan and module merged, #22, #23) |
+| Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | Parked: wired but off by default, per-message blocking only (#22, #23, #27) |
 | Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (on `/` above the message lists, live polled data, #14, #19) |
 | Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
 | 3D conversation scene, Next.js + React Three Fiber (parked) | _Not written yet_ | Later | Not started |
@@ -31,10 +31,11 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Photon iMessage gateway | Simulator: rich iMessage content, demo scenario and demo script (task 1.8) | `feat/photon-sim-rich-content` | Tuan + Claude Code | In review | [#26](https://github.com/tuann72/HackUTD/pull/26) |
-| Photon iMessage gateway | Deploy tooling and setup checklist: `docs/SETUP.md`, webhook registration script, VM deploy files, tunnel helper (task 1.7) | `chore/photon-deploy-tooling` | Tuan + Claude Code | In review | [#25](https://github.com/tuann72/HackUTD/pull/25) |
-| Sender blocklist | Blocklist wired but parked behind `SENDER_BLOCKLIST` (default off), one-message restore route, email handle fix (tasks 1.1, 2.1, 2.2; photon-imessage 1.5) | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | In review | [#27](https://github.com/tuann72/HackUTD/pull/27) |
-| Photon iMessage gateway | Replace the Twilio webhook with Photon (Spectrum) iMessage webhooks: gateway, simulator, fixture, docs (task 1.1) | `feat/photon-imessage-gateway` | Tuan + Claude Code | In review | [#24](https://github.com/tuann72/HackUTD/pull/24) |
+| Classifier service | Artifact-free tests + Vultr train/deploy scripts, not executed (task 1.4) | `chore/classifier-vultr-ready` | Tuan + Claude Code | Done | [#28](https://github.com/tuann72/HackUTD/pull/28) |
+| Photon iMessage gateway | Simulator: rich iMessage content, demo scenario and demo script (task 1.8) | `feat/photon-sim-rich-content` | Tuan + Claude Code | Done | [#26](https://github.com/tuann72/HackUTD/pull/26) |
+| Photon iMessage gateway | Deploy tooling and setup checklist: `docs/SETUP.md`, webhook registration script, VM deploy files, tunnel helper (task 1.7) | `chore/photon-deploy-tooling` | Tuan + Claude Code | Done | [#25](https://github.com/tuann72/HackUTD/pull/25) |
+| Sender blocklist | Blocklist wired but parked behind `SENDER_BLOCKLIST` (default off), one-message restore route, email handle fix (tasks 1.1, 2.1, 2.2; photon-imessage 1.5) | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | Done | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| Photon iMessage gateway | Replace the Twilio webhook with Photon (Spectrum) iMessage webhooks: gateway, simulator, fixture, docs (task 1.1) | `feat/photon-imessage-gateway` | Tuan + Claude Code | Done | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 | Sender blocklist | Fingerprint + blocklist module (task 1.2) | `feat/sender-blocklist-module` | Timothy + Claude Code | Done | [#23](https://github.com/tuann72/HackUTD/pull/23) |
 | Sender blocklist | Write the plan | `feat/sender-blocklist-plan` | Timothy + Claude Code | Done | [#22](https://github.com/tuann72/HackUTD/pull/22) |
 | Initial 3D scene | Combine scene and messages on `/`, 2D bubble image (task 3.4) | `feat/initial-3d-scene-combined-page` | Tuan + Claude Code | Done | [#19](https://github.com/tuann72/HackUTD/pull/19) |
