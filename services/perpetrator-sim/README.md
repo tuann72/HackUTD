@@ -27,17 +27,21 @@ cp .env.example .env   # optional; the defaults match the gateway's dev defaults
 ## Commands
 
 ```bash
-npm run sim -- scenario grandparent.jsonl           # main demo story (about 25 s)
+npm run sim -- scenario imessage-demo               # iMessage demo: albums, reactions, contact cards, links (about 80 s)
+npm run sim -- scenario grandparent.jsonl           # text-only demo story (about 25 s)
 npm run sim -- scenario smoke.jsonl                 # 3 messages, 500 ms apart
 npm run sim -- random --n 20 --scam-ratio 0.6 --seed 42 --interval-ms 1500
 npm run sim -- send --from +15555550142 "Hi Grandma it's me"
+npm run sim -- send --from +15555550142 --attachment receipt.jpg            # a photo (metadata only)
+npm run sim -- send --from +15555550110 --attachment IMG_1.HEIC "Lake!" --group family-chat   # captioned album in a group
+npm run sim -- send --from +15555550101 --react ❤️ "Photos from the lake"    # a reaction to that message
 npm run sim -- scenario smoke.jsonl --dry-run       # print signed requests, send nothing
 ```
 
-- **`scenario <file>`** plays `{delayMs, from, body, expected}` steps from a JSONL file. If the path doesn't exist as given, it's looked up in `data/message_bank/scenarios/` (the `.jsonl` suffix is optional).
+- **`scenario <file>`** plays `{delayMs, from, body, expected}` steps from a JSONL file. A step can carry `content` (an attachment, reaction, contact card, rich link or album) instead of `body`, and a `group` id to arrive in a group chat. Fields and examples are in [`data/message_bank/README.md`](../../data/message_bank/README.md). If the path doesn't exist as given, it's looked up in `data/message_bank/scenarios/` (the `.jsonl` suffix is optional).
 - **`random`** draws `round(n × scam-ratio)` scam rows and the rest legit from `data/message_bank/bank.jsonl` + `generated.jsonl`, shuffled with the seed, each with a fictional sender from `+15555550120`–`+15555550199` (skipping 0142 and 0177, which the scenario uses). The seed is printed so a run can be repeated. Defaults: `--n 20 --scam-ratio 0.6 --interval-ms 1500`, random seed.
-- **`send --from <number> "<text>"`** sends one typed message.
-- **`--dry-run`** (any command) prints the URL, headers (including the signature) and form body for each request, and doesn't wait on delays.
+- **`send --from <number> "<text>"`** sends one typed message. `--group <id>` sends it into a group chat. `--attachment <file>` sends an attachment instead; with text, it's a captioned album. `--react <emoji>` sends a reaction, with the text as the message reacted to. The MIME type is guessed from the file extension.
+- **`--dry-run`** (any command) prints the URL, headers (including the signature) and JSON body for each request, and doesn't wait on delays.
 
 Each send prints the masked sender (`***-***-0142`), the HTTP status and the expected outcome:
 
@@ -52,7 +56,7 @@ Exit codes: `0` all sends accepted (2xx), `1` any send failed (non-2xx or unreac
 ## Safety rails
 
 - Only sends to `GATEWAY_WEBHOOK_URL`; refuses a URL whose host is `photon.codes` or a subdomain, and anything not `http(s)`.
-- Refuses any sender or victim-line number outside the fictional `+1555xxxxxxx` range, unless `--allow-real-numbers` is passed. All checks run before the first send.
+- Refuses any sender, victim-line or contact-card number outside the fictional `+1555xxxxxxx` range, unless `--allow-real-numbers` is passed. All checks run before the first send.
 - `message.id` is always a fresh `spc-msg-<uuid>`, even with `--seed`, so reruns aren't swallowed by the gateway's dedupe. The timestamp is the send time, so signed requests go stale after 5 minutes (a dry run's output can't be replayed later).
 
 ## Fake gateway (for testing the simulator alone)

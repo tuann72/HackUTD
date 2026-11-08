@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseContent, type SimContent } from "./content.ts";
 import { mulberry32, shuffle } from "./rng.ts";
 
 export type Expected = "deliver" | "block";
@@ -9,7 +10,12 @@ export type Expected = "deliver" | "block";
 export interface Step {
   delayMs: number;
   from: string;
+  /** Plain text. "" when `content` carries the message instead. */
   body: string;
+  /** Non-text iMessage content (attachment, reaction, contact, link, album). Overrides `body`. */
+  content?: SimContent;
+  /** Group chat id: the message arrives in that group instead of a DM. */
+  group?: string;
   expected?: Expected;
 }
 
@@ -44,16 +50,26 @@ export function parseJsonl<T = unknown>(text: string, label = "jsonl"): T[] {
 export function parseScenario(text: string, label = "scenario"): Step[] {
   return parseJsonl<Record<string, unknown>>(text, label).map((row, i) => {
     const where = `${label} step ${i + 1}`;
-    const { delayMs, from, body, expected } = row;
+    const { delayMs, from, body, expected, group } = row;
     if (typeof delayMs !== "number" || !Number.isFinite(delayMs) || delayMs < 0) {
       throw new Error(`${where}: delayMs must be a non-negative number`);
     }
     if (typeof from !== "string" || !from) throw new Error(`${where}: from must be a string`);
-    if (typeof body !== "string" || !body) throw new Error(`${where}: body must be a non-empty string`);
+    const content = row.content === undefined ? undefined : parseContent(row.content, where);
+    if (content && body !== undefined) throw new Error(`${where}: give either body or content, not both`);
+    if (!content && (typeof body !== "string" || !body)) throw new Error(`${where}: body must be a non-empty string`);
+    if (group !== undefined && (typeof group !== "string" || !group)) throw new Error(`${where}: group must be a non-empty string`);
     if (expected !== undefined && expected !== "deliver" && expected !== "block") {
       throw new Error(`${where}: expected must be "deliver" or "block"`);
     }
-    return { delayMs, from, body, expected };
+    return {
+      delayMs,
+      from,
+      body: content ? "" : (body as string),
+      ...(content ? { content } : {}),
+      ...(group ? { group: group as string } : {}),
+      expected,
+    };
   });
 }
 

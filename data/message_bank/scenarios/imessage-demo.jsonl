@@ -1,0 +1,10 @@
+{"delayMs": 0, "from": "+15555550110", "body": "Hi Mom! Are we still on for dinner Sunday?", "expected": "deliver"}
+{"delayMs": 7000, "from": "+15555550110", "group": "family-chat", "content": {"type": "group", "items": [{"type": "text", "text": "Photos from the lake this weekend!"}, {"type": "attachment", "name": "IMG_0412.HEIC", "mimeType": "image/heic", "size": 2483112}, {"type": "attachment", "name": "IMG_0413.HEIC", "mimeType": "image/heic", "size": 2391044}]}, "expected": "deliver"}
+{"delayMs": 7000, "from": "+15555550101", "group": "family-chat", "content": {"type": "reaction", "emoji": "❤️", "targetPreview": "Photos from the lake this weekend!"}, "expected": "deliver"}
+{"delayMs": 9000, "from": "+15555550142", "body": "Hi Grandma it's me, I lost my phone, this is my new number", "expected": "deliver"}
+{"delayMs": 8000, "from": "+15555550142", "body": "I'm in trouble, I need $800 in gift cards, please don't tell mom", "expected": "block"}
+{"delayMs": 8000, "from": "+15555550142", "content": {"type": "attachment", "name": "receipt_photo.jpg", "mimeType": "image/jpeg", "size": 184320}, "expected": "deliver"}
+{"delayMs": 9000, "from": "+15555550177", "content": {"type": "richlink", "url": "https://bit.ly/acct-verify"}, "expected": "block"}
+{"delayMs": 8000, "from": "+15555550177", "content": {"type": "contact", "name": "Bank Fraud Dept", "phones": ["+15555550199"]}, "expected": "deliver"}
+{"delayMs": 8000, "from": "+15555550177", "body": "Your account is locked. Call the Bank Fraud Dept now and verify your PIN", "expected": "block"}
+{"delayMs": 8000, "from": "+15555550110", "body": "See you Sunday, love you!", "expected": "deliver"}

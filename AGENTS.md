@@ -121,6 +121,7 @@ Keep these items marked **TBD** until the team resolves them. Distinguish agreed
 - **Work tracker:** [`README.md`](README.md#active-work). Lists every feature and every branch an agent or person is currently working on.
 - **Feature plans:** [`docs/features/`](docs/features/). One file per feature, with ordered tasks and parallelization notes. Start new ones from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md).
 - **Dataset reference:** [`data/README.md`](data/README.md).
+- **Demo script:** [`docs/DEMO.md`](docs/DEMO.md). The judge walkthrough, setup, live iPhone moment and fallbacks.
 
 ## Data
 

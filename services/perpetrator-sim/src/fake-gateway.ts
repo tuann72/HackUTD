@@ -54,7 +54,9 @@ export function startFakeGateway(opts: {
       }
       received.push({ payload, raw, signature, timestamp, valid });
       const m = payload?.message;
-      opts.log?.(`${valid ? "valid  " : "INVALID"} ${m?.id} from ${maskNumber(m?.sender.id ?? "")}: ${m?.content.text}`);
+      const c = m?.content;
+      const what = c?.type === "text" ? c.text : `[${c?.type ?? "?"}]`;
+      opts.log?.(`${valid ? "valid  " : "INVALID"} ${m?.id} from ${maskNumber(m?.sender.id ?? "")}: ${what}`);
       if (!valid) {
         res.writeHead(401, { "Content-Type": "text/plain" }).end("bad signature");
         return;
