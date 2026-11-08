@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Free-ham rows merged into the 100k files
+
+Tuan: merge the 300 harmless "free" texts into the main dataset. They are appended to `scam_categories_100k_full.csv` and `scam_categories_100k.csv` (100,000 → 100,300 rows, `split = train`, `source = synthetic_free_ham`). `build_splits.py` no longer reads `free_ham_synthetic.csv` separately, which would duplicate them, so all 300 now train (none go to val). The threat files and `spam_ham_100k*` are unchanged.
+
 ### 2026-11-08: Harmless "free" training texts
 
 Tuan: the classifier overfit on "free" and flagged texts like "Feel free to do this" or "Free pizza". Added `data/free_ham_synthetic.csv` (300 ham rows using "free" harmlessly: "feel free", "are you free", free food at events, "parking is free", idioms), built by `data/build_free_ham_synthetic.py`. `classifier/build_splits.py` merges it with the threat rows (255 train, 45 val). It only takes effect after a retrain, which hasn't been run. There's no held-out "free" ham eval yet. See `data/README.md`, section 5.
