@@ -47,6 +47,7 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 - **Route:** decided (Tuan, task 3.4): the scene is the top band of the home page `/`, above the message lists. `/scene` redirects there. **Band size (Tuan, 2026-11-08):** the band is taller, `65dvh` (min 20rem) from the `sm` breakpoint up and `45dvh` (min 16rem) on phones, and the camera sets its fov from the band's aspect ratio so both blobs, the shot arc and the labels always fit (`FitCamera` in `Scene.tsx`).
 - **Event contract v1:** this plan assumes `message.delivered` / `message.blocked` events with `action`, a label and an opaque message id, as in `CHANGELOG.md`. The contract file (`contracts/events.v1.schema.json`) doesn't exist yet. Until it does, fixtures follow the shape in `CHANGELOG.md`.
 - **Speed:** #14 fires one message every 1.3 s. Whether the demo needs a slower first pass is TBD.
+- **Flight speed profile (Tuan, 2026-11-08):** each bubble flies fast for the first 30% of the distance, slow (a third of the speed) through the middle 40%, and fast again for the last 30%, with smooth speed transitions. The whole flight takes 2.2 s, split about 18% / 64% / 18%. Blocked messages still stop at 80% of the distance. Code: `components/scene/flight.ts` (`flightDistance`), used by `MessageShot.tsx`.
 
 ## Tasks
 

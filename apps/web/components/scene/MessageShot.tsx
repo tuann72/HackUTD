@@ -6,10 +6,12 @@ import { Html, useTexture } from "@react-three/drei";
 import { motion } from "motion/react";
 import type { Group, Sprite, SpriteMaterial, Vector3 } from "three";
 import type { SceneMessage } from "./feed";
+import { flightDistance } from "./flight";
 
-const FLIGHT_SECONDS = 1.8;
+/** Whole flight; fast-slow-fast (see `flight.ts`), so the middle takes most of it. */
+const FLIGHT_SECONDS = 2.2;
 const ARC_HEIGHT = 0.9;
-/** Where along the path a blocked message stops (just outside the victim's shield). */
+/** Distance fraction where a blocked message stops (just outside the victim's shield). */
 const BLOCK_AT = 0.8;
 const STAMP_SECONDS = 0.9;
 const POP_SECONDS = 0.3;
@@ -72,12 +74,14 @@ export const MessageShot = memo(function MessageShot({
     if (!g) return;
 
     if (phase.current === "fly") {
+      // `progress` is the time fraction; the path and arc use the distance it maps to.
       progress.current = Math.min(progress.current + dt / FLIGHT_SECONDS, 1);
       const stop = blocked ? BLOCK_AT : 1;
-      const p = Math.min(progress.current, stop);
+      const distance = flightDistance(progress.current);
+      const p = Math.min(distance, stop);
       g.position.lerpVectors(from, to, p);
       g.position.y += Math.sin(Math.PI * p) * ARC_HEIGHT;
-      if (progress.current >= stop) {
+      if (distance >= stop) {
         phaseTime.current = 0;
         if (blocked) {
           phase.current = "stamp";
