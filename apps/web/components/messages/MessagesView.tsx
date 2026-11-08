@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useMessages, type Message, type MessageChange, type SourceMode } from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
-import { categoryClass, categoryLabel } from "./category";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
 
@@ -91,23 +90,11 @@ export function MessagesView() {
   const { messages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
 
-  const { inbox, blocked, deliveredCount, pendingCount, categories } = useMemo(() => {
+  const { inbox, blocked, deliveredCount } = useMemo(() => {
     const pending = messages.filter((m) => m.action === "pending");
     const delivered = messages.filter((m) => m.action === "delivered");
     const blocked = messages.filter((m) => m.action === "blocked");
-    const counts = new Map<string, { category: string | null; n: number }>();
-    for (const m of blocked) {
-      const c = m.verdict?.category ?? null;
-      const key = categoryLabel(c);
-      counts.set(key, { category: c, n: (counts.get(key)?.n ?? 0) + 1 });
-    }
-    return {
-      inbox: [...pending, ...delivered],
-      blocked,
-      deliveredCount: delivered.length,
-      pendingCount: pending.length,
-      categories: [...counts.entries()].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0])),
-    };
+    return { inbox: [...pending, ...delivered], blocked, deliveredCount: delivered.length };
   }, [messages]);
 
   return (
@@ -117,27 +104,6 @@ export function MessagesView() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
             <SourceIndicator mode={mode} />
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-md bg-zinc-100 px-2 py-1 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              Inbox <span className="tabular-nums">{deliveredCount}</span>
-            </span>
-            <span className="rounded-md bg-rose-50 px-2 py-1 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-              Blocked <span className="tabular-nums">{blocked.length}</span>
-            </span>
-            {pendingCount > 0 && (
-              <span className="px-1 text-zinc-500 dark:text-zinc-400">
-                Checking <span className="tabular-nums">{pendingCount}</span>
-              </span>
-            )}
-            {categories.map(([label, { category, n }]) => (
-              <span
-                key={label}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClass(category)}`}
-              >
-                {label} <span className="tabular-nums opacity-80">{n}</span>
-              </span>
-            ))}
           </div>
           {error && (
             <p
