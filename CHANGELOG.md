@@ -6,12 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
-### 2026-11-07: Tracks are T-Mobile, NVIDIA and Photon; Nemotron added
+### 2026-11-07: NVIDIA track added; Nemotron behind the classifier
 
-- **Decision (Timothy):** the hackathon tracks are **Safe Signal (T-Mobile)**, **NVIDIA** and **Photon**.
-- **Replaces:** "Safe Signal track only; Photon dropped" and the Vultr track from "MiniLM, trained and served on Vultr; Vultr track added". Vultr hosting itself is unchanged.
-- **NVIDIA:** the track is **Nemotron**, a second layer behind MiniLM (see [`AGENTS.md`, "Scam follow-up"](AGENTS.md#scam-follow-up-nemotron-proposed)). It's called on the classifier's uncertain band and optional content triggers, not on every message. That flow is proposed, not agreed.
-- **Photon:** qualifying needs a project "built on Photon 2.0 and live on at least one Photon channel". Nothing in the repo uses Photon yet. The proposal is a victim-facing agent on iMessage or SMS for block notices and forward-to-check (see [`AGENTS.md`, "Photon track"](AGENTS.md#photon-track-proposed)). Whether to build it is **TBD**.
+- **Decision (Timothy):** add the **NVIDIA** track alongside **Safe Signal (T-Mobile)** and **Vultr**. Vultr stays a track (classifier and gateway on Vultr), and Photon stays dropped.
+- **NVIDIA:** the track is **Nemotron**, a second layer behind the classifier (see [`AGENTS.md`, "Scam follow-up"](AGENTS.md#scam-follow-up-nemotron-proposed)). It's called on the classifier's uncertain band and optional content triggers, not on every message, and the gateway keeps the deliver/block policy. That flow is proposed, not agreed. Model, hosting, thresholds, timeout and fail-open behavior are **TBD**.
 
 ### 2026-11-07: Gateway on a Vultr VM, web app on Vercel
 
