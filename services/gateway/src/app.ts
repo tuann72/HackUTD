@@ -6,7 +6,7 @@ import type { Blocklist, Fingerprinter } from './blocklist.js';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
-import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, isClassifiable, parseSpectrumEvent, verifySpectrumRequest, type InboundMessage } from './photon.js';
+import { EVENT_HEADER, SIGNATURE_HEADER, STANDARD_ID_HEADER, STANDARD_SIGNATURE_HEADER, STANDARD_TIMESTAMP_HEADER, TIMESTAMP_HEADER, isClassifiable, parsePhotonEvent, verifySpectrumRequest, verifyStandardRequest, type InboundMessage } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
 /** Path Photon delivers inbound iMessage webhooks to. */
@@ -145,14 +145,25 @@ export function createApp({
   app.post(WEBHOOK_PATH, async (c) => {
     // Verify over the raw bytes, before any JSON parsing (Photon signs the exact body).
     const raw = await c.req.text();
-    const check = verifySpectrumRequest({
+    const signed = {
       secret: config.photonWebhookSecret,
-      signature: c.req.header(SIGNATURE_HEADER),
-      timestamp: c.req.header(TIMESTAMP_HEADER),
       rawBody: raw,
       nowSeconds: Math.floor(now().getTime() / 1000),
       toleranceSeconds: config.signatureToleranceSeconds,
-    });
+    };
+    // Photon 2.0 / Beta uses Standard Webhooks headers, Stable uses X-Spectrum-*. Both check the same secret.
+    const check = c.req.header(STANDARD_SIGNATURE_HEADER)
+      ? verifyStandardRequest({
+          ...signed,
+          id: c.req.header(STANDARD_ID_HEADER),
+          signature: c.req.header(STANDARD_SIGNATURE_HEADER),
+          timestamp: c.req.header(STANDARD_TIMESTAMP_HEADER),
+        })
+      : verifySpectrumRequest({
+          ...signed,
+          signature: c.req.header(SIGNATURE_HEADER),
+          timestamp: c.req.header(TIMESTAMP_HEADER),
+        });
     if (!check.ok) {
       logger.warn(`rejected webhook: ${check.error}`);
       return c.text(check.error, check.status);
@@ -164,7 +175,7 @@ export function createApp({
     } catch {
       return c.text('body is not JSON', 400);
     }
-    const parsed = parseSpectrumEvent(json);
+    const parsed = parsePhotonEvent(json);
     if (parsed.kind === 'invalid') {
       logger.warn(`rejected webhook: ${parsed.error}`);
       return c.text(parsed.error, 400);

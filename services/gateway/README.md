@@ -37,7 +37,7 @@ curl -s localhost:8787/api/messages | jq
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `8787` | Listen port |
-| `PHOTON_WEBHOOK_SECRET` | required | The webhook's signing secret, shown once when it's registered. Verifies `X-Spectrum-Signature`. Local dev uses the placeholder `dev-photon-webhook-secret-change-me`, which the simulator also uses. Keep the real one in `.env` only |
+| `PHOTON_WEBHOOK_SECRET` | required | The webhook's signing secret, shown once when it's registered. Verifies `X-Spectrum-Signature` (Stable) or `webhook-signature` (Photon 2.0 / Beta, a `whsec_` secret). Local dev uses the placeholder `dev-photon-webhook-secret-change-me`, which the simulator also uses. Keep the real one in `.env` only |
 | `SIGNATURE_TOLERANCE_SECONDS` | `300` | Reject deliveries whose `X-Spectrum-Timestamp` is further than this from now (replay protection, Photon's recommended value) |
 | `DB_PATH` | `./data/gateway.sqlite` | SQLite file (gitignored). `:memory:` works too. A file left over from the Twilio schema is refused at startup: delete it (`npm run db:reset`) |
 | `CLASSIFIER_URL` | empty | Empty = built-in keyword stub (`stub@0`). Set = call `POST ${CLASSIFIER_URL}/classify` |

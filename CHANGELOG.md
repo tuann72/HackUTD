@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: VM gateway accepts Photon 2.0 / Beta webhooks
+
+- **Why (Timothy):** the team's Photon project is on Beta, and the goal is iPhone → Photon → Vultr gateway → classifier. The gateway only spoke Stable Spectrum, so it would have rejected every Beta delivery.
+- **What:** `POST /webhooks/photon` now verifies Standard Webhooks signatures (`webhook-id`, `webhook-timestamp`, `webhook-signature`, `whsec_` secret) when those headers are present and parses `message.received` envelopes. Stable `X-Spectrum-*` deliveries and the simulator work as before. Both paths check `PHOTON_WEBHOOK_SECRET`, and neither can be skipped. The Beta field names come from `api.photon.codes/openapi.json`.
+- **Beta differences:** attachment events carry only an id, so the name, type and size are null. Reactions have no target preview. Voice, read receipts and typing events are acknowledged and ignored.
+- **Verified:** `test/photon-beta.test.ts` (8 tests) with synthetic signed events. A real Beta delivery to the VM has not been tested yet.
+- **Still open:** a Beta project can deliver to both the VM and the Vercel backup route. Which destinations stay registered, and which one `NEXT_PUBLIC_API_URL` reads, is for the team to settle.
+
 ### 2026-11-08: Classifier tests without artifacts; one-command Vultr scripts (proposal for hosting)
 
 - **Done:** `classifier/tests/test_offline.py` runs with no trained model, GPU, PyTorch or download. It trains a tiny TF-IDF model on synthetic rows, fakes the MiniLM encoder for occlusion, and checks the service against the gateway's `parseVerdict` expectations. `classifier/vultr/train_gpu.sh` and `deploy_inference.sh` automate README steps 1–2 through the Vultr API. They're **not yet run against a real account**.

@@ -44,6 +44,44 @@ export function verifySpectrumRequest(opts: {
   return { ok: true };
 }
 
+// --- Photon 2.0 / Beta signatures -------------------------------------------
+
+export const STANDARD_ID_HEADER = 'webhook-id';
+export const STANDARD_TIMESTAMP_HEADER = 'webhook-timestamp';
+export const STANDARD_SIGNATURE_HEADER = 'webhook-signature';
+
+/** Standard Webhooks: base64 HMAC-SHA256 over `<id>.<timestamp>.<rawBody>`, keyed with the base64 part of `whsec_...`. */
+export function standardSignature(secret: string, id: string, timestamp: string, rawBody: string): string {
+  const key = secret.startsWith('whsec_') ? Buffer.from(secret.slice(6), 'base64') : Buffer.from(secret);
+  return createHmac('sha256', key).update(`${id}.${timestamp}.${rawBody}`).digest('base64');
+}
+
+/** `signature` holds one or more space-separated `v1,<sig>` (two during a secret rotation). */
+export function verifyStandardRequest(opts: {
+  secret: string;
+  id: string | undefined;
+  signature: string | undefined;
+  timestamp: string | undefined;
+  rawBody: string;
+  nowSeconds: number;
+  toleranceSeconds?: number;
+}): VerifyResult {
+  const { id, signature, timestamp } = opts;
+  if (!id || !signature || !timestamp) return { ok: false, status: 400, error: 'missing webhook-id, webhook-timestamp or webhook-signature' };
+  if (!/^\d+$/.test(timestamp)) return { ok: false, status: 400, error: 'malformed timestamp' };
+  const tolerance = opts.toleranceSeconds ?? DEFAULT_TOLERANCE_SECONDS;
+  if (Math.abs(opts.nowSeconds - Number(timestamp)) > tolerance) {
+    return { ok: false, status: 400, error: 'stale timestamp' };
+  }
+  const expected = Buffer.from(standardSignature(opts.secret, id, timestamp, opts.rawBody));
+  for (const part of signature.split(' ')) {
+    const [version, sig] = part.split(',');
+    const given = Buffer.from(sig ?? '');
+    if (version === 'v1' && given.length === expected.length && timingSafeEqual(given, expected)) return { ok: true };
+  }
+  return { ok: false, status: 401, error: 'bad signature' };
+}
+
 // --- Payload ---------------------------------------------------------------
 
 export interface SpectrumSpace {
@@ -192,6 +230,68 @@ export function parseSpectrumEvent(raw: unknown): ParseResult {
       sentAt: typeof msg.timestamp === 'string' ? msg.timestamp : null,
     },
   };
+}
+
+/** Maps one Beta content block; null for types T-Gate doesn't handle (voice, read receipts, typing, ...). */
+function parseBetaContent(content: unknown): Content | null {
+  if (!isObj(content)) return null;
+  const empty = { body: '', attachments: [], reaction: null, contact: null };
+  const noMeta: AttachmentMeta = { name: null, mimeType: null, size: null };
+  switch (content.type) {
+    case 'text':
+      return typeof content.text === 'string' && content.text.trim() ? { ...empty, kind: 'text', body: content.text } : null;
+    case 'attachment':
+      return { ...empty, kind: 'attachment', attachments: [noMeta] }; // the event carries only an attachment id
+    case 'reaction':
+      return typeof content.reaction === 'string' && content.reaction
+        ? { ...empty, kind: 'reaction', reaction: { emoji: content.reaction, targetPreview: null } }
+        : null;
+    case 'group': {
+      const parts = (Array.isArray(content.parts) ? content.parts : []).filter(isObj);
+      const body = parts.filter((p) => p.type === 'text' && typeof p.text === 'string').map((p) => p.text as string).join('\n');
+      const attachments = parts.filter((p) => p.type === 'attachment').map(() => noMeta);
+      if (!body.trim() && attachments.length === 0) return null;
+      return { ...empty, kind: 'album', body, attachments };
+    }
+    default:
+      return null;
+  }
+}
+
+/** Photon 2.0 / Beta envelope: `{ id, type: "message.received", data: { object: Message } }` (api.photon.codes/openapi.json). */
+export function parseBetaEvent(raw: Record<string, unknown>): ParseResult {
+  if (raw.type !== 'message.received') return { kind: 'ignored', reason: `event ${JSON.stringify(raw.type)}` };
+  const msg = isObj(raw.data) && isObj(raw.data.object) ? raw.data.object : null;
+  if (!msg || typeof msg.id !== 'string' || !msg.id) return { kind: 'invalid', error: 'missing data.object.id' };
+  const sender = isObj(msg.sentBy) && typeof msg.sentBy.handle === 'string' ? msg.sentBy.handle : '';
+  if (!sender) return { kind: 'invalid', error: 'missing data.object.sentBy.handle' };
+  if (msg.platform !== 'imessage') return { kind: 'ignored', reason: `platform ${JSON.stringify(msg.platform)}` };
+  if (msg.status !== undefined && msg.status !== 'received') return { kind: 'ignored', reason: `status ${String(msg.status)}` };
+
+  const content = parseBetaContent(msg.content);
+  if (!content) return { kind: 'ignored', reason: `content type ${isObj(msg.content) ? String(msg.content.type) : 'none'}` };
+
+  const space = isObj(msg.space) ? msg.space : {};
+  return {
+    kind: 'message',
+    message: {
+      providerMessageId: msg.id,
+      sender,
+      line: isObj(msg.addressedTo) && typeof msg.addressedTo.handle === 'string' ? msg.addressedTo.handle : null,
+      conversation: {
+        spaceId: typeof space.id === 'string' && space.id ? space.id : `dm:${sender}`,
+        type: typeof space.kind === 'string' && /group/i.test(space.kind) ? 'group' : 'dm',
+      },
+      ...content,
+      sentAt: typeof msg.timestamp === 'string' ? msg.timestamp : null,
+    },
+  };
+}
+
+/** Either format: Beta (`type` + `data`) or Stable Spectrum (`event`). */
+export function parsePhotonEvent(raw: unknown): ParseResult {
+  if (isObj(raw) && typeof raw.type === 'string' && isObj(raw.data)) return parseBetaEvent(raw);
+  return parseSpectrumEvent(raw);
 }
 
 /** Text worth sending to the classifier. Attachments, reactions and contact cards have none. */
