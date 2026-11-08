@@ -23,7 +23,7 @@ Each message:
 | `body` | Message text |
 | `receivedAt` | ISO 8601 time the gateway accepted it |
 | `action` | `pending`, `delivered` or `blocked` |
-| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified), `not_classified` (no text to check: attachment, reaction, contact card), `sender_blocked` (blocked without the model: the sender is on the blocklist; `verdict` is `null`), `override` (a person marked it "Not a scam" and moved it to the inbox; the original `verdict` is kept) or `null` while pending |
+| `reason` | `model_verdict`, `classifier_unavailable` (fail open: delivered, unverified), `not_classified` (no text to check: attachment, reaction, contact card), `sender_blocked` (blocked without the model because the sender is on the blocklist; `verdict` is `null`. **Not emitted by default:** only with the gateway's parked `SENDER_BLOCKLIST=on`), `override` (a person marked this message "Not a scam" and it moved to the inbox; the original `verdict` is kept) or `null` while pending |
 | `verdict` | `{ label, score, category, model, highlights }` from the classifier, or `null` if pending, unavailable or not classified |
 | `kind` | `text`, `link`, `attachment`, `reaction`, `contact` or `album` (iMessage content). Optional: absent means `text` |
 | `conversation` | `{ id, type }`: an opaque chat id (`c_<hex>`) and `dm` or `group`. Optional: absent means a DM |
@@ -48,6 +48,6 @@ Photon signs each webhook with the webhook's signing secret ([docs](https://phot
 
 ## Not part of the contract
 
-`POST /admin/senders/allow` (the "Not a scam" override, only when `ADMIN_TOKEN` is set) and `POST /debug/reset` (clears the SQLite database) are operator tools.
+`POST /admin/messages/restore` ("Not a scam" for one message, only when `ADMIN_TOKEN` is set) and `POST /debug/reset` (clears the SQLite database) are operator tools.
 
 `POST /debug/reset` on the gateway clears its SQLite database. It's a developer tool, off unless `GATEWAY_DEBUG=1`, and the web app must never call it.

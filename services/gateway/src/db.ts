@@ -150,18 +150,12 @@ export class Store {
     return row ?? null;
   }
 
-  /**
-   * "Not a scam": move this message, and every other blocked message from the same sender,
-   * to the inbox with reason `override`. Verdicts are kept for the record. Returns how many moved.
-   */
-  restoreSender(id: string, now = new Date()): number {
+  /** "Not a scam": move this one blocked message to the inbox with reason `override`. Its verdict is kept. */
+  restoreMessage(id: string, now = new Date()): boolean {
     const res = this.db
-      .prepare(
-        `UPDATE messages SET action = 'delivered', reason = 'override', classified_at = ?
-         WHERE action = 'blocked' AND participant_id = (SELECT participant_id FROM messages WHERE id = ?)`,
-      )
+      .prepare(`UPDATE messages SET action = 'delivered', reason = 'override', classified_at = ? WHERE id = ? AND action = 'blocked'`)
       .run(now.toISOString(), id);
-    return Number(res.changes);
+    return Number(res.changes) === 1;
   }
 
   applyDecision(id: string, action: Exclude<Action, 'pending'>, reason: Exclude<Reason, null>, verdict: Verdict | null, now = new Date()): void {

@@ -48,7 +48,7 @@
 
 **Group chats:** `space.type == "group"` is stored as a conversation. The API's `conversation: {id, type}` has an opaque `c_<hex>` id per chat, so the raw `space.id` never leaves the gateway. Group messages are classified like DMs, and each sender keeps their own participant id. The UI shows a "Group chat" badge.
 
-**Not classified:** attachment-only messages aren't judged, because the model reads text only. The UI shows them as "Not checked". Once a sender is on the blocklist, their attachments, reactions and contact cards are blocked too (`sender_blocked`, task 1.5, proposed).
+**Not classified:** attachment-only messages aren't judged, because the model reads text only. The UI shows them as "Not checked". There's no sender-level blocking by default, so a scam sender's later attachments are delivered unchecked too. Only with the parked `SENDER_BLOCKLIST=on` are a blocklisted sender's attachments, reactions and contact cards blocked (`sender_blocked`).
 
 The iMessage `sender.id` is usually E.164, but iMessage handles can also be **email addresses**. The gateway masks both (`***-***-0142`, `j***@icloud.com`) and never exposes either in the query API.
 
@@ -80,6 +80,6 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 
 ## Open questions (TBD)
 
-- Attachment-only messages from a known scam sender: **proposed blocked** (`sender_blocked`) in task 1.5 ([#27](https://github.com/tuann72/HackUTD/pull/27)). Needs Tuan's confirmation.
+- Attachment-only messages: delivered unchecked (`not_classified`). There's no sender-level blocking by default (Tuan, 2026-11-08: block the message, not the sender). Only with the parked `SENDER_BLOCKLIST=on` would a blocklisted sender's attachments be blocked.
 - Whether to also keep an SMS path. Not planned. Photon's own SMS provider would be a separate decision.
 - Dedupe retention: the gateway keeps every `message.id` forever in SQLite. Photon suggests a 24–48 h TTL, which is fine at hackathon scale.

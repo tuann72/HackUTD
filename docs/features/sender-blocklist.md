@@ -2,10 +2,12 @@
 
 - **Slug:** `sender-blocklist`
 - **Phase:** MVP
-- **Status:** In progress (plan and task 1.2 merged)
+- **Status:** **Parked, off by default** (Tuan, 2026-11-08). The module and wiring exist behind `SENDER_BLOCKLIST=on`. The default is `off`: each message is judged on its own.
 - **Owner:** Timothy
 
 ## Goal
+
+> **Parked (Tuan, 2026-11-08):** "we don't aim to block users, just block that instance of a message." This overrides the sender-level blocking below. The gateway blocks individual messages by the classifier's verdict. The blocklist code stays, behind `SENDER_BLOCKLIST` (default `off`: no blocklist calls, no Atlas connection). Everything below describes the `on` option.
 
 Vultr is the judge: the classifier on Vultr scores every message, and above `BLOCK_THRESHOLD` the gateway blocks it, as today. This feature adds two things on top (Timothy, 2026-11-08; see `CHANGELOG.md`, "Sender blocklist and scam fingerprints in MongoDB Atlas"):
 
@@ -68,7 +70,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 |---|---|---|---|---|---|---|---|
 | 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 | 1.2 | Gateway: fingerprint + blocklist module (store interface, MongoDB implementation, in-memory fake, tests) | — | 1.1, 1.3, 1.4 | Done | `feat/sender-blocklist-module` | Timothy + Claude Code | [#23](https://github.com/tuann72/HackUTD/pull/23) |
-| 1.3 | Atlas setup: M0 cluster, database user, IP allowlist, connection string in `.env` (person, not agent) | — | 1.1, 1.2, 1.4 | Not started | | Timothy | |
+| 1.3 | Atlas setup: M0 cluster, database user, IP allowlist, connection string in `.env` (person, not agent) | — | 1.1, 1.2, 1.4 | Parked (only needed with `SENDER_BLOCKLIST=on`) | | Timothy | |
 | 1.4 | Vultr: train the model and deploy the classifier ([classifier plan](classifier-service.md), tasks 2.1 and 3.x) | — | 1.1, 1.2, 1.3 | Not started | | Tuan | |
 
 ### Stage 2: wire it in
@@ -76,14 +78,14 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
-| 2.2 | Override: admin route + script to unblock and allowlist a sender | 1.2 | 2.1 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| 2.2 | Override: `POST /admin/messages/restore` + `npm run message:restore`, which restores one message (allowlists the sender only when on) | 1.2 | 2.1 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 
 ### Stage 3: on Vultr, end to end
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Deploy the gateway on the Vultr VM ([runbook](../../services/gateway/DEPLOY.md), [Twilio MVP](twilio-mvp.md) task 3.1) with `CLASSIFIER_URL`, `MONGODB_URI`, `FINGERPRINT_SECRET`; add the VM's IP to Atlas | 1.3, 1.4, 2.1 | — | Not started | | | |
-| 3.2 | End-to-end check: real classifier + Atlas + simulator and one real phone | 3.1 | — | Not started | | | |
+| 3.1 | Deploy the gateway on the Vultr VM ([runbook](../../services/gateway/DEPLOY.md), [Twilio MVP](twilio-mvp.md) task 3.1) with `CLASSIFIER_URL`, `MONGODB_URI`, `FINGERPRINT_SECRET`; add the VM's IP to Atlas | 1.3, 1.4, 2.1 | — | Parked (deploy itself is the Twilio-MVP/Photon task 3.1; Atlas only if on) | | | |
+| 3.2 | End-to-end check: real classifier + Atlas + simulator and one real phone | 3.1 | — | Parked | | | |
 
 ## Task details
 
@@ -115,10 +117,11 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 ### 2.2 Override
 
-- **What:** `POST /admin/senders/allow` (token-protected, off unless configured) and `npm run sender:allow -- <message id>`: looks up the sender of a stored message, allowlists its fingerprint and restores the message to the inbox. Takes a message id, so nobody has to type a phone number.
+- **What (as built, after Tuan's 2026-11-08 decision):** `POST /admin/messages/restore` (behind `ADMIN_TOKEN`, off unless set) and `npm run message:restore -- <message id>`. It restores **only that message** to the inbox (reason `override`). With `SENDER_BLOCKLIST=on`, it also allowlists the sender's fingerprint. It takes a message id, so nobody has to type a phone number.
 - **Done when:** a test restores a blocked message and the sender's next scam is judged by the model again, not by the blocklist.
 
 ## Progress notes
+- **2026-11-08:** **Parked by Tuan:** block the message, not the sender. `SENDER_BLOCKLIST` added (default `off`). The override became `POST /admin/messages/restore` / `npm run message:restore` and restores only the named message. With `off`, no blocklist method is called (a spy test checks this) and a scam sender's next legit message is delivered. The `on` tests still pass.
 - **2026-11-08:** Tasks 1.1, 2.1 and 2.2 built (`feat/sender-blocklist-gateway-flow`, [#27](https://github.com/tuann72/HackUTD/pull/27), stacked on the Photon PR #24). The blocklist check runs before the classifier, model blocks are fingerprinted, Atlas fails open, the contract has reasons `sender_blocked` and `override`, and the override is `POST /admin/senders/allow` (`ADMIN_TOKEN`) plus `npm run sender:allow`. Email handles are normalized. **Proposals for Tuan:** block a blocklisted sender's text-less content; override as an operator tool, not a web button; restore all of the sender's blocked messages. Not run against Atlas (task 1.3 needs a person).
 
 - **2026-11-08:** Task 1.2 built: `services/gateway/src/blocklist.ts` (`MemoryBlocklist`, `MongoBlocklist`, keyed-hash fingerprints) and the `MONGODB_*`, `FINGERPRINT_SECRET`, `SENDER_BLOCK_*` settings. Not wired into the request flow yet (task 2.1). Tests: 54 pass; the 5 MongoDB tests also pass against a local `mongo:8` container (`MONGODB_TEST_URI`). Not yet run against Atlas (needs task 1.3).

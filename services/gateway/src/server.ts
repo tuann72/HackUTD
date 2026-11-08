@@ -17,11 +17,17 @@ const rules = {
   highScore: config.senderBlockScore,
   ttlMs: config.senderBlockTtlDays * 24 * 60 * 60 * 1000,
 };
-// Without Atlas, an in-process blocklist and a per-process key: both reset on restart.
-const blocklist: Blocklist = config.mongodbUri
-  ? new MongoBlocklist({ uri: config.mongodbUri, dbName: config.mongodbDb, rules })
-  : new MemoryBlocklist(rules);
-const fingerprinter = makeFingerprinter(config.fingerprintSecret ?? ephemeralSecret());
+// SENDER_BLOCKLIST=off (default, Tuan 2026-11-08): no blocklist object, no Atlas connection.
+// on: Atlas if MONGODB_URI is set, else an in-process blocklist and per-process key (both reset on restart).
+let blocklist: Blocklist | undefined;
+if (config.senderBlocklist) {
+  blocklist = config.mongodbUri
+    ? new MongoBlocklist({ uri: config.mongodbUri, dbName: config.mongodbDb, rules })
+    : new MemoryBlocklist(rules);
+} else if (config.mongodbUri) {
+  console.warn('[gateway] MONGODB_URI is set but SENDER_BLOCKLIST=off: ignored, not connecting to Atlas');
+}
+const fingerprinter = blocklist ? makeFingerprinter(config.fingerprintSecret ?? ephemeralSecret()) : undefined;
 
 const app = createApp({ db, classifier, config, blocklist, fingerprinter });
 
@@ -29,7 +35,7 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[gateway] listening on http://localhost:${info.port}`);
   console.log(`[gateway] db=${config.dbPath} classifier=${config.classifierUrl ? `http (${config.classifierUrl})` : 'stub'} threshold=${config.blockThreshold}`);
   console.log(
-    `[gateway] blocklist=${config.mongodbUri ? `atlas (${config.mongodbDb})` : 'memory (resets on restart)'} strikes=${rules.strikes} score>=${rules.highScore} ttl=${config.senderBlockTtlDays}d admin=${config.adminToken ? 'ON' : 'off'}`,
+    `[gateway] sender blocklist=${!blocklist ? 'off (each message judged on its own)' : `on, ${config.mongodbUri ? `atlas (${config.mongodbDb})` : 'memory (resets on restart)'}, strikes=${rules.strikes} score>=${rules.highScore} ttl=${config.senderBlockTtlDays}d`} admin=${config.adminToken ? 'ON' : 'off'}`,
   );
   console.log(`[gateway] Photon webhook: POST ${WEBHOOK_PATH} (signature tolerance ${config.signatureToleranceSeconds}s) debug=${config.debug ? 'ON' : 'off'}`);
 });
@@ -40,7 +46,7 @@ function shutdown() {
   closing = true;
   server.close(async () => {
     await app.idle();
-    await blocklist.close().catch(() => {});
+    await blocklist?.close().catch(() => {});
     db.close();
     process.exit(0);
   });

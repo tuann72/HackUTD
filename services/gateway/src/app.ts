@@ -22,11 +22,19 @@ export interface AppDeps {
   classifier: Classifier;
   config: Pick<
     GatewayConfig,
-    'photonWebhookSecret' | 'signatureToleranceSeconds' | 'blockThreshold' | 'corsOrigins' | 'debug' | 'debugToken' | 'adminToken'
+    | 'photonWebhookSecret'
+    | 'signatureToleranceSeconds'
+    | 'blockThreshold'
+    | 'corsOrigins'
+    | 'debug'
+    | 'debugToken'
+    | 'adminToken'
+    | 'senderBlocklist'
   >;
   /**
-   * Sender blocklist (docs/features/sender-blocklist.md). Both or neither. Without them the gateway
-   * judges every message by the model alone. Errors from the blocklist are logged and ignored (fail open).
+   * Sender blocklist (docs/features/sender-blocklist.md), a parked option. Used only when
+   * `config.senderBlocklist` is true and both are given; otherwise never called, and every message
+   * is judged on its own. Errors from the blocklist are logged and ignored (fail open).
    */
   blocklist?: Blocklist;
   fingerprinter?: Fingerprinter;
@@ -64,7 +72,8 @@ export function createApp({
   const store = new Store(db);
   const pending = new Set<Promise<void>>();
   const app = new Hono();
-  const bl = blocklist && fingerprinter ? { list: blocklist, fp: fingerprinter } : null;
+  // Default (Tuan, 2026-11-08): block the message, not the sender. The blocklist is off unless configured on.
+  const bl = config.senderBlocklist && blocklist && fingerprinter ? { list: blocklist, fp: fingerprinter } : null;
 
   /** True only if the blocklist answered yes. An error counts as "not blocked" (fail open). */
   async function senderIsBlocked(id: string, senderFp: string): Promise<boolean> {
@@ -209,11 +218,11 @@ export function createApp({
     });
   }
 
-  // Admin tool, not part of the contract: "Not a scam". Exists only when ADMIN_TOKEN is set.
+  // Admin tool, not part of the contract: "Not a scam" for one message. Exists only when ADMIN_TOKEN is set.
   // Takes an opaque message id, never a handle. The web app must never call it.
   if (config.adminToken) {
     const token = config.adminToken;
-    app.post('/admin/senders/allow', async (c) => {
+    app.post('/admin/messages/restore', async (c) => {
       const given = c.req.header('X-Admin-Token');
       if (!given) return c.json({ error: 'missing X-Admin-Token' }, 401);
       if (!safeEqual(given, token)) return c.json({ error: 'bad X-Admin-Token' }, 403);
@@ -224,21 +233,24 @@ export function createApp({
         return c.json({ error: 'body must be JSON: {"messageId": "msg_..."}' }, 400);
       }
       if (typeof messageId !== 'string' || !messageId) return c.json({ error: 'messageId is required' }, 400);
-      const handle = store.senderHandleOf(messageId);
-      if (handle === null) return c.json({ error: 'no such message' }, 404);
-      let allowlisted = false;
+      const decision = store.decisionOf(messageId);
+      if (!decision) return c.json({ error: 'no such message' }, 404);
+      if (decision.action !== 'blocked') return c.json({ error: `message is ${decision.action}, not blocked` }, 409);
+
+      // Only with the blocklist on: also allowlist the sender so the blocklist never blocks them again.
+      let allowlisted: boolean | null = null;
       if (bl) {
+        allowlisted = false;
         try {
-          await bl.list.allow(bl.fp.sender(handle), now());
+          await bl.list.allow(bl.fp.sender(store.senderHandleOf(messageId)!), now());
           allowlisted = true;
         } catch (err) {
-          // Still restore the messages; report that the allowlist write failed so it can be retried.
           logger.warn(`${messageId}: allowlist write failed (${(err as Error).message})`);
         }
       }
-      const restored = store.restoreSender(messageId, now());
-      logger.warn(`admin override: sender of ${messageId} allowlisted=${allowlisted}, ${restored} message(s) moved to the inbox`);
-      return c.json({ ok: true, allowlisted, restored });
+      store.restoreMessage(messageId, now());
+      logger.warn(`admin restore: ${messageId} moved to the inbox${allowlisted === null ? '' : ` (sender allowlisted=${allowlisted})`}`);
+      return c.json({ ok: true, messageId, allowlisted });
     });
   }
 
