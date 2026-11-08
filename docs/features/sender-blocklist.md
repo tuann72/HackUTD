@@ -2,7 +2,7 @@
 
 - **Slug:** `sender-blocklist`
 - **Phase:** MVP
-- **Status:** **Parked, off by default** (Tuan, 2026-11-08). The module and wiring exist behind `SENDER_BLOCKLIST=on`. The default is `off`: each message is judged on its own.
+- **Status:** **On by default** (Tuan, 2026-11-08, `feat/sender-blocklist-clear`, [#86](https://github.com/tuann72/HackUTD/pull/86)), with password-protected Unblock and Clear blocks buttons in the web UI (stage 4). `SENDER_BLOCKLIST=off` still judges each message on its own.
 - **Owner:** Timothy
 
 ## Goal
@@ -80,6 +80,13 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 | 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | Done | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 | 2.2 | Override: `POST /admin/messages/restore` + `npm run message:restore`, which restores one message (allowlists the sender only when on) | 1.2 | 2.1 | Done | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 
+### Stage 4: turn it on, with UI controls (Tuan, 2026-11-08)
+
+| # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
+|---|---|---|---|---|---|---|---|
+| 4.1 | Gateway: `SENDER_BLOCKLIST` defaults to `on`; `POST /api/messages/:id/unblock`, `GET /api/blocklist`, `POST /api/blocklist/clear` behind `X-Action-Password` (`UI_ACTION_PASSWORD`, default `4321`) | 2.1, 2.2 | 4.2 | Done | `feat/sender-blocklist-clear` | Tuan + Claude Code | [#86](https://github.com/tuann72/HackUTD/pull/86) |
+| 4.2 | Web: password prompt, Unblock on blocked cards, Clear blocks next to Clear chats; same routes on the Vercel backup | contract | 4.1 | Done | `feat/sender-blocklist-clear` | Tuan + Claude Code | [#86](https://github.com/tuann72/HackUTD/pull/86) |
+
 ### Stage 3: on Vultr, end to end
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
@@ -121,6 +128,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 - **Done when:** a test restores a blocked message and the sender's next scam is judged by the model again, not by the blocklist.
 
 ## Progress notes
+- **2026-11-08:** **Turned on by Tuan** (#86): "it'll block people, but if someone clicks the clear block button it'll unblock everyone that's been blocked", and both Unblock and Clear need the password 4321. The password is checked on the server (`UI_ACTION_PASSWORD`), so it isn't in the page's code, but it's a demo guard, not real security. Clear blocks deletes sender records only; text fingerprints and the blocked log stay.
 - **2026-11-08:** **Parked by Tuan:** block the message, not the sender. `SENDER_BLOCKLIST` added (default `off`). The override became `POST /admin/messages/restore` / `npm run message:restore` and restores only the named message. With `off`, no blocklist method is called (a spy test checks this) and a scam sender's next legit message is delivered. The `on` tests still pass.
 - **2026-11-08:** First run against real Atlas (Timothy + Claude Code, [#29](https://github.com/tuann72/HackUTD/pull/29)). The 5 `MongoBlocklist` tests pass against Atlas (`tgate_test`). End to end on the Photon gateway: 3 stub-scored scams from one sender were blocked by the model, the 4th was `sender_blocked` with no classifier call, and Atlas held the sender (3 strikes, blocked 7 days) and its text (3 hits). On Windows, Node got DNS server `127.0.0.1`, which refuses SRV lookups (`querySrv ECONNREFUSED`), so #29 adds `DNS_SERVERS`. It also drops the driver's deprecated `timeoutMS` option.
 - **2026-11-08:** Tasks 1.1, 2.1 and 2.2 built (`feat/sender-blocklist-gateway-flow`, [#27](https://github.com/tuann72/HackUTD/pull/27), stacked on the Photon PR #24). The blocklist check runs before the classifier, model blocks are fingerprinted, Atlas fails open, the contract has reasons `sender_blocked` and `override`, and the override is `POST /admin/senders/allow` (`ADMIN_TOKEN`) plus `npm run sender:allow`. Email handles are normalized. **Proposals for Tuan:** block a blocklisted sender's text-less content; override as an operator tool, not a web button; restore all of the sender's blocked messages. Not run against Atlas (task 1.3 needs a person).

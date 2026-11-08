@@ -23,7 +23,19 @@ export function CategoryBadge({ category }: { category: string | null | undefine
 }
 
 /** One message. Renders the gateway's action/reason/verdict as given. */
-export function MessageCard({ message: m, now }: { message: Message; now: number | null }) {
+export function MessageCard({
+  message: m,
+  now,
+  onUnblock,
+  unblockOff,
+}: {
+  message: Message;
+  now: number | null;
+  /** Opens the password prompt for this blocked message. Absent = no Unblock button. */
+  onUnblock?: (m: Message) => void;
+  /** Why Unblock can't be used here (e.g. mock data). Shown as the disabled button's tooltip. */
+  unblockOff?: string | null;
+}) {
   const blocked = m.action === "blocked";
   const pending = m.action === "pending";
   const unverified = isUnverified(m);
@@ -105,7 +117,7 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
       </header>
 
       {blocked && (
-        <div className="mb-2">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           {isSenderBlocked(m) ? (
             <span
               title={SENDER_BLOCKED_TITLE}
@@ -115,6 +127,17 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
             </span>
           ) : (
             <CategoryBadge category={m.verdict?.category} />
+          )}
+          {onUnblock && (
+            <button
+              type="button"
+              onClick={() => onUnblock(m)}
+              disabled={!!unblockOff}
+              title={unblockOff ?? "Not a scam? Move this message to the inbox. Needs the password."}
+              className="border border-ink px-2.5 py-1 font-label text-[10px] font-bold uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+            >
+              Unblock
+            </button>
           )}
         </div>
       )}

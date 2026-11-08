@@ -1,3 +1,4 @@
+import { blockActions, type BlockActions } from "./actions";
 import fixture from "./fixture.v1.json";
 import type { Message, MessagesResponse } from "./types";
 
@@ -15,6 +16,8 @@ export interface MessageSource {
   fetch(): Promise<Message[]>;
   /** Deletes every message (live: DELETE /api/messages; replay: restarts empty). Absent for static. */
   clear?(): Promise<void>;
+  /** Unblock and Clear blocks (password-protected). Live only: the mock sources have no server to check a password. */
+  actions?: BlockActions;
 }
 
 const FIXTURE = (fixture as MessagesResponse).messages;
@@ -23,6 +26,7 @@ export function liveSource(apiUrl: string, limit = 100): MessageSource {
   const base = apiUrl.replace(/\/+$/, "");
   return {
     mode: "live",
+    actions: blockActions(base),
     async fetch() {
       const res = await fetch(`${base}/api/messages?limit=${limit}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`GET /api/messages failed: ${res.status}`);

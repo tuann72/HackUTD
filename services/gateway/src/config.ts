@@ -19,10 +19,12 @@ export interface GatewayConfig {
   /** Token for admin routes (the "Not a scam" override). Null = admin routes off. */
   adminToken: string | null;
   /**
-   * SENDER_BLOCKLIST: off (default) = judge every message on its own, no blocklist calls at all.
-   * on = parked option: block known scam senders without the model (docs/features/sender-blocklist.md).
+   * SENDER_BLOCKLIST: on (default since 2026-11-08, Tuan) = block known scam senders without the model
+   * (docs/features/sender-blocklist.md). off = judge every message on its own, no blocklist calls at all.
    */
   senderBlocklist: boolean;
+  /** UI_ACTION_PASSWORD: the X-Action-Password the web UI's Unblock and Clear blocks buttons must send. Default "4321". */
+  uiActionPassword: string;
   /** MongoDB Atlas connection string. Null = in-process blocklist (lost on restart). */
   mongodbUri: string | null;
   mongodbDb: string;
@@ -78,7 +80,7 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     throw new Error('ADMIN_TOKEN must be at least 16 characters (make one with: openssl rand -hex 24).');
   }
 
-  const blocklistRaw = (str(env, 'SENDER_BLOCKLIST') ?? 'off').toLowerCase();
+  const blocklistRaw = (str(env, 'SENDER_BLOCKLIST') ?? 'on').toLowerCase();
   if (blocklistRaw !== 'off' && blocklistRaw !== 'on') {
     throw new Error(`SENDER_BLOCKLIST must be "off" or "on", got "${blocklistRaw}"`);
   }
@@ -129,6 +131,8 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     debugToken: debug ? debugToken : null,
     adminToken,
     senderBlocklist,
+    // Any non-empty string; unset or blank falls back to the demo default.
+    uiActionPassword: str(env, 'UI_ACTION_PASSWORD') ?? '4321',
     mongodbUri,
     mongodbDb: str(env, 'MONGODB_DB') ?? 'tgate',
     dnsServers,

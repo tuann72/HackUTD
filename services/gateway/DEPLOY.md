@@ -80,7 +80,8 @@ sudo systemctl restart t-gate-gateway      # after every .env change
 | `PHOTON_WEBHOOK_SECRET` | Keep the dev placeholder until step 6, so the simulator can test the VM. Step 6 replaces it |
 | `CORS_ORIGINS` | The Vercel site's origin, for example `https://<project>.vercel.app`, plus any custom domain, comma-separated. No trailing slash |
 | `CLASSIFIER_URL`, `CLASSIFIER_TOKEN` | Leave empty for the keyword stub until the classifier is deployed |
-| `MONGODB_URI`, `FINGERPRINT_SECRET` | Optional ([`SETUP.md`](../../docs/SETUP.md)). With neither set, the blocklist stays in memory |
+| `MONGODB_URI`, `FINGERPRINT_SECRET` | Optional ([`SETUP.md`](../../docs/SETUP.md)). With neither set, the blocklist stays in memory and resets on restart. `SENDER_BLOCKLIST` defaults to `on` since #86: if `MONGODB_URI` is set, `FINGERPRINT_SECRET` (32+ characters) must be too, or the gateway won't start |
+| `UI_ACTION_PASSWORD` | Password for the web UI's Unblock and Clear blocks buttons. Default `4321` (a demo guard, not real auth) |
 | `GATEWAY_DEBUG` | `0` on the public VM. If you set it to `1`, `DEBUG_TOKEN` must be a long random string |
 
 The [Environment table in the README](README.md#environment) lists every variable.

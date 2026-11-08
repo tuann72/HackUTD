@@ -116,6 +116,38 @@ blocklistContract('MongoBlocklist (MONGODB_TEST_URI)', () =>
   testUri ? new MongoBlocklist({ uri: testUri, dbName: 'tgate_test', rules: RULES, timeoutMs: 10_000 }) : null,
 );
 
+describe('MemoryBlocklist clear and countBlocked', () => {
+  const fp = makeFingerprinter(SECRET);
+  const scam = (senderFp: string, score: number) => ({ senderFp, textFp: fp.text('scam'), score, category: null, model: 't' });
+
+  it('counts only active, non-allowlisted blocks', async () => {
+    const list = new MemoryBlocklist(RULES);
+    expect(await list.countBlocked(at(0))).toBe(0);
+    await list.recordScam(scam(fp.sender('+15555550001'), 0.99), at(0)); // blocked
+    await list.recordScam(scam(fp.sender('+15555550002'), 0.6), at(0)); // one strike, not blocked
+    await list.recordScam(scam(fp.sender('+15555550003'), 0.99), at(0));
+    await list.allow(fp.sender('+15555550003'), at(0)); // allowlisted
+    expect(await list.countBlocked(at(1))).toBe(1);
+    expect(await list.countBlocked(at(7.1))).toBe(0); // expired
+  });
+
+  it('clear removes every sender record (blocks, strikes, allowlist) and keeps text fingerprints', async () => {
+    const list = new MemoryBlocklist(RULES);
+    const a = fp.sender('+15555550001');
+    const b = fp.sender('+15555550002');
+    await list.recordScam(scam(a, 0.99), at(0));
+    await list.allow(b, at(0));
+    expect(await list.clear()).toBe(2);
+    expect(list.senders.size).toBe(0);
+    expect(list.texts.size).toBe(1);
+    expect(await list.isBlocked(a, at(1))).toBe(false);
+    expect(await list.countBlocked(at(1))).toBe(0);
+    expect(await list.clear()).toBe(0);
+    // The allowlist went too: one very high score blocks b again.
+    expect((await list.recordScam(scam(b, 0.99), at(2))).blocked).toBe(true);
+  });
+});
+
 describe('MemoryBlocklist storage', () => {
   it('stores no raw number or text', async () => {
     const list = new MemoryBlocklist(RULES);
@@ -142,8 +174,10 @@ describe('blocklist config', () => {
     expect(() => loadConfig({ ...on, MONGODB_URI: 'mongodb+srv://x' })).toThrow(/FINGERPRINT_SECRET/);
     expect(() => loadConfig({ ...on, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).toThrow(/32/);
     expect(loadConfig({ ...on, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: SECRET }).fingerprintSecret).toBe(SECRET);
-    // Off (default): not validated.
-    expect(() => loadConfig({ ...base, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).not.toThrow();
+    // On is the default, so the same checks apply with SENDER_BLOCKLIST unset.
+    expect(() => loadConfig({ ...base, MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).toThrow(/32/);
+    // Off: not validated.
+    expect(() => loadConfig({ ...base, SENDER_BLOCKLIST: 'off', MONGODB_URI: 'mongodb+srv://x', FINGERPRINT_SECRET: 'short' })).not.toThrow();
   });
 
   it('rejects bad rule values', () => {

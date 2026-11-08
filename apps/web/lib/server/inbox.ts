@@ -165,6 +165,8 @@ export interface Store {
   /** false if this key was already stored (Photon retries and re-delivers). */
   insert(key: string, msg: Message): Promise<boolean>;
   update(id: string, patch: Pick<Message, "action" | "reason" | "verdict">): Promise<void>;
+  /** One message by its opaque id, or null. */
+  get(id: string): Promise<Message | null>;
   list(limit: number): Promise<Message[]>;
   /** Deletes every message. Returns how many were deleted. */
   clear(): Promise<number>;
@@ -180,6 +182,10 @@ export class MemoryStore implements Store {
   }
   async update(id: string, patch: Pick<Message, "action" | "reason" | "verdict">) {
     for (const m of this.rows.values()) if (m.id === id) Object.assign(m, patch);
+  }
+  async get(id: string) {
+    for (const m of this.rows.values()) if (m.id === id) return { ...m };
+    return null;
   }
   async list(limit: number) {
     return [...this.rows.values()].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt)).slice(0, limit);
@@ -206,6 +212,9 @@ export class MongoStore implements Store {
   }
   async update(id: string, patch: Pick<Message, "action" | "reason" | "verdict">) {
     await this.col.updateOne({ id }, { $set: patch });
+  }
+  async get(id: string) {
+    return (await this.col.findOne({ id }, { projection: { _id: 0 } })) as Message | null;
   }
   async list(limit: number) {
     return (await this.col.find({}, { projection: { _id: 0 } }).sort({ receivedAt: -1 }).limit(limit).toArray()) as Message[];

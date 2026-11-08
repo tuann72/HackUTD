@@ -105,7 +105,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Sender blocklist | Turn the blocklist on; password-protected (4321) Unblock button per blocked message and Clear blocks button that unblocks every sender | `feat/sender-blocklist-clear` | Tuan + Claude Code (subagents) | In progress | — |
+| Sender blocklist | Turn the blocklist on; password-protected (4321) Unblock button per blocked message and Clear blocks button that unblocks every sender | `feat/sender-blocklist-clear` | Tuan + Claude Code (subagents) | Done | [#86](https://github.com/tuann72/HackUTD/pull/86) |
 | Project docs | Architecture diagram in the README; sync docs with #82 | `docs/architecture-diagram` | Tuan + Claude Code | Done | — |
 | Project docs | Sync `AGENTS.md` and the README trackers with merges #63 to #81 | `docs/sync-agents-readme` | Tuan + Claude Code | Done | — |
 | Voice scam guard | Send each call transcript to the VM gateway as a signed Photon-format message, like the simulator | `feat/voice-scam-detection` | JP | Done | [#82](https://github.com/tuann72/HackUTD/pull/82) |

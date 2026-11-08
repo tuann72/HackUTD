@@ -334,7 +334,7 @@ describe('GET /api/messages', () => {
       method: 'OPTIONS',
       headers: { Origin: 'http://localhost:3000', 'Access-Control-Request-Method': 'GET' },
     });
-    expect(preflight.headers.get('access-control-allow-methods')).toBe('GET,DELETE');
+    expect(preflight.headers.get('access-control-allow-methods')).toBe('GET,POST,DELETE');
   });
 
   it('serves /healthz', async () => {

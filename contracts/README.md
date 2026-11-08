@@ -58,6 +58,7 @@ Two password-protected writes from the web UI (Tuan, 2026-11-08). Both need the 
 - `POST /api/messages/:id/unblock` moves one blocked message to the inbox (`action: "delivered"`, `reason: "override"`, original `verdict` kept). With the sender blocklist on, it also allowlists that sender. Returns `{ "ok": true, "messageId": "<id>", "allowlisted": true | false | null }` (`null` when the blocklist is off). `404` if no such message, `409` if it isn't blocked.
 - `GET /api/blocklist` returns `{ "enabled": <bool>, "blockedSenders": <n> }`: whether the sender blocklist is on and how many senders are blocked right now. No password.
 - `POST /api/blocklist/clear` unblocks every sender: it deletes every sender record (blocks, strikes and allowlist entries) and keeps the text fingerprints. Messages already in the blocked log stay there. Returns `{ "ok": true, "cleared": <senders removed>, "enabled": <bool> }` (`cleared: 0, enabled: false` when the blocklist is off).
+- If the blocklist store (Atlas) is unreachable, `GET /api/blocklist` and `POST /api/blocklist/clear` return `503 { "error": "blocklist unavailable" }`. Message handling still fails open.
 
 ## Webhook signing (gateway and simulator)
 
