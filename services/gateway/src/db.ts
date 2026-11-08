@@ -2,25 +2,28 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
+import type { InboundMessage } from './photon.js';
 import type { Action, ApiMessage, Reason, Verdict } from './types.js';
 
-// Raw phone numbers and Twilio SIDs are stored here and nowhere else.
-// Nothing in this module returns them to callers outside the DB layer.
+// Raw iMessage handles (numbers or emails) and Photon message/space ids are stored here and
+// nowhere else. Nothing in this module returns them to callers outside the DB layer.
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS participants (
   id          TEXT PRIMARY KEY,
-  phone       TEXT NOT NULL UNIQUE,
+  handle      TEXT NOT NULL UNIQUE,
   display     TEXT NOT NULL,
   created_at  TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS messages (
-  seq             INTEGER PRIMARY KEY AUTOINCREMENT,
-  id              TEXT NOT NULL UNIQUE,
-  message_sid     TEXT NOT NULL UNIQUE,
-  participant_id  TEXT NOT NULL REFERENCES participants(id),
-  to_number       TEXT,
-  body            TEXT NOT NULL,
-  received_at     TEXT NOT NULL,
+  seq                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  id                   TEXT NOT NULL UNIQUE,
+  provider_message_id  TEXT NOT NULL UNIQUE,
+  participant_id       TEXT NOT NULL REFERENCES participants(id),
+  line                 TEXT,
+  space_type           TEXT,
+  sent_at              TEXT,
+  body                 TEXT NOT NULL,
+  received_at          TEXT NOT NULL,
   action          TEXT NOT NULL CHECK (action IN ('pending', 'delivered', 'blocked')),
   reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable')),
   verdict_json    TEXT,
@@ -32,6 +35,11 @@ export function openDb(path: string): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  const legacy = db.prepare("SELECT 1 FROM pragma_table_info('messages') WHERE name = 'message_sid'").get();
+  if (legacy) {
+    db.close();
+    throw new Error(`${path} uses the old Twilio schema. Delete it (or point DB_PATH at a new file) and restart.`);
+  }
   db.exec(SCHEMA);
   return db;
 }
@@ -47,11 +55,19 @@ export function maskNumber(phone: string): string {
   return `***-***-${digits.slice(-4).padStart(4, '*')}`;
 }
 
-export interface InboundRecord {
-  messageSid: string;
-  from: string;
-  to: string | null;
-  body: string;
+/** iMessage handles are numbers or Apple ID emails: `jane@icloud.com` -> `j***@icloud.com`. */
+export function maskHandle(handle: string): string {
+  const at = handle.lastIndexOf('@');
+  if (at > 0) return `${handle[0]}***@${handle.slice(at + 1)}`;
+  return maskNumber(handle);
+}
+
+/** Phone handles in E.164 without formatting; email handles lowercased. One participant per person. */
+export function normalizeHandle(handle: string): string {
+  const t = handle.trim();
+  if (t.includes('@')) return t.toLowerCase();
+  const digits = t.replace(/\D/g, '');
+  return t.startsWith('+') ? `+${digits}` : digits;
 }
 
 export interface StoredMessage {
@@ -63,36 +79,38 @@ export interface StoredMessage {
 export class Store {
   constructor(private readonly db: DatabaseSync) {}
 
-  /** Returns the participant id for a phone number, creating one on first sight. */
-  private participantFor(phone: string, now: string): { id: string; display: string } {
+  /** Returns the participant id for an iMessage handle, creating one on first sight. */
+  private participantFor(rawHandle: string, now: string): { id: string; display: string } {
+    const handle = normalizeHandle(rawHandle);
     const existing = this.db
-      .prepare('SELECT id, display FROM participants WHERE phone = ?')
-      .get(phone) as { id: string; display: string } | undefined;
+      .prepare('SELECT id, display FROM participants WHERE handle = ?')
+      .get(handle) as { id: string; display: string } | undefined;
     if (existing) return existing;
-    const p = { id: newId('p'), display: maskNumber(phone) };
+    const p = { id: newId('p'), display: maskHandle(handle) };
     this.db
-      .prepare('INSERT INTO participants (id, phone, display, created_at) VALUES (?, ?, ?, ?)')
-      .run(p.id, phone, p.display, now);
+      .prepare('INSERT INTO participants (id, handle, display, created_at) VALUES (?, ?, ?, ?)')
+      .run(p.id, handle, p.display, now);
     return p;
   }
 
   /**
-   * Inserts a new pending message. Returns null if this MessageSid was already seen (Twilio retry).
+   * Inserts a new pending message. Returns null if this Photon message.id was already seen
+   * (Photon delivers at least once and retries on 5xx/timeouts).
    */
-  insertInbound(rec: InboundRecord, now = new Date()): StoredMessage | null {
+  insertInbound(rec: InboundMessage, now = new Date()): StoredMessage | null {
     const nowIso = now.toISOString();
-    const seen = this.db.prepare('SELECT 1 FROM messages WHERE message_sid = ?').get(rec.messageSid);
+    const seen = this.db.prepare('SELECT 1 FROM messages WHERE provider_message_id = ?').get(rec.providerMessageId);
     if (seen) return null;
     this.db.exec('BEGIN');
     try {
-      const p = this.participantFor(rec.from, nowIso);
+      const p = this.participantFor(rec.sender, nowIso);
       const id = newId('msg');
       const res = this.db
         .prepare(
-          `INSERT OR IGNORE INTO messages (id, message_sid, participant_id, to_number, body, received_at, action)
-           VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+          `INSERT OR IGNORE INTO messages (id, provider_message_id, participant_id, line, space_type, sent_at, body, received_at, action)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
         )
-        .run(id, rec.messageSid, p.id, rec.to, rec.body, nowIso);
+        .run(id, rec.providerMessageId, p.id, rec.line, rec.spaceType, rec.sentAt, rec.body, nowIso);
       this.db.exec('COMMIT');
       if (Number(res.changes) === 0) return null;
       return { id, body: rec.body, display: p.display };

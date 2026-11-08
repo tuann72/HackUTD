@@ -2,7 +2,7 @@ import type { Highlight, ScamCategory, Verdict } from './types.js';
 import { SCAM_CATEGORIES } from './types.js';
 
 export interface ClassifyInput {
-  /** Opaque gateway message id. Never a phone number or Twilio SID. */
+  /** Opaque gateway message id. Never a sender handle or Photon message id. */
   messageId: string;
   text: string;
 }

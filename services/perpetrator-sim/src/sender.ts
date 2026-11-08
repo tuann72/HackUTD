@@ -1,7 +1,7 @@
 import type { SimConfig } from "./config.ts";
 import { assertSafeNumber, assertSafeUrl } from "./safety.ts";
 import type { Step } from "./steps.ts";
-import { buildInboundSms, encodeForm, maskNumber, signRequest } from "./twilio-request.ts";
+import { buildInboundMessage, maskNumber, signBody, type SpectrumPayload } from "./spectrum-request.ts";
 
 export interface RunOptions {
   dryRun?: boolean;
@@ -14,7 +14,7 @@ export interface RunOptions {
 
 export interface SendResult {
   index: number;
-  messageSid: string;
+  messageId: string;
   from: string;
   ok: boolean;
   status?: number;
@@ -25,25 +25,34 @@ export interface SendResult {
 export interface SignedRequest {
   url: string;
   headers: Record<string, string>;
-  params: Record<string, string>;
+  payload: SpectrumPayload;
   body: string;
 }
 
-export function buildSignedRequest(config: SimConfig, step: Pick<Step, "from" | "body">): SignedRequest {
-  const params = buildInboundSms({
-    from: step.from,
-    to: config.victimNumber,
-    body: step.body,
-    accountSid: config.accountSid,
-  });
+/** Placeholder X-Spectrum-Webhook-Id; the gateway doesn't check it. */
+export const SIM_WEBHOOK_ID = "00000000-0000-4000-8000-000000000000";
+
+export function buildSignedRequest(
+  config: SimConfig,
+  step: Pick<Step, "from" | "body">,
+  now: () => Date = () => new Date(),
+): SignedRequest {
+  const at = now();
+  const payload = buildInboundMessage({ from: step.from, line: config.victimNumber, body: step.body, timestamp: at.toISOString() });
+  const body = JSON.stringify(payload);
+  const timestamp = String(Math.floor(at.getTime() / 1000));
   return {
     url: config.webhookUrl,
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "X-Twilio-Signature": signRequest(config.authToken, config.webhookUrl, params),
+      "Content-Type": "application/json",
+      "User-Agent": "t-gate-perpetrator-sim",
+      "X-Spectrum-Event": "messages",
+      "X-Spectrum-Webhook-Id": SIM_WEBHOOK_ID,
+      "X-Spectrum-Timestamp": timestamp,
+      "X-Spectrum-Signature": signBody(config.webhookSecret, timestamp, body),
     },
-    params,
-    body: encodeForm(params),
+    payload,
+    body,
   };
 }
 
@@ -62,7 +71,7 @@ export async function runSteps(config: SimConfig, steps: readonly Step[], opts: 
   const allowReal = opts.allowRealNumbers ?? false;
 
   assertSafeUrl(config.webhookUrl);
-  assertSafeNumber(config.victimNumber, "VICTIM_NUMBER (To)", allowReal);
+  assertSafeNumber(config.victimNumber, "VICTIM_NUMBER (line)", allowReal);
   steps.forEach((s, i) => assertSafeNumber(s.from, `step ${i + 1} From`, allowReal));
 
   log(`${opts.dryRun ? "[dry run] " : ""}${steps.length} message(s) -> ${config.webhookUrl}`);
@@ -74,7 +83,7 @@ export async function runSteps(config: SimConfig, steps: readonly Step[], opts: 
     const req = buildSignedRequest(config, step);
     const tag = `[${i + 1}/${steps.length}] +${(elapsed / 1000).toFixed(1)}s ${maskNumber(step.from)}`;
     const expected = step.expected ? ` expected=${step.expected}` : "";
-    const base = { index: i, messageSid: req.params.MessageSid, from: step.from, expected: step.expected };
+    const base = { index: i, messageId: req.payload.message.id, from: step.from, expected: step.expected };
 
     if (opts.dryRun) {
       log(`${tag}${expected} (not sent)`);

@@ -130,7 +130,7 @@ describe('MemoryBlocklist storage', () => {
 });
 
 describe('blocklist config', () => {
-  const base = { TWILIO_AUTH_TOKEN: 't' };
+  const base = { PHOTON_WEBHOOK_SECRET: 't' };
 
   it('defaults to 3 strikes, 0.95, 7 days, no Atlas', () => {
     const c = loadConfig(base);

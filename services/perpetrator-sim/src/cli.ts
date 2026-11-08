@@ -14,10 +14,10 @@ Commands:
 
 Options (any command):
   --dry-run              Print the signed requests instead of sending
-  --allow-real-numbers   Allow From/To numbers outside +1555xxxxxxx
+  --allow-real-numbers   Allow sender/line numbers outside +1555xxxxxxx
   -h, --help             Show this help
 
-Env: GATEWAY_WEBHOOK_URL, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID, VICTIM_NUMBER (.env is loaded if present)`;
+Env: GATEWAY_WEBHOOK_URL, PHOTON_WEBHOOK_SECRET, VICTIM_NUMBER (.env is loaded if present)`;
 
 export interface CliDeps extends Omit<RunOptions, "dryRun" | "allowRealNumbers"> {
   config?: SimConfig;

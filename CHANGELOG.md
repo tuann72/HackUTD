@@ -6,6 +6,16 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: iMessage through Photon replaces Twilio SMS
+
+- **Decision (Tuan):** migrate to **Photon (Spectrum)** and handle **only iMessage**. The gateway's `POST /twilio/sms` is replaced by `POST /webhooks/photon`. The `twilio` package is removed from the gateway and the simulator. This reverses "Photon dropped" (2026-11-07) for the messaging provider. Whether the team enters a Photon track is TBD. Plan: [`docs/features/photon-imessage.md`](docs/features/photon-imessage.md).
+- **Webhook:** JSON `messages` events. The signature is `X-Spectrum-Signature: v0=` + HMAC-SHA256(signing secret, `v0:<X-Spectrum-Timestamp>:<raw body>`), with a 300 s replay window ([Photon docs](https://photon.codes/docs/webhooks/verifying-signatures)). The URL isn't signed, so `PUBLIC_WEBHOOK_URL` is removed. Responses: `400` for missing headers, a stale timestamp or a malformed body; `401` for a bad signature; `200 ok` for everything else, including duplicates and ignored content, so Photon (which retries 5xx, 408 and 429 up to 6 times) doesn't retry them.
+- **Verified by hand, not with Photon's SDK:** about 20 lines of `node:crypto` keep the gateway free of a provider SDK and let tests and the simulator sign requests the same way. `spectrum-ts` and its Hono adapter exist and could replace this later.
+- **Data:** dedupe on Photon's `message.id`. Participants are keyed by iMessage handle (an E.164 number or an Apple ID email), normalized and masked (`***-***-0142`, `j***@icloud.com`). The query API contract is unchanged. The SQLite schema changed, and the gateway refuses to open an old Twilio-schema file.
+- **Content:** `text`, `richlink` (its URL) and `group` (joined items) are classified. `attachment`, `reaction` and `contact` are acknowledged and ignored (TBD).
+- **Hosting:** Photon delivers only to public HTTPS URLs with no redirects, which fits the Vultr VM behind Caddy. Real messages on a laptop need a tunnel. The simulator still posts to `localhost`.
+- **Still TBD:** dedicated vs. shared line, what "blocked" means on a real victim handset, attachments and group chats, and wiring the sender blocklist on email handles.
+
 ### 2026-11-08: Sender blocklist and scam fingerprints in MongoDB Atlas
 
 - **Decision (Timothy):** Vultr is the judge: the classifier on Vultr scores each message and the gateway blocks it at `BLOCK_THRESHOLD`, as before. New: each blocked message records a **fingerprint** in **MongoDB Atlas**, and proven scam senders go on a **blocklist** so their later messages are blocked without the model (reason `sender_blocked`). Plan: [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md).

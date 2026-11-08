@@ -2,13 +2,14 @@ import { timingSafeEqual } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import twilio from 'twilio';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
+import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, parseSpectrumEvent, verifySpectrumRequest } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
-export const EMPTY_TWIML = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>';
+/** Path Photon delivers inbound iMessage webhooks to. */
+export const WEBHOOK_PATH = '/webhooks/photon';
 
 export interface Logger {
   info(msg: string): void;
@@ -18,8 +19,10 @@ export interface Logger {
 export interface AppDeps {
   db: DatabaseSync;
   classifier: Classifier;
-  config: Pick<GatewayConfig, 'twilioAuthToken' | 'publicWebhookUrl' | 'blockThreshold' | 'corsOrigins' | 'debug' | 'debugToken'>;
+  config: Pick<GatewayConfig, 'photonWebhookSecret' | 'signatureToleranceSeconds' | 'blockThreshold' | 'corsOrigins' | 'debug' | 'debugToken'>;
   logger?: Logger;
+  /** Clock for the signature timestamp check. Tests override it. */
+  now?: () => Date;
 }
 
 export type GatewayApp = Hono & {
@@ -39,7 +42,7 @@ function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
-export function createApp({ db, classifier, config, logger = consoleLogger }: AppDeps): GatewayApp {
+export function createApp({ db, classifier, config, logger = consoleLogger, now = () => new Date() }: AppDeps): GatewayApp {
   const store = new Store(db);
   const pending = new Set<Promise<void>>();
   const app = new Hono();
@@ -70,30 +73,48 @@ export function createApp({ db, classifier, config, logger = consoleLogger }: Ap
 
   app.get('/healthz', (c) => c.json({ ok: true }));
 
-  app.post('/twilio/sms', async (c) => {
+  app.post(WEBHOOK_PATH, async (c) => {
+    // Verify over the raw bytes, before any JSON parsing (Photon signs the exact body).
     const raw = await c.req.text();
-    const params = Object.fromEntries(new URLSearchParams(raw));
-    const signature = c.req.header('X-Twilio-Signature') ?? '';
-    const url = config.publicWebhookUrl ?? c.req.url;
-
-    if (!signature || !twilio.validateRequest(config.twilioAuthToken, signature, url, params)) {
-      logger.warn(`rejected webhook: invalid or missing X-Twilio-Signature (validated against ${url})`);
-      return c.text('Forbidden', 403);
+    const check = verifySpectrumRequest({
+      secret: config.photonWebhookSecret,
+      signature: c.req.header(SIGNATURE_HEADER),
+      timestamp: c.req.header(TIMESTAMP_HEADER),
+      rawBody: raw,
+      nowSeconds: Math.floor(now().getTime() / 1000),
+      toleranceSeconds: config.signatureToleranceSeconds,
+    });
+    if (!check.ok) {
+      logger.warn(`rejected webhook: ${check.error}`);
+      return c.text(check.error, check.status);
     }
 
-    const messageSid = params.MessageSid ?? params.SmsMessageSid;
-    const from = params.From;
-    if (!messageSid || !from) return c.text('Missing MessageSid or From', 400);
+    let json: unknown;
+    try {
+      json = JSON.parse(raw);
+    } catch {
+      return c.text('body is not JSON', 400);
+    }
+    const parsed = parseSpectrumEvent(json);
+    if (parsed.kind === 'invalid') {
+      logger.warn(`rejected webhook: ${parsed.error}`);
+      return c.text(parsed.error, 400);
+    }
+    if (parsed.kind === 'ignored') {
+      // 2xx so Photon doesn't retry something we'll never handle.
+      logger.info(`webhook ignored (${parsed.reason}; X-Spectrum-Event=${c.req.header(EVENT_HEADER) ?? '?'})`);
+      return c.text('ok', 200);
+    }
 
-    const stored = store.insertInbound({ messageSid, from, to: params.To ?? null, body: params.Body ?? '' });
+    const stored = store.insertInbound(parsed.message);
     if (stored) {
       logger.info(`${stored.id} received from ${stored.display}`);
       schedule(stored.id, stored.body, stored.display);
     } else {
-      logger.info(`duplicate webhook ignored (already-seen MessageSid)`);
+      logger.info('duplicate webhook ignored (already-seen message.id)');
     }
-    // Never reply to the sender: always empty TwiML.
-    return c.body(EMPTY_TWIML, 200, { 'Content-Type': 'text/xml' });
+    // Ack fast; classification runs after the response. The gateway never replies to the sender.
+    return c.text('ok', 200);
   });
 
   app.use(

@@ -6,7 +6,7 @@ The only thing the gateway and the web app share (see `AGENTS.md`, "Decoupling r
 |---|---|
 | [`query-api.v1.schema.json`](query-api.v1.schema.json) | JSON Schema for `GET /api/messages`, the gateway's read-only query API |
 | [`fixtures/messages.v1.sample.json`](fixtures/messages.v1.sample.json) | A sample `GET /api/messages` response. The web app uses it when `NEXT_PUBLIC_API_URL` is unset |
-| [`fixtures/twilio-inbound-sms.sample.json`](fixtures/twilio-inbound-sms.sample.json) | The form fields Twilio posts for an inbound SMS. **Synthetic**, built from Twilio's documented fields; replace with a recorded real request (task 1.1) |
+| [`fixtures/photon-inbound-imessage.sample.json`](fixtures/photon-inbound-imessage.sample.json) | The headers and JSON body Photon (Spectrum) posts for an inbound iMessage. **Synthetic**, built from Photon's documented payload; replace with a recorded real delivery (photon-imessage task 1.3) |
 
 ## `GET /api/messages` (v1)
 
@@ -18,8 +18,8 @@ Each message:
 
 | Field | Meaning |
 |---|---|
-| `id` | Opaque message id (not the Twilio `MessageSid`) |
-| `from.participantId`, `from.display` | Opaque sender id and masked number (`***-***-0142`). Never a raw number |
+| `id` | Opaque message id (not Photon's `message.id`) |
+| `from.participantId`, `from.display` | Opaque sender id and masked iMessage handle (`***-***-0142`, or `j***@icloud.com` for an email handle). Never a raw handle |
 | `body` | Message text |
 | `receivedAt` | ISO 8601 time the gateway accepted it |
 | `action` | `pending`, `delivered` or `blocked` |
@@ -32,10 +32,11 @@ Display rule: `action == "delivered"` with `reason == "classifier_unavailable"` 
 
 ## Webhook signing (gateway and simulator)
 
-Twilio signs each webhook over the **exact URL** configured for the number plus the sorted form fields. The gateway must validate against that same URL string:
+Photon signs each webhook with the webhook's signing secret ([docs](https://photon.codes/docs/webhooks/verifying-signatures)):
 
-- In dev, the simulator signs for `GATEWAY_WEBHOOK_URL` (default `http://localhost:8787/twilio/sms`), and the gateway validates against `http://localhost:<PORT>/twilio/sms`.
-- Behind a tunnel or proxy, set the gateway's `PUBLIC_WEBHOOK_URL` to the public URL configured in Twilio (and point the simulator's `GATEWAY_WEBHOOK_URL` at it too). Otherwise the URL the gateway rebuilds from the request won't match, and every request gets 403.
+- `X-Spectrum-Signature: v0=<hex>`, where `hex` is HMAC-SHA256 over `"v0:" + X-Spectrum-Timestamp + ":" + <raw body>`. Verify the raw bytes before parsing JSON.
+- The gateway rejects timestamps more than 300 s from its clock. The URL isn't signed, so proxies and tunnels need no extra config.
+- In dev, the simulator and the gateway share the placeholder secret `dev-photon-webhook-secret-change-me`.
 - A 200 from the webhook only means the message was accepted, not classified. Read the outcome from `GET /api/messages`.
 
 ## Not part of the contract

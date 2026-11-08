@@ -57,7 +57,7 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 
 | # | Task | Depends on | Parallel? | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Scaffolding: gateway `/webhooks/photon` (signature, dedupe, content parsing), SQLite schema for handles, simulator signs Spectrum payloads, fixture, docs | — | — | In progress | `feat/photon-imessage-gateway` | Tuan + Claude Code | TBD |
+| 1.1 | Scaffolding: gateway `/webhooks/photon` (signature, dedupe, content parsing), SQLite schema for handles, simulator signs Spectrum payloads, fixture, docs | — | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 | 1.2 | Provision a Photon iMessage line and project. Register the webhook against the deployed gateway | 1.1, gateway deploy | Yes, with 1.3 | Not started | — | — | — |
 | 1.3 | Record a real delivery and replace the synthetic fixture (`contracts/fixtures/photon-inbound-imessage.sample.json`) | 1.2 | — | Not started | — | — | — |
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
