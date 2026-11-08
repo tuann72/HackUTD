@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Shield or hand switch; Rapid fire button; two presets removed
+
+- **Decision (Tuan):** bring the hand back as an option. A **Shield | Hand** switch replaces the "On guard" status above the scene (shield is the default, not remembered across visits). Shield mode works as before; hand mode is the earlier slapping hand in its "T-GUARD" box: shots fly at the hand, delivered ones land in it, blocked ones stop short and get slapped. A shot keeps the guard it was fired with, so switching mid-flight is safe. `Hand.tsx`, `slap.ts`, its tests and the hand images are restored.
+- **Simulate:** the iMessage demo and Smoke test buttons are removed (their scenario files stay in the bank). A new **Rapid fire** button sends 50 mixed messages (60% scams) 100 ms apart; the interval floor (`LIMITS.minIntervalMs`) drops from 250 to 100 ms. Random presets now always use their own count, ratio and interval.
+- **Limit to know:** `/api/simulate` allows 60 simulated messages per minute, so one Rapid fire fits; a second one within the same minute stops partway with "Too many simulated messages; wait a minute." The scene animates at most one shot every 600 ms and drops older queued ones, so a burst shows only some of the 50; the lists show them all.
+
 ### 2026-11-08: Nemotron always reviews large money asks, new decision prompt
 
 - **Rule:** a message asking for at least `MONEY_WARN_AMOUNT` now goes to Nemotron even when its score is below `REVIEW_BAND_LOW`, because the classifier can't weigh amounts. Scores at or above `REVIEW_BAND_HIGH` stay blocked without review.

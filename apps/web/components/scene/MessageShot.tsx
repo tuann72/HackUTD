@@ -7,12 +7,17 @@ import { motion } from "motion/react";
 import type { Group, Sprite, SpriteMaterial, Vector3 } from "three";
 import type { SceneMessage } from "./feed";
 import { flightDistance } from "./flight";
+import { SLAPS, contactTime, palmAt, pickSlap, type SlapName } from "./slap";
 
 /** Whole flight; fast-slow-fast (see `flight.ts`), so the middle takes most of it. */
 const FLIGHT_SECONDS = 2.2;
 /** Default arc height; delivered shots pass a higher one so they clear the shield. */
 const ARC_HEIGHT = 0.9;
-/** How long a blocked bubble flies back after hitting the shield, and how it flies. */
+/** Hand mode: distance fraction where a blocked message stops, within reach of the hand. */
+const BLOCK_AT = 0.85;
+/** Hand mode: at contact the bubble's center is this far left of the palm center (it meets the palm's edge). */
+const CONTACT_OFFSET_X = 0.3;
+/** How long a blocked bubble flies back (off the shield or slapped), and how it flies. */
 const KNOCK_SECONDS = 0.8;
 const KNOCK_VX = -6;
 const KNOCK_VY = 2.6;
@@ -39,16 +44,22 @@ interface MessageShotProps {
   to: Vector3;
   /** Peak height of the flight arc above the straight line. */
   arc?: number;
+  /**
+   * What stops blocked messages. "shield": it flies to `to` (the shield's face)
+   * and bounces back. "hand": it stops short of `to`, waits for the slap, and is
+   * knocked away.
+   */
+  guard?: "shield" | "hand";
   /** Called once when a delivered message reaches the target. */
   onArrive: () => void;
-  /** Called once when a blocked message hits the shield. */
-  onBlocked: () => void;
+  /** Called once when a blocked message is stopped; in hand mode, with the slap the hand should play. */
+  onBlocked: (slap: SlapName) => void;
   /** Called once when the shot is finished and can be removed. */
   onDone: (shotKey: number) => void;
 }
 
-/** fly → (blocked) knocked back off the shield, or fly → done when delivered. */
-type Phase = "fly" | "knocked" | "done";
+/** fly → (blocked) [hand: wait for the slap →] knocked back, or fly → done when delivered. */
+type Phase = "fly" | "wait" | "knocked" | "done";
 
 /**
  * Memoized: with stable callbacks from the parent, shots already in flight
@@ -61,6 +72,7 @@ export const MessageShot = memo(function MessageShot({
   from,
   to,
   arc = ARC_HEIGHT,
+  guard = "shield",
   onArrive,
   onBlocked,
   onDone,
@@ -72,6 +84,7 @@ export const MessageShot = memo(function MessageShot({
   const phase = useRef<Phase>("fly");
   const phaseTime = useRef(0);
   const velocity = useRef({ x: 0, y: 0 });
+  const waitFrom = useRef({ x: 0, y: 0 });
   const label = useRef<HTMLDivElement>(null);
   const stamp = useRef<HTMLDivElement>(null);
   const [stamped, setStamped] = useState(false);
@@ -79,6 +92,9 @@ export const MessageShot = memo(function MessageShot({
   const textures = useTexture(BUBBLES);
 
   const { blocked, potentialScam } = message;
+  const slapName = pickSlap(shotKey);
+  const slap = SLAPS[slapName];
+  const byHand = blocked && guard === "hand";
 
   useFrame((_, dt) => {
     const g = group.current;
@@ -87,17 +103,25 @@ export const MessageShot = memo(function MessageShot({
     if (phase.current === "fly") {
       // `progress` is the time fraction; the path and arc use the distance it maps to.
       progress.current = Math.min(progress.current + dt / FLIGHT_SECONDS, 1);
-      const p = flightDistance(progress.current);
+      const stop = byHand ? BLOCK_AT : 1;
+      const distance = flightDistance(progress.current);
+      const p = Math.min(distance, stop);
       g.position.lerpVectors(from, to, p);
       g.position.y += Math.sin(Math.PI * p) * arc;
-      if (p >= 1) {
+      if (distance >= stop) {
         phaseTime.current = 0;
-        if (blocked) {
+        if (byHand) {
+          // Stopped within reach: wait for the slap.
+          phase.current = "wait";
+          waitFrom.current = { x: g.position.x, y: g.position.y };
+          setStamped(true);
+          onBlocked(slapName);
+        } else if (blocked) {
           // Hit the shield: stamp it and bounce straight back.
           phase.current = "knocked";
           velocity.current = { x: KNOCK_VX, y: KNOCK_VY };
           setStamped(true);
-          onBlocked();
+          onBlocked(slapName);
         } else {
           phase.current = "done";
           onArrive();
@@ -108,6 +132,25 @@ export const MessageShot = memo(function MessageShot({
     }
 
     phaseTime.current += dt;
+
+    if (phase.current === "wait") {
+      // While the hand winds up, drift to where its palm will be at contact,
+      // with a nervous wobble, so the slap lands on the bubble.
+      const hit = contactTime(slap);
+      const k = Math.min(phaseTime.current / hit, 1);
+      const ease = k * k * (3 - 2 * k);
+      const palm = palmAt(slap.angle);
+      g.position.x = waitFrom.current.x + (palm.x - CONTACT_OFFSET_X - waitFrom.current.x) * ease;
+      g.position.y = waitFrom.current.y + (palm.y - waitFrom.current.y) * ease;
+      if (bubble.current) bubble.current.position.x = Math.sin(phaseTime.current * 40) * 0.03;
+      if (phaseTime.current >= hit) {
+        phase.current = "knocked";
+        phaseTime.current = 0;
+        velocity.current = { x: KNOCK_VX, y: KNOCK_VY };
+        if (bubble.current) bubble.current.position.x = 0;
+      }
+      return;
+    }
 
     if (phase.current === "knocked") {
       // Fly back toward the sender, spinning and fading.
