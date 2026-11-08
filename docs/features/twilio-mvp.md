@@ -143,7 +143,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 | Storage | **SQLite** (`node:sqlite`), with debug tools to clear it (`POST /debug/reset` when `GATEWAY_DEBUG=1`, and an `npm run db:reset` script) | **Decided** (Tuan, 2026-11-07) |
 | Classifier-down behavior | **Fail open:** deliver with `reason: classifier_unavailable`, shown as "unverified" | **Decided** (Tuan, 2026-11-07) |
 | Block threshold | `BLOCK_THRESHOLD` env var, default 0.5, tuned on `val` later | **TBD** |
-| Classifier approach and label scheme | MiniLM on Vultr, in [PR #3](https://github.com/lytx02/HackUTD/pull/3) (separate plan: `classifier-service.md` once merged) | In PR #3 |
+| Classifier approach and label scheme | MiniLM on Vultr (Tuan), with TF-IDF + LR as the baseline; label scheme still open; see [classifier-service.md](classifier-service.md). The gateway calls either through the same `POST /classify` | Approach **agreed**; label scheme **TBD** |
 | Message bank file format | **JSONL** | **Decided** (Tuan, 2026-11-07) |
 | Message bank size and mix | Scenario files plus a small bank of SMS-style rows | **TBD** |
 | Where the message UI lives | **`apps/web`, route `/messages`**, so the 3D scene ([PR #2](https://github.com/lytx02/HackUTD/pull/2)) can take `/` later | **Decided** (Tuan, 2026-11-07) |
@@ -158,7 +158,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
-| 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | Not started | | | |
+| 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | In progress (approach done: MiniLM on Vultr; label scheme after the Vultr training run) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 1: foundations
 
@@ -169,7 +169,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | 1.3a | `apps/web` scaffold with the 3D-scene packages and the shared `lib/messages` data layer (done first, so the scene can start in parallel) | contract | all | In review | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | [#5](https://github.com/lytx02/HackUTD/pull/5) |
 | 1.3 | Message UI: `/messages` page (with 2.2) | 1.3a | 1.1, 1.2, 1.4, 1.5 | In progress | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | |
 | 1.4 | Message bank and demo scenario files (with 2.1) | — | 1.1–1.3, 1.5 | In review | `feat/twilio-mvp-simulator` | Tuan + Claude Code | [#7](https://github.com/lytx02/HackUTD/pull/7) |
-| 1.5 | Classifier: train, evaluate on `val`/`test`, export | 0.2 | 1.1–1.4 | In progress | `feat/classifier-minilm-vultr` | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
+| 1.5 | Classifier: train, evaluate on `val`/`test`, export. Tracked in [classifier-service.md](classifier-service.md) | 0.2 | 1.1–1.4 | In progress (code done; Vultr training next) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 2: integration
 

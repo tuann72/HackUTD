@@ -1,0 +1,3 @@
+{$TGATE_DOMAIN} {
+	reverse_proxy classifier:8000
+}
