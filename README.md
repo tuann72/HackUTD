@@ -8,6 +8,8 @@ Proposed, not final: the victim gets a short "potential scam blocked" notice wit
 
 Status: **building the MVP**. On `main`: the classifier code, the query API contract, the `apps/web` scaffold, the message bank and perpetrator simulator (`services/perpetrator-sim/`), the gateway (`services/gateway/`), the gateway's Vultr deploy runbook, the sender-blocklist module, and the web UI: one page at `/` with the 3D scene above the inbox/blocked lists. Next: the real classifier (2.3), deployment (3.1) and wiring the sender blocklist into the gateway. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`CHANGELOG.md`](CHANGELOG.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset.
 
+**Setting up accounts and credentials?** Start with [`docs/SETUP.md`](docs/SETUP.md) (Photon, Vultr, domain, Vercel, optional Atlas; Twilio isn't needed). Deploying the gateway: [`services/gateway/DEPLOY.md`](services/gateway/DEPLOY.md).
+
 ## Feature board
 
 Every feature has a plan in [`docs/features/`](docs/features/) with ordered tasks and parallelization notes. New plans start from [`_TEMPLATE.md`](docs/features/_TEMPLATE.md).
@@ -29,7 +31,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Photon iMessage gateway | Deploy tooling and setup checklist: `docs/SETUP.md`, webhook registration script, VM deploy files, tunnel helper (task 1.7) | `chore/photon-deploy-tooling` | Tuan + Claude Code | In progress | TBD |
+| Photon iMessage gateway | Deploy tooling and setup checklist: `docs/SETUP.md`, webhook registration script, VM deploy files, tunnel helper (task 1.7) | `chore/photon-deploy-tooling` | Tuan + Claude Code | In review | [#25](https://github.com/tuann72/HackUTD/pull/25) |
 | Photon iMessage gateway | Replace the Twilio webhook with Photon (Spectrum) iMessage webhooks: gateway, simulator, fixture, docs (task 1.1) | `feat/photon-imessage-gateway` | Tuan + Claude Code | In review | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 | Sender blocklist | Fingerprint + blocklist module (task 1.2) | `feat/sender-blocklist-module` | Timothy + Claude Code | Done | [#23](https://github.com/tuann72/HackUTD/pull/23) |
 | Sender blocklist | Write the plan | `feat/sender-blocklist-plan` | Timothy + Claude Code | Done | [#22](https://github.com/tuann72/HackUTD/pull/22) |

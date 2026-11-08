@@ -77,7 +77,7 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
 | 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | Not started | — | — | — |
 | 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
-| 1.7 | Deploy tooling and setup checklist: `docs/SETUP.md`, `npm run photon:webhook`, `services/gateway/deploy/` (Caddyfile, systemd unit, bootstrap), tunnel helper | 1.1 | Yes | In progress | `chore/photon-deploy-tooling` | Tuan + Claude Code | TBD |
+| 1.7 | Deploy tooling and setup checklist: `docs/SETUP.md`, `npm run photon:webhook`, `services/gateway/deploy/` (Caddyfile, systemd unit, bootstrap), tunnel helper | 1.1 | Yes | In review | `chore/photon-deploy-tooling` | Tuan + Claude Code | [#25](https://github.com/tuann72/HackUTD/pull/25) |
 
 ## Open questions (TBD)
 
