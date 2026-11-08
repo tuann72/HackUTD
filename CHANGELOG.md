@@ -6,11 +6,16 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Shared-pool Photon number, not a dedicated line
+
+- **Correction (Tuan):** the team isn't on Photon's Business plan. The victim line is the **shared-pool number** the project gets on Free/Pro. No code change: the gateway never filters on `space.phone`, and webhooks only carry our project's conversations.
+- **Consequences:** no real group chats (the UI support stays for the simulator); quotas of 50 new conversations per line per day and 5,000 messages per day (a live-demo risk); and whether arbitrary iPhones can reach the project is undocumented. Test this before the demo.
+
 ### 2026-11-08: Photon track, dedicated line, rich iMessage content, virtual inbox
 
 - **Decisions (Tuan):**
   1. Enter the **Photon track**.
-  2. Use one **dedicated** Photon line, so there's no shared-pool filtering.
+  2. Use one **dedicated** Photon line, so there's no shared-pool filtering. *(Superseded the same day: shared-pool number, see above.)*
   3. **Show attachments, reactions, contact cards and group chats** in the UI.
   4. Keep the victim's inbox **virtual** (the web UI), as with Twilio.
 - **Contract (additive, still v1):** new optional message fields `kind`, `conversation {id, type}`, `attachments [{name, mimeType, size}]`, `reaction {emoji, targetPreview}` and `contact {name, phones}`, plus a new reason, `not_classified`. They're optional so older v1 data stays valid. The gateway always sends them. Contact-card phones are masked, and Photon's attachment GUIDs and `space.id` never leave the gateway.

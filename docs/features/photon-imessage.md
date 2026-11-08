@@ -5,13 +5,18 @@
 **Follow-up decisions (Tuan, 2026-11-08):**
 
 1. The team **enters the Photon track**.
-2. One **dedicated** Photon line, so every delivery is for the victim and there's no shared-pool filtering.
+2. ~~One dedicated line~~. **Corrected (Tuan, 2026-11-08):** the team is on a Free/Pro plan with a **shared-pool number**, and that number is the victim number. Photon delivers only our project's conversations to our webhook, so the gateway does no extra filtering.
 3. Attachments, reactions, contact cards and group chats **show in the UI**.
 4. The victim's inbox is the **virtual inbox** (the web UI), as with Twilio.
 
 ## How interception works with Photon
 
-1. The team has one **dedicated** Photon iMessage line, the **victim line**, with its own number (`space.phone`).
+1. The team's victim line is the **shared-pool number** Photon routes our project's conversations through (Free/Pro plan; a dedicated line needs Business). The gateway stores whatever `space.phone` holds and doesn't depend on it.
+
+   What this means, per [Photon's line model](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing):
+   - **No group chats.** Shared pools can't create groups or deliver group-change events, so the "Group chat" UI won't trigger from real messages. It stays for the simulator and for a later dedicated line.
+   - **Quotas:** 5,000 messages per server per day and **50 new conversations per line per day**. That matters for the live public demo, where every judge who texts in is a new conversation. Raise it via help@photon.codes.
+   - **Not documented:** whether *any* iPhone can reach our project through the shared number or only linked users, and whether the number can differ across senders. Task 1.4 (a real iPhone that has never texted the line) answers this. Test with a second teammate's phone before the demo.
 2. A webhook pointing at the gateway is registered on the Photon project (see [Webhook setup](#webhook-setup)). Photon returns a **signing secret** once. That value is `PHOTON_WEBHOOK_SECRET`.
 3. Every inbound iMessage to the line arrives as `POST /webhooks/photon` with a JSON body (`event: "messages"`) and `X-Spectrum-*` headers.
 4. The gateway checks the signature and timestamp, dedupes on `message.id`, stores the message as `pending`, returns `200 ok` right away, then classifies it and marks it delivered or blocked. This is the same policy as before.
