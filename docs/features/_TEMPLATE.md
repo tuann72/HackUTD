@@ -7,7 +7,7 @@
 
 ## Goal
 
-What the feature does and why, in two or three sentences. Link the relevant `AGENTS.md` scope and `DESIGN.md` sections.
+What the feature does and why, in two or three sentences. Link the relevant `AGENTS.md` scope and `CHANGELOG.md` sections.
 
 ## Out of scope
 
@@ -15,7 +15,7 @@ What this feature deliberately does not do.
 
 ## Open questions
 
-- TBD items that block or shape the tasks below. Link the decision in `DESIGN.md` once resolved.
+- TBD items that block or shape the tasks below. Link the decision in `CHANGELOG.md` once resolved.
 
 ## Tasks
 

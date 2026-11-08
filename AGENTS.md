@@ -2,6 +2,12 @@
 
 This file is the shared source of truth for every coding agent (Claude Code, Codex, Cursor, Copilot, Gemini, etc.) and for human contributors. `CLAUDE.md` imports this file; Codex and most other agents read `AGENTS.md` directly. Put project rules here, not in tool-specific files.
 
+> **Feature plans live in [`docs/features/`](docs/features/).** Before working on a feature, read its plan there: it has the concrete design, ordered tasks, what can run in parallel, and who's on what. Current plans:
+>
+> - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (Twilio webhook, gateway, simulator, basic message UI).
+>
+> New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
+
 ## Project summary
 
 - **Name:** **T-Gate** (renamed from the earlier working name "Gate Guardian"). The repository folder and GitHub repo are still called `HackUTD`.
@@ -14,9 +20,12 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 
 ### MVP: Twilio scam-message simulation
 
-The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app: the victim-facing experience is a scam notice plus the Next.js web app.
+The MVP is **Twilio-first** and replaces the SRS's MVP. There is no mobile app. The full plan is in [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md).
 
-- The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `DESIGN.md`, "One Twilio number, simulated perpetrator".)
+- **MVP UI (Tuan, 2026-11-07):** a **basic Next.js page** that lists messages as delivered (inbox) or blocked. It polls the gateway's read-only query API (`GET /api/messages`); there's no event stream or WebSocket in the MVP. The **3D scene is parked** for later, along with the scam notice and blocked-scams panel. Don't build them for the MVP.
+- **Tunnels are only for local dev with a real phone.** Twilio delivers webhooks to a public URL, so a gateway on a laptop needs a tunnel to receive real texts. The simulator posts straight to `localhost`, and a deployed gateway needs no tunnel. Recommendation: deploy the gateway early. Hosting is TBD.
+
+- The team owns **one Twilio phone number, the victim number.** It receives messages and is the number T-Gate protects. (This replaces the earlier two-number plan; see `CHANGELOG.md`, "One Twilio number, simulated perpetrator".)
 - **The perpetrator is simulated with API calls**, not a second Twilio number. A perpetrator simulator sends HTTP requests to the gateway's webhook in exactly the format Twilio uses for an inbound SMS to the victim number (`From`, `To`, `Body`, `MessageSid`, …), signed with a valid `X-Twilio-Signature`. The gateway handles simulated and real messages the same way.
 - **Message bank:** the simulator draws its messages from a bank of labeled scam and legitimate examples, so demos and tests are repeatable and show both outcomes. Candidate sources: a subset of the real `test` split in `data/` (SMS-style rows), plus generated messages (templates or LLM-written). The exact mix is TBD.
 - **Real path check:** a teammate texts the victim number from their own phone to confirm the real Twilio → gateway path works. That's the same path the later public demo uses.
@@ -45,19 +54,19 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 **Training data (agreed, Tuan):** train on [`data/scam_categories_100k_full.csv`](data/README.md#scam_categories_100k_fullcsv), the most aggregated labeled file. It has the 8-class `label_class`, the binary `is_spam`, and the `split`/`style`/`is_synthetic`/`label_confidence` metadata, so it supports either label scheme. Evaluate only on the real `val`/`test` splits. The message bank is separate demo input, not training data.
 
-**Where the model runs (under consideration, not agreed):** the team is considering [Vultr](https://www.vultr.com/) to train the model and host it as an inference service. The gateway would send each intercepted message to the Vultr-hosted model and block or deliver based on the verdict it returns. See [`DESIGN.md`, "Classifier service on Vultr"](DESIGN.md#classifier-service-on-vultr-under-consideration).
+**Where the model runs (under consideration, not agreed):** the team is considering [Vultr](https://www.vultr.com/) to train the model and host it as an inference service. The gateway would send each intercepted message to the Vultr-hosted model and block or deliver based on the verdict it returns. See [`CHANGELOG.md`, "Classifier service on Vultr"](CHANGELOG.md#classifier-service-on-vultr-under-consideration).
 
 ## Proposed architecture: interception gateway and demo scene (not agreed)
 
-**Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** No code exists for it, and scaffolding is on hold. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`DESIGN.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](DESIGN.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
+**Status: proposed by Tuan on 2026-11-07, not yet agreed by the team, except where marked as Tuan's decision.** For the MVP, only the gateway, simulator, classifier interface and a read-only query API are in play; the event stream, scene, notice and panel below are later scope (see [MVP](#mvp-twilio-scam-message-simulation)). No code exists for it, and scaffolding is on hold. The full spec (component responsibilities, event contract v1, gateway behavior, scene design, open questions) is in [`CHANGELOG.md`, "Proposal: Twilio interception gateway and decoupled demo scene"](CHANGELOG.md#proposal-twilio-interception-gateway-and-decoupled-demo-scene). Read it before building anything in this area.
 
 **How interception works:** Twilio sends every SMS addressed to the victim number to our webhook. No phone sits behind that number. The victim's inbox is virtual and owned by the gateway, so the gateway acts as the victim's carrier. It classifies each message, then **delivers** it to the inbox or **blocks** it (quarantine log). Blocking needs no outbound SMS, so Twilio trial and A2P 10DLC limits don't apply to it.
 
 **Stack:**
-- **TypeScript (Tuan's lean):** the gateway, the perpetrator simulator and the web app.
+- **TypeScript (Tuan's decision, 2026-11-07):** the gateway (Twilio webhook and query API, built with **Hono**), the perpetrator simulator and the web app.
 - **Python:** the model training and inference service.
 - **Web app (Tuan's decision):** Next.js with **React Three Fiber** for the 3D scene and **Motion** (`motion/react`) for DOM animation (bubbles, panel, toasts). Don't use the deprecated `framer-motion-3d`, which doesn't support React 19. Animate 3D objects in R3F (`useFrame` with damping).
-- **Gateway hosting:** recommended as a **separate TypeScript service** on an always-on host, not Next.js route handlers on Vercel. Vercel can't hold the event stream or local storage, and a web deploy must never be able to break interception. See [`DESIGN.md`, "Technology stack"](DESIGN.md#technology-stack-leaning-typescript).
+- **Gateway hosting:** recommended as a **separate TypeScript service** on an always-on host, not Next.js route handlers on Vercel. Vercel can't hold the event stream or local storage, and a web deploy must never be able to break interception. See [`CHANGELOG.md`, "Technology stack"](CHANGELOG.md#technology-stack-typescript).
 
 **Components** (each separately runnable):
 
@@ -82,12 +91,12 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 **Scene (firm requirement from Tuan: keep it simple):** blob people (R3F meshes) wander and bob. When one sends a message, a chat bubble (HTML via drei `<Html>`, animated with Motion) appears above its head. Delivered messages float to the victim. A scam bubble turns red with a "Blocked" stamp and pops before it reaches the victim. New public senders spawn as new blobs (later scope).
 
-Everything above except the two firm requirements is a proposal. Open items stay **TBD**: confirming TypeScript and the gateway framework, where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, the highlight method if MiniLM is chosen, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
+Everything above except the two firm requirements is a proposal. Open items stay **TBD**: where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, the highlight method if MiniLM is chosen, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
 
 ## Open questions — do not guess
 
 - **Message type:** the MVP assumes text messages to the victim number. Whether voice calls are in scope for the Twilio MVP is TBD.
-- **Twilio architecture:** confirming the TypeScript lean, the gateway framework, and how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
+- **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** whether it sends scripted conversations, random draws from the message bank, messages typed by a teammate, or a mix.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
 - **Classifier:** final approach (see above), label scheme (binary spam/ham or the 8-class scam categories), thresholds, and evaluation measures.
@@ -101,7 +110,7 @@ Keep these items marked **TBD** until the team resolves them. Distinguish agreed
 ## Project documents
 
 - **Source SRS:** [HackUTD SRS](https://docs.google.com/document/d/1XIBEqGl1SWqR6r0WXhKSHVs-ZWZYoIjby72qngpZ06o/edit). It predates the Twilio-first decision; where it disagrees with this file, this file wins.
-- **Design specification:** [`DESIGN.md`](DESIGN.md). Detailed decisions, rationale, and the decision log.
+- **Design specification:** [`CHANGELOG.md`](CHANGELOG.md). Detailed decisions, rationale, and the decision log.
 - **Work tracker:** [`README.md`](README.md#active-work). Lists every feature and every branch an agent or person is currently working on.
 - **Feature plans:** [`docs/features/`](docs/features/). One file per feature, with ordered tasks and parallelization notes. Start new ones from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md).
 - **Dataset reference:** [`data/README.md`](data/README.md).
@@ -124,7 +133,7 @@ These rules apply to every model and tool. Follow them by default unless a perso
 
 ### 1. Before starting any work
 
-1. Read this file, then the relevant `docs/features/` plan, `DESIGN.md` sections, and the existing code. Do not choose an approach before looking at what exists.
+1. Read this file, then the relevant `docs/features/` plan, `CHANGELOG.md` sections, and the existing code. Do not choose an approach before looking at what exists.
 2. Sync with the remote: `git fetch origin`.
 3. **Check that nobody is already doing the work:**
    - `gh pr list --state open` (and `gh pr list --state all --search "<keyword>"` for related work).
@@ -185,7 +194,7 @@ Split work into tasks small enough to land in one focused PR, and prefer splits 
 ### 6. Keep the docs current
 
 1. When a task changes an agreed requirement, scope, architecture, technology choice, user behavior, or implementation status, update `AGENTS.md` in the same PR so the next agent has accurate context.
-2. Record detailed decisions and their rationale in `DESIGN.md` (add a decision-log entry). Keep unresolved questions explicit.
+2. Record detailed decisions and their rationale in `CHANGELOG.md` (add a decision-log entry). Keep unresolved questions explicit.
 3. Update the feature plan and the README tracker as task status changes.
 4. If the SRS, this file, and the code disagree, surface the discrepancy and use the newest explicit team decision. Do not silently turn a stretch idea into an MVP requirement.
 5. Follow any more specific `AGENTS.md` files found in subdirectories.
