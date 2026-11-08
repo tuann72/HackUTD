@@ -17,7 +17,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Twilio MVP: webhook gateway, simulator, classifier, basic Next.js message UI | [twilio-mvp.md](docs/features/twilio-mvp.md) | MVP | Not started |
 | Classifier service: MiniLM trained and served on Vultr | [classifier-service.md](docs/features/classifier-service.md) | MVP | In progress |
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
-| Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | Not started |
+| Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (`/scene` with fake data, #14) |
 | Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
 | 3D conversation scene, Next.js + React Three Fiber (parked) | _Not written yet_ | Later | Not started |
 

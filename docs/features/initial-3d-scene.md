@@ -1,9 +1,9 @@
 # Feature: Initial 3D scene
 
 - **Slug:** `initial-3d-scene` (used in branch names: `<type>/initial-3d-scene-<short-task>`)
-- **Phase:** Later (the 3D scene is parked until the MVP works; see [`CHANGELOG.md`, "MVP UI is a basic Next.js message list; 3D scene parked"](../../CHANGELOG.md#2026-11-07-mvp-ui-is-a-basic-nextjs-message-list-3d-scene-parked))
-- **Status:** Not started
-- **Owner:** TBD
+- **Phase:** Later. The rest of the 3D scene is still parked (see [`CHANGELOG.md`, "MVP UI is a basic Next.js message list; 3D scene parked"](../../CHANGELOG.md#2026-11-07-mvp-ui-is-a-basic-nextjs-message-list-3d-scene-parked)), but this first version was built early with fake data.
+- **Status:** In progress. Stages 1–3 are done in [#14](https://github.com/lytx02/HackUTD/pull/14) (`/scene`, fake messages). Stage 4 (live data) is not started.
+- **Owner:** Tuan
 
 ## Goal
 
@@ -14,34 +14,39 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 ## Scene design (Tuan, 2026-11-07)
 
 - **Victim:** one **pink** blob in the scene. It idles (gentle bob) and reacts with a small bounce when a message reaches it.
-- **Sender:** one blob that shoots messages at the victim. It isn't colored red itself (Tuan dropped that idea). Its color is TBD, and it should be neutral so it doesn't clash with the red messages.
+- **Sender:** one blob that shoots messages at the victim. It isn't colored red itself (Tuan dropped that idea). Built as neutral slate grey (`#94a3b8`).
 - **Messages:** each message is a small projectile, a blob or orb, that flies from the sender toward the victim.
   - **Red** = flagged as a **potential scam**.
-  - **Not flagged:** a neutral or calm color (TBD, for example white or soft blue).
+  - **Not flagged:** soft light blue (`#bfdbfe`), as built.
 - **Outcome:**
   - **Goes through:** the projectile reaches the victim and is absorbed, and the victim bounces.
-  - **Blocked:** the projectile stops short of the victim, shows a "Blocked" stamp and pops. An optional shield flash around the victim is TBD.
+  - **Blocked:** the projectile stops short of the victim, shows a "Blocked" stamp and pops. The victim's shield flashes when a message is blocked (as built).
 - **Wording:** always say **"potential scam"**, never "scam", in on-screen labels and stamps (for example, "Potential scam · Blocked"). The classifier can be wrong, and the wording should reflect that.
 - **Where color and outcome come from:** both come straight from the event. Color comes from the classification label, and the outcome comes from the event's `action` (`delivered` / `blocked`). Normally red messages are blocked and the rest go through. The scene never decides either one itself.
+
+## What #14 built
+
+[#14](https://github.com/lytx02/HackUTD/pull/14) added `/scene` to `apps/web` (linked from the home page):
+
+- `components/scene/`: `Blob.tsx` (victim and sender, idle bob, hit bounce, shield), `MessageShot.tsx` (arcing orb, 34-character text label, "Potential scam · Blocked" stamp and pop), `Scene.tsx` (fires one message every 1.3 s on a loop, with a colour key and delivered/blocked counts) and `SceneClient.tsx` (client-only load).
+- `components/scene/fakeMessages.ts`: 20 hand-written messages with `potentialScam` and `action`. This stands in for task 1.2's fixture file; it is not in `contracts/fixtures/`.
+- **Beyond this plan:** some messages go back from the victim to the sender as replies (`direction: "toSender"`), and the overlay shows counts. Both were listed as out of scope or follow-ups below.
+- **Verified:** typecheck and lint only. Not yet checked in a browser.
 
 ## Out of scope
 
 - Several senders, wandering crowds, or public senders spawning (later scope: [live public demo](../../AGENTS.md#later-live-public-demo)).
 - Chat bubbles with the full message text. Showing a short preview on hover or as a label is TBD (see open questions).
-- Counters, a HUD, or a with/without T-Gate comparison view. These are possible follow-ups.
+- A with/without T-Gate comparison view (possible follow-up). Counters were added in #14.
 - The blocked-scams panel (`/blocked`), the scam notice, and keyword highlights. Those are separate features.
 - Anything on the gateway, simulator or classifier side.
 
 ## Open questions
 
-- **When it starts:** the 3D scene is parked for later scope. Start this plan only once the Twilio MVP works end to end, or once Tuan un-parks it.
-- **Data source:** the MVP has no event stream. Its basic UI polls `GET /api/messages`. This scene could poll that same API first (as a stand-in for task 4.1) or wait for the event stream (TBD).
-- **Route:** the MVP's basic message list owns the web app first. The scene's route (`/` or `/scene`) is TBD.
+- **Data source for 4.1:** the MVP has no event stream. Its UI polls `GET /api/messages`, which the gateway (#10) now serves. The scene could poll that same API first, mapping `action` and `verdict` onto shots, or wait for the event stream (TBD).
+- **Route:** built at `/scene`. Whether it later moves to `/` is TBD.
 - **Event contract v1:** this plan assumes `message.delivered` / `message.blocked` events with `action`, a label and an opaque message id, as in `CHANGELOG.md`. The contract file (`contracts/events.v1.schema.json`) doesn't exist yet. Until it does, fixtures follow the shape in `CHANGELOG.md`.
-- **Colors:** the sender blob's color, and the color of messages that aren't flagged. Red for potential scam and pink for the victim are decided.
-- **Message text:** whether the projectile shows any text (none, a short truncated label, or a hover preview).
-- **Shield flash** on block: yes or no.
-- **Speed:** how fast messages are shot during the demo, and whether there's a slow first pass followed by a faster one.
+- **Speed:** #14 fires one message every 1.3 s. Whether the demo needs a slower first pass is TBD.
 
 ## Tasks
 
@@ -51,21 +56,21 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Add R3F + drei + Motion to the web app and put an empty client-only `<Canvas>` on a scene route | Scene un-parked; the MVP web app exists | 1.2 | Not started | | | |
-| 1.2 | Scene fixtures: a mock event sequence of potential-scam and other messages, each delivered or blocked | — | 1.1 | Not started | | | |
+| 1.1 | Add R3F + drei + Motion to the web app and put an empty client-only `<Canvas>` on a scene route | Scene un-parked; the MVP web app exists | 1.2 | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
+| 1.2 | Scene fixtures: a mock event sequence of potential-scam and other messages, each delivered or blocked | — | 1.1 | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
 
 ### Stage 2: Scene pieces
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Victim (pink) and sender blobs: placement, idle bob, victim bounce on receive | 1.1 | 2.2 | Not started | | | |
-| 2.2 | Message projectile: fly sender → victim, red vs. neutral color, "goes through" and "blocked + pop" animations | 1.1 | 2.1 | Not started | | | |
+| 2.1 | Victim (pink) and sender blobs: placement, idle bob, victim bounce on receive | 1.1 | 2.2 | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
+| 2.2 | Message projectile: fly sender → victim, red vs. neutral color, "goes through" and "blocked + pop" animations | 1.1 | 2.1 | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
 
 ### Stage 3: Wire it up
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Mock event source → client store → scene: each fixture event fires a projectile, with color and outcome taken from the event | 1.2, 2.1, 2.2 | — | Not started | | | |
+| 3.1 | Mock event source → client store → scene: each fixture event fires a projectile, with color and outcome taken from the event | 1.2, 2.1, 2.2 | — | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
 
 ### Stage 4: Live (after the gateway exists)
 
@@ -113,5 +118,6 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 ## Progress notes
 
+- **2026-11-07:** Stages 1–3 built in #14 at `/scene` with fake messages in `components/scene/fakeMessages.ts` (not a contracts fixture). Plan updated to match: colours, shield flash and the text label are as built. Next: a browser check, then 4.1 (live data, probably polling `GET /api/messages`).
 - **2026-11-07:** rebased onto the merged Twilio MVP plan (PR #1). Phase set to Later, because that PR parked the 3D scene.
 - **2026-11-07:** plan written from Tuan's scene description: one pink victim blob, one sender blob that shoots messages, red = potential scam, each message goes through or gets blocked.

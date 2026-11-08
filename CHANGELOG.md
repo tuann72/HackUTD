@@ -39,6 +39,7 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Why:** it's the simplest picture that shows T-Gate stopping potential scams while letting other messages through.
 - **Doesn't change:** the scene stays parked until the MVP works. The fuller scene below (crowd of blobs, chat bubbles) stays proposed.
 - **Details:** [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
+- **Update:** built early in #14 at `/scene` with fake messages, before the MVP was finished. Live data is still to come.
 
 ### 2026-11-07: MVP UI is a basic Next.js message list; 3D scene parked
 
