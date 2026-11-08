@@ -66,7 +66,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | Not started | | | |
+| 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
 | 1.2 | Gateway: fingerprint + blocklist module (store interface, MongoDB implementation, in-memory fake, tests) | — | 1.1, 1.3, 1.4 | Done | `feat/sender-blocklist-module` | Timothy + Claude Code | [#23](https://github.com/tuann72/HackUTD/pull/23) |
 | 1.3 | Atlas setup: M0 cluster, database user, IP allowlist, connection string in `.env` (person, not agent) | — | 1.1, 1.2, 1.4 | Not started | | Timothy | |
 | 1.4 | Vultr: train the model and deploy the classifier ([classifier plan](classifier-service.md), tasks 2.1 and 3.x) | — | 1.1, 1.2, 1.3 | Not started | | Tuan | |
@@ -75,8 +75,8 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | Not started | | | |
-| 2.2 | Override: admin route + script to unblock and allowlist a sender | 1.2 | 2.1 | Not started | | | |
+| 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
+| 2.2 | Override: admin route + script to unblock and allowlist a sender | 1.2 | 2.1 | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
 
 ### Stage 3: on Vultr, end to end
 

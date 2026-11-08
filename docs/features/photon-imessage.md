@@ -75,7 +75,7 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 | 1.2 | Provision a Photon iMessage line and project. Register the webhook against the deployed gateway | 1.1, gateway deploy | Yes, with 1.3 | Not started | — | — | — |
 | 1.3 | Record a real delivery and replace the synthetic fixture (`contracts/fixtures/photon-inbound-imessage.sample.json`) | 1.2 | — | Not started | — | — | — |
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
-| 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | Not started | — | — | — |
+| 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
 | 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 
 ## Open questions (TBD)
