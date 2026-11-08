@@ -1,5 +1,5 @@
 // Scam category display colors. Category names come from the gateway's
-// verdict (the 7 FTC-derived groups in data/scam_categories.csv); the UI only
+// verdict (the scam groups in data/scam_categories.csv); the UI only
 // colors them and never derives a category itself.
 // Full class strings are listed so Tailwind can see them.
 
@@ -11,6 +11,7 @@ export const KNOWN_CATEGORIES = [
   "Health & Pharmacy",
   "Shopping & Product Offers",
   "Internet, Telecom & Media",
+  "Threats & Extortion",
 ] as const;
 
 const COLORS: Record<string, string> = {
@@ -28,6 +29,8 @@ const COLORS: Record<string, string> = {
     "bg-fuchsia-100 text-fuchsia-800 ring-fuchsia-600/20 dark:bg-fuchsia-500/15 dark:text-fuchsia-300 dark:ring-fuchsia-400/30",
   "Internet, Telecom & Media":
     "bg-teal-100 text-teal-800 ring-teal-600/20 dark:bg-teal-500/15 dark:text-teal-300 dark:ring-teal-400/30",
+  "Threats & Extortion":
+    "bg-red-100 text-red-800 ring-red-600/20 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-400/30",
 };
 
 export const FALLBACK_CATEGORY_CLASS =

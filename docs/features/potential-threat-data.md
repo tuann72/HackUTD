@@ -72,5 +72,6 @@ The classifier handles threat and coercion texts badly, for example "MOM IM DYIN
 
 ## Progress notes
 
+- **2026-11-08:** Tasks 2.1, 2.2, 2.4 and 2.5 done on `feat/classifier-retrain-threats` (Timothy + Claude Code), with the name changed to **Threats & Extortion**. `--extra-data` wasn't needed: `classifier/build_splits.py` merges the files. In 2.3 the category is in the gateway's list; keyword rules for the stub were not added. Results: `CHANGELOG.md`.
 - **2026-11-08 (Claude Code):** task 1.1 built. 4,100 train rows (2,650 label 8, 1,450 label 0) and 100 eval rows (58 / 42). Two runs (and a different `PYTHONHASHSEED`) give byte-identical files; no row matches the 100k corpus or the eval file. ALL CAPS share: 34% of label 8, 38% of label 0. Nothing trained.
 - **2026-11-08 (Claude Code):** coverage check of `scam_categories_100k_full.csv`: kidnap/ransom/hostage 86 rows, nearly all Enron spam noise in labels 5/7; "or else / I know where you live" 34, mostly eBay phishing and ham; hitman 2 (ham); "hi mum/dad" family-emergency 143, 139 of them label 1 (all synthetic train). No ALL-CAPS message with a money amount exists, and 215 of 239 short ALL-CAPS texts are ham. The model has no examples of threat-plus-money texts and has seen that caps usually means ham.

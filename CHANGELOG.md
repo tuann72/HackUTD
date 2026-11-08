@@ -6,6 +6,17 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Retrained with a 9th category, Threats & Extortion, on leak-free splits
+
+- **Decision (Timothy):** add label 8 as a real category, shown as **"Threats & Extortion"** rather than "Potential Threat", which read as vague for a scam type. Rows in `potential_threat_*.csv` keep the old `category_name`; only the numeric label is used. Settles "binary vs. 8-class vs. 9-class" for the served model.
+- **Leak-free data (`classifier/build_splits.py`):** the real test split stays the anchor. Text matching a held-out message (after normalizing case, punctuation and digits, or the same word set reordered) is removed from train and val, along with synthetic children of held-out rows. That removed 2,674 leaking train rows and 96 val rows, plus 10,456 duplicates inside train and 87 inside test.
+- **Separate runs:** `train.py` reads `train_val.csv` and never loads the test file. `classifier/evaluate.py` scores the finished model on `test.csv` and `threat_eval.csv` through the service's own code.
+- **Val includes threat templates:** real val has no threats and the stacker is fit on val, so 15% of each threat scenario (592 rows) goes to val. Metrics and thresholds use real val rows only. Test stays 100% real.
+- **Results, same cleaned test (3,068 real messages, cutoff 0.5), old → new:** false blocks 26 → 27, missed scams 33 → 33, SMS F1 0.952 → 0.952, F1 0.981 → 0.980, category accuracy 0.944 → 0.943, ECE 0.008 → 0.007. Threat check file (58 threats, 42 hard negatives): threats blocked 22% → 95%, named correctly 0% → 93%, hard negatives blocked 5% → 0%. That file shares an author with the templates, so these numbers are optimistic.
+- **Also compared:** TF-IDF + SGD (log loss) against TF-IDF + LR on half of val: same F1 (0.982), 5 s against about 221 s to fit, slightly lower category accuracy. Not adopted: training time isn't a constraint.
+- **Real-world threat data:** public sets are scarce, and TExtPhish and ThreatCore are CC BY-NC-ND. The plan is TExtPhish as an external test only, never trained on and never committed (`evaluate.py --external`). Download is still blocked by a 403 on the gated files, so this test has not run.
+- **Still TBD:** the block threshold (suggested: 0.22 for 97% precision, 0.77 for 99%, picked on val), and whether self-harm-style messages should warn instead of block.
+
 ### 2026-11-08: "Clear chats" deletes messages instead of hiding them
 
 - **What (Tuan + Claude Code):** the web UI's "Clear chats" button now deletes every stored message, after a confirm dialog. Before, it only hid them in that browser (a localStorage cutoff, [#38](https://github.com/tuann72/HackUTD/pull/38)), and that code is removed along with "Show N cleared". Both backends serve `DELETE /api/messages`: the VM gateway (SQLite, the same wipe as `POST /debug/reset`, CORS now allows DELETE) and the Vercel backup (`deleteMany` on the Atlas `inbox` collection). The page calls whichever one `NEXT_PUBLIC_API_URL` points at. In replay mode, clearing empties the mock list and the replay keeps going.
