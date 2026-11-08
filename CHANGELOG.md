@@ -11,6 +11,15 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Decision (Tuan):** `/` is a landing page from Tuan's mock: "T-GUARD" in a heavy condensed face (Anton), the tagline "Security that moves with you." (Archivo), and a pink/black color-block composition on the right, plus a **Start** button.
 - **Start** opens the scene and inbox/blocked lists, which moved from `/` to `/messages` (the route the MVP plan first used). `/scene` now redirects to `/messages`; the old `/messages` → `/` redirect is gone.
 
+### 2026-11-08: Simulate sidebar on the home page
+
+- **Decision (Tuan):** run perpetrator simulations from buttons on `/`, configurable, instead of only from the CLI.
+- **How:** a sidebar (`components/sim/SimPanel.tsx`) with preset buttons from `apps/web/lib/sim/presets.ts` (one scam, one legit text, random burst, and the bank's scenarios), burst settings (count, scam share, interval, sender, seed), a custom message box, Stop, and a log of what was sent. The browser paces the run and posts one step at a time to `POST /api/simulate`, which signs a Photon `messages` webhook (`X-Spectrum-Signature`) and sends it to the gateway. Pacing in the browser keeps each request short (Vercel time limits) and makes Stop immediate.
+- **Why server-side signing:** the webhook secret must never reach the browser. The legacy `v0` signature uses the secret string as-is, so it works against the VM gateway and the Vercel backup even when their secret is a Beta `whsec_` value.
+- **Decoupling:** a second exception to "the web app never writes to the gateway", after Clear chats. Unauthenticated by choice; rails: fictional `+1555` numbers only, no `photon.codes` target, 1,000-character text, 60 sends a minute per server instance (best effort). Off (panel says why) when no target or secret is configured, which includes replay mode.
+- **Bank copy:** `npm run sync:bank` copies `data/message_bank/` into `apps/web/lib/sim/bank.json`, because Vercel builds only `apps/web`. `npm run check:bank` fails when it's stale.
+- **TBD:** authentication for `/api/simulate` before a public demo.
+
 ### 2026-11-08: Project renamed to T-Guard
 
 - **Decision (Tuan):** the project is called **T-Guard**, not T-Gate. Every user-facing and written mention (web page title and header, UI strings, docs, comments, service descriptions, the Photon webhook destination name) now says T-Guard.

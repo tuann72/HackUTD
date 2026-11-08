@@ -23,6 +23,8 @@ npm run lint
 npm run build
 npm run check:contract # fails if lib/messages/fixture.v1.json is stale
 npm run sync:contract  # re-copies the fixture from contracts/
+npm run check:bank     # fails if lib/sim/bank.json is stale
+npm run sync:bank      # re-copies data/message_bank/ for the Simulate sidebar
 ```
 
 ## Data: `lib/messages`
@@ -60,6 +62,8 @@ Display helpers: `isPotentialScam(m)` (the gateway's label is `scam`; say "poten
 ## Config
 
 Copy `.env.example` to `.env.local`. `NEXT_PUBLIC_API_URL` is the gateway base URL, for example `http://localhost:8787`. It ships to the browser, so never put secrets in `NEXT_PUBLIC_` variables.
+
+**Simulate sidebar.** The buttons on the right of `/` send simulated iMessages through `POST /api/simulate`, which signs them on the server and sends them to `SIM_WEBHOOK_URL` (default `${NEXT_PUBLIC_API_URL}/webhooks/photon`). Set `SIM_WEBHOOK_SECRET` to the target gateway's `PHOTON_WEBHOOK_SECRET` (default: this app's `PHOTON_WEBHOOK_SECRET`). Without a target or secret the panel says "Simulation is off". Edit `lib/sim/presets.ts` to change the buttons. See [`docs/features/simulation-panel.md`](../../docs/features/simulation-panel.md).
 
 ## Deploy (Vercel)
 
