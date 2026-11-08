@@ -44,6 +44,15 @@ export interface Highlight {
   weight: number;
 }
 
+/** Nemotron's second opinion, when the classifier was unsure. */
+export interface Review {
+  decision: "block" | "deliver";
+  reason: string;
+  model: string;
+  checks: { check: string; keyword: string | null; found: boolean }[];
+  bankSource: "nessie" | "mock" | null;
+}
+
 export interface Verdict {
   label: "scam" | "legit";
   /** P(scam), 0..1 */
@@ -51,6 +60,7 @@ export interface Verdict {
   category: string | null;
   model: string;
   highlights: Highlight[];
+  review?: Review;
 }
 
 export interface Message {

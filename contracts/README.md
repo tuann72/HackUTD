@@ -32,6 +32,8 @@ Each message:
 | `reaction` | `{ emoji, targetPreview }` for `kind: "reaction"`, else `null`. `targetPreview` is up to ~80 characters of the message reacted to |
 | `contact` | `{ name, phones }` for a shared contact card, else `null`. `phones` are masked like `from.display` |
 
+`verdict.review` (optional, added 2026-11-08) is `{ decision, reason, model, checks, bankSource }`, Nemotron's second opinion when the score was in the review band. When present, `action` and `verdict.label` follow its decision, and `verdict.score` stays the classifier's.
+
 `kind`, `conversation`, `attachments`, `reaction` and `contact` were added to v1 on 2026-11-08 as optional fields, so older v1 data stays valid. The gateway always sends them. For non-text kinds, `body` is `""`. The UI renders from `kind` and the extras, never from guessing at `body`.
 
 Highlight spans are character offsets into `body` with `0 <= start < end <= body.length` (JSON Schema can't express this; the gateway drops spans that don't fit). Consumers should still guard against bad spans.

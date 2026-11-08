@@ -10,6 +10,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 > - [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md): proposed later feature for SIP-routed call transcription, classification, and warnings.
 > - [`docs/features/potential-threat-data.md`](docs/features/potential-threat-data.md): synthetic threat/coercion/fake-emergency texts with a proposed label 8 "Potential Threat" (in progress; label scheme TBD).
 > - [`docs/features/simulation-panel.md`](docs/features/simulation-panel.md): Simulate sidebar on `/messages` that sends configurable simulated iMessages to the gateway through `POST /api/simulate` (done, #54).
+> - [`docs/features/nemotron-review.md`](docs/features/nemotron-review.md): proposed second opinion from NVIDIA Nemotron with Nessie (mock bank) checks for scores in the review band, off by default behind `REVIEWER`.
 >
 > New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
 
