@@ -7,14 +7,21 @@ import { motion } from "motion/react";
 import type { Group, Sprite, SpriteMaterial, Vector3 } from "three";
 import type { SceneMessage } from "./feed";
 import { flightDistance } from "./flight";
+import { SLAPS, contactTime, palmAt, pickSlap, type SlapName } from "./slap";
 
 /** Whole flight; fast-slow-fast (see `flight.ts`), so the middle takes most of it. */
 const FLIGHT_SECONDS = 2.2;
 const ARC_HEIGHT = 0.9;
-/** Distance fraction where a blocked message stops (just outside the victim's shield). */
-const BLOCK_AT = 0.8;
-const STAMP_SECONDS = 0.9;
-const POP_SECONDS = 0.3;
+/** Distance fraction where a blocked message stops, within reach of the Receiver's hand. */
+const BLOCK_AT = 0.85;
+/** At contact the bubble's center is this far left of the palm center (it meets the palm's edge). */
+const CONTACT_OFFSET_X = 0.3;
+/** How long a slapped bubble flies before it is removed, and how it flies. */
+const KNOCK_SECONDS = 0.8;
+const KNOCK_VX = -6;
+const KNOCK_VY = 2.6;
+const GRAVITY = -9;
+const KNOCK_SPIN = 9;
 
 // The projectile is a flat chat-bubble image (a sprite always faces the
 // camera), not a 3D mesh. Swap the art by replacing these files.
@@ -35,13 +42,14 @@ interface MessageShotProps {
   to: Vector3;
   /** Called once when a delivered message reaches the target. */
   onArrive: () => void;
-  /** Called once when a blocked message stops. */
-  onBlocked: () => void;
+  /** Called once when a blocked message stops, with the slap the hand should play. */
+  onBlocked: (slap: SlapName) => void;
   /** Called once when the shot is finished and can be removed. */
   onDone: (shotKey: number) => void;
 }
 
-type Phase = "fly" | "stamp" | "pop" | "done";
+/** fly → (blocked) wait for the slap → knocked away, or fly → done when delivered. */
+type Phase = "fly" | "wait" | "knocked" | "done";
 
 /**
  * Memoized: with stable callbacks from the parent, shots already in flight
@@ -63,11 +71,17 @@ export const MessageShot = memo(function MessageShot({
   const progress = useRef(0);
   const phase = useRef<Phase>("fly");
   const phaseTime = useRef(0);
+  const waitFrom = useRef({ x: 0, y: 0 });
+  const velocity = useRef({ x: 0, y: 0 });
+  const label = useRef<HTMLDivElement>(null);
+  const stamp = useRef<HTMLDivElement>(null);
   const [stamped, setStamped] = useState(false);
   // Cached by drei after the first load, so later shots don't suspend.
   const textures = useTexture(BUBBLES);
 
-  const { blocked, potentialScam, label } = message;
+  const { blocked, potentialScam } = message;
+  const slapName = pickSlap(shotKey);
+  const slap = SLAPS[slapName];
 
   useFrame((_, dt) => {
     const g = group.current;
@@ -84,9 +98,10 @@ export const MessageShot = memo(function MessageShot({
       if (distance >= stop) {
         phaseTime.current = 0;
         if (blocked) {
-          phase.current = "stamp";
+          phase.current = "wait";
+          waitFrom.current = { x: g.position.x, y: g.position.y };
           setStamped(true);
-          onBlocked();
+          onBlocked(slapName);
         } else {
           phase.current = "done";
           onArrive();
@@ -98,24 +113,37 @@ export const MessageShot = memo(function MessageShot({
 
     phaseTime.current += dt;
 
-    if (phase.current === "stamp") {
-      // Hover in place with a nervous wobble while the stamp shows.
-      if (bubble.current) {
-        bubble.current.position.x = Math.sin(phaseTime.current * 40) * 0.03;
-      }
-      if (phaseTime.current >= STAMP_SECONDS) {
-        phase.current = "pop";
+    if (phase.current === "wait") {
+      // While the hand winds up, drift to where its palm will be at contact,
+      // with a nervous wobble, so the slap lands on the bubble.
+      const hit = contactTime(slap);
+      const k = Math.min(phaseTime.current / hit, 1);
+      const ease = k * k * (3 - 2 * k);
+      const palm = palmAt(slap.angle);
+      g.position.x = waitFrom.current.x + (palm.x - CONTACT_OFFSET_X - waitFrom.current.x) * ease;
+      g.position.y = waitFrom.current.y + (palm.y - waitFrom.current.y) * ease;
+      if (bubble.current) bubble.current.position.x = Math.sin(phaseTime.current * 40) * 0.03;
+      if (phaseTime.current >= hit) {
+        phase.current = "knocked";
         phaseTime.current = 0;
+        velocity.current = { x: KNOCK_VX, y: KNOCK_VY };
+        if (bubble.current) bubble.current.position.x = 0;
       }
       return;
     }
 
-    if (phase.current === "pop") {
-      // Swell and fade out.
-      const k = Math.min(phaseTime.current / POP_SECONDS, 1);
-      bubble.current?.scale.set(BUBBLE_W * (1 + k * 0.8), BUBBLE_H * (1 + k * 0.8), 1);
-      if (material.current) material.current.opacity = 1 - k;
-      if (k >= 1) {
+    if (phase.current === "knocked") {
+      // Fly back toward the sender, spinning and fading.
+      velocity.current.y += GRAVITY * dt;
+      g.position.x += velocity.current.x * dt;
+      g.position.y += velocity.current.y * dt;
+      const fade = Math.max(1 - phaseTime.current / KNOCK_SECONDS, 0);
+      if (material.current) {
+        material.current.rotation += KNOCK_SPIN * dt;
+        material.current.opacity = fade;
+      }
+      for (const el of [label.current, stamp.current]) if (el) el.style.opacity = String(fade);
+      if (phaseTime.current >= KNOCK_SECONDS) {
         phase.current = "done";
         onDone(shotKey);
       }
@@ -134,15 +162,17 @@ export const MessageShot = memo(function MessageShot({
       </sprite>
       <Html position={[0, -0.45, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <div
+          ref={label}
           className={`whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-medium shadow ${
             potentialScam ? "bg-red-600/90 text-white" : "bg-white/90 text-slate-800"
           }`}
         >
-          {label}
+          {message.label}
         </div>
       </Html>
       {stamped && (
         <Html position={[0, 0.6, 0]} center zIndexRange={[20, 10]} style={{ pointerEvents: "none" }}>
+          <div ref={stamp}>
           <motion.div
             initial={{ scale: 2.2, opacity: 0, rotate: -18 }}
             animate={{ scale: 1, opacity: 1, rotate: -8 }}
@@ -151,6 +181,7 @@ export const MessageShot = memo(function MessageShot({
           >
             Potential scam · Blocked
           </motion.div>
+          </div>
         </Html>
       )}
     </group>
