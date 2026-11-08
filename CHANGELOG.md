@@ -6,6 +6,17 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Sender blocklist wired into the gateway flow (proposals need Tuan)
+
+- **Built (`feat/sender-blocklist-gateway-flow`):** sender-blocklist tasks 1.1, 2.1 and 2.2 and photon-imessage task 1.5. After the webhook's `200`, the gateway checks the blocklist first. A blocklisted sender's message is `blocked` with reason `sender_blocked`, without a classifier call. Every model block records sender and text fingerprints, with strikes, very-high-score and TTL rules at the existing defaults. Atlas errors are logged and ignored (fail open). Without `MONGODB_URI`, a `MemoryBlocklist` with a per-process key is used.
+- **Handles:** fingerprints use the same normalization as participants (`src/handle.ts`). Email handles are lowercased, so `Scammer@iCloud.com` and `scammer@icloud.com` are one sender. Before this, `normalizeNumber` reduced every email handle to an empty string, which would have made all email senders one fingerprint.
+- **Contract (additive, v1):** new reasons `sender_blocked` (`verdict: null`) and `override` (a person said "Not a scam"; the verdict is kept). The web app shows "Blocked: known scam sender" and "Restored".
+- **Proposals needing Tuan's confirmation:**
+  1. Text-less content (attachments, reactions, contact cards) from a blocklisted sender is **blocked**, not delivered unchecked.
+  2. The override is an **operator tool**: `POST /admin/senders/allow` with its own `ADMIN_TOKEN`, separate from `DEBUG_TOKEN` so it can run on the public VM with debug off, plus `npm run sender:allow -- <msg id>`. It's not a web button, which keeps the one-way data rule.
+  3. The override restores **all** of the sender's blocked messages, not just the one named.
+- **SQLite:** the reason CHECK constraint changed. A database from before this change is refused at startup (`npm run db:reset`).
+
 ### 2026-11-08: Photon track, dedicated line, rich iMessage content, virtual inbox
 
 - **Decisions (Tuan):**

@@ -23,6 +23,7 @@ npm run dev               # http://localhost:8787, reloads on change
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run send:sample` | Send one signed, Photon-format iMessage webhook to the local gateway, using the fixture in `contracts/fixtures/`. Options: `-- "custom body"`, `-- --from +15555550177` (or an email handle), `-- --id spc-msg-...` (reuse an id to test dedupe) |
 | `npm run db:reset` | Delete the SQLite file at `DB_PATH` (stop the gateway first) |
+| `npm run sender:allow -- <msg id>` | "Not a scam": allowlist that message's sender and move its blocked messages to the inbox. Needs `ADMIN_TOKEN` (and `GATEWAY_URL` if not local) |
 
 Quick check:
 
@@ -46,6 +47,13 @@ curl -s localhost:8787/api/messages | jq
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to `GET /api/*` |
 | `GATEWAY_DEBUG` | `0` | `1` registers `POST /debug/reset`. Startup fails if `DEBUG_TOKEN` is empty |
 | `DEBUG_TOKEN` | empty | Required `X-Debug-Token` value for debug routes |
+| `ADMIN_TOKEN` | empty | Turns on `POST /admin/senders/allow` (the "Not a scam" override), checked against `X-Admin-Token`. At least 16 characters. Empty means the route is off |
+| `MONGODB_URI` | empty | MongoDB Atlas connection string for the sender blocklist. Empty means an in-process blocklist that resets on restart |
+| `MONGODB_DB` | `tgate` | Atlas database name |
+| `FINGERPRINT_SECRET` | empty | HMAC key for sender and text fingerprints (`openssl rand -hex 32`). Required with `MONGODB_URI`. Empty means a random key per process |
+| `SENDER_BLOCK_STRIKES` | `3` | Model blocks from one sender before it's blocklisted (TBD) |
+| `SENDER_BLOCK_SCORE` | `0.95` | One block at or above this score blocklists the sender at once (TBD) |
+| `SENDER_BLOCK_TTL_DAYS` | `7` | How long a blocklisting lasts |
 
 ## Endpoints
 
@@ -59,8 +67,9 @@ JSON, exactly as Photon sends it ([fixture](../../contracts/fixtures/photon-inbo
 4. Dedupe on `message.id` (UNIQUE in SQLite). Photon delivers at least once and retries on 5xx, 408, 429 and timeouts. A retry gets `200 ok` and nothing else happens.
 5. Map `sender.id` (an E.164 number or an Apple ID email) to an opaque, stable `participantId` (`p_<hex>`) and a masked display (`***-***-0142` or `j***@icloud.com`).
 6. Store the message as `pending` and answer `200 ok`. The gateway never replies to the sender, and it has no Photon send code.
-7. After responding, classify through the `Classifier` interface. `score >= BLOCK_THRESHOLD` → `blocked`, else `delivered`, reason `model_verdict`.
-8. If the classifier throws, times out or returns something malformed, **fail open** (Tuan, 2026-11-07): the message is `delivered` with reason `classifier_unavailable` and `verdict: null`. The UI shows this as "unverified".
+7. After responding, check the **sender blocklist** with a keyed hash of the normalized handle. If the sender is blocklisted, the message is `blocked` with reason `sender_blocked` and `verdict: null`, and the classifier isn't called. This also applies to attachments, reactions and contact cards.
+8. Otherwise, text-less content is `delivered` with reason `not_classified`. Text is classified through the `Classifier` interface: `score >= BLOCK_THRESHOLD` → `blocked`, else `delivered`, reason `model_verdict`. Every model block records the sender and text fingerprints. `SENDER_BLOCK_STRIKES` blocks, or one at `SENDER_BLOCK_SCORE` or above, put the sender on the blocklist for `SENDER_BLOCK_TTL_DAYS`. The blocklist **fails open**: if Atlas errors or times out, it's logged and the message is judged by the model.
+9. If the classifier throws, times out or returns something malformed, **fail open** (Tuan, 2026-11-07): the message is `delivered` with reason `classifier_unavailable` and `verdict: null`. The UI shows this as "unverified".
 
 Raw handles and Photon message and space ids live only in the SQLite file. They never appear in API responses, and logs show only masked handles and opaque ids.
 
@@ -71,6 +80,16 @@ Read-only, `limit` 1–200 (default 100), newest first. The response shape is ex
 ### `GET /healthz`
 
 `{"ok":true}`.
+
+### `POST /admin/senders/allow` (operator tool, not part of the contract)
+
+The "Not a scam" override. It only exists when `ADMIN_TOKEN` is set (otherwise `404`). Send `X-Admin-Token: <ADMIN_TOKEN>` (missing → `401`, wrong → `403`) and the body `{"messageId": "msg_..."}`, the opaque id from `GET /api/messages`, never a handle.
+
+It allowlists that message's sender, so the blocklist never blocks them again. The model still judges each of their messages, one at a time. It also moves all of the sender's blocked messages to the inbox with reason `override`, keeping their verdicts. The response is `{ok, allowlisted, restored}`. If the allowlist write to Atlas fails, the messages are still restored and `allowlisted` is `false`, so run it again. **The web app must never call it.**
+
+```bash
+npm run sender:allow -- msg_0123abcd...
+```
 
 ### `POST /debug/reset` (developer tool, not part of the contract)
 
@@ -109,9 +128,11 @@ src/app.ts         createApp({ db, classifier, config }) -> Hono app (+ idle() f
 src/photon.ts      Spectrum signature check and payload parsing
 src/server.ts      reads env, opens SQLite, picks the classifier, listens
 src/classifier.ts  Classifier interface, StubClassifier, HttpClassifier
-src/db.ts          SQLite schema and queries, handle masking
+src/db.ts          SQLite schema and queries
+src/handle.ts      iMessage handle normalization and masking (shared by db and blocklist)
+src/blocklist.ts   sender blocklist: keyed-hash fingerprints, MemoryBlocklist, MongoBlocklist (Atlas)
 src/config.ts      env parsing and validation
 src/types.ts       types copied from the v1 contract
-scripts/           db-reset, send-sample
+scripts/           db-reset, send-sample, sender-allow
 test/              vitest suites and a local fake classifier server
 ```

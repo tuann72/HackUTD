@@ -48,7 +48,7 @@
 
 **Group chats:** `space.type == "group"` is stored as a conversation. The API's `conversation: {id, type}` has an opaque `c_<hex>` id per chat, so the raw `space.id` never leaves the gateway. Group messages are classified like DMs, and each sender keeps their own participant id. The UI shows a "Group chat" badge.
 
-**Not classified:** attachment-only messages aren't judged, because the model reads text only. The UI shows them as "Not checked". A scam sender's attachments are still delivered until the sender blocklist (task 1.5) is wired.
+**Not classified:** attachment-only messages aren't judged, because the model reads text only. The UI shows them as "Not checked". Once a sender is on the blocklist, their attachments, reactions and contact cards are blocked too (`sender_blocked`, task 1.5, proposed).
 
 The iMessage `sender.id` is usually E.164, but iMessage handles can also be **email addresses**. The gateway masks both (`***-***-0142`, `j***@icloud.com`) and never exposes either in the query API.
 
@@ -75,11 +75,11 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 | 1.2 | Provision a Photon iMessage line and project. Register the webhook against the deployed gateway | 1.1, gateway deploy | Yes, with 1.3 | Not started | — | — | — |
 | 1.3 | Record a real delivery and replace the synthetic fixture (`contracts/fixtures/photon-inbound-imessage.sample.json`) | 1.2 | — | Not started | — | — | — |
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
-| 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
+| 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 | 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
 
 ## Open questions (TBD)
 
-- Should attachment-only messages from a known scam sender be blocked? This depends on task 1.5.
+- Attachment-only messages from a known scam sender: **proposed blocked** (`sender_blocked`) in task 1.5 ([#27](https://github.com/tuann72/HackUTD/pull/27)). Needs Tuan's confirmation.
 - Whether to also keep an SMS path. Not planned. Photon's own SMS provider would be a separate decision.
 - Dedupe retention: the gateway keeps every `message.id` forever in SQLite. Photon suggests a 24–48 h TTL, which is fine at hackathon scale.

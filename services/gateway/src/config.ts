@@ -12,6 +12,8 @@ export interface GatewayConfig {
   corsOrigins: string[];
   debug: boolean;
   debugToken: string | null;
+  /** Token for admin routes (the "Not a scam" override). Null = admin routes off. */
+  adminToken: string | null;
   /** MongoDB Atlas connection string. Null = in-process blocklist (lost on restart). */
   mongodbUri: string | null;
   mongodbDb: string;
@@ -49,6 +51,11 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
     throw new Error('GATEWAY_DEBUG=1 requires a non-empty DEBUG_TOKEN. Refusing to enable debug routes without one.');
   }
 
+  const adminToken = str(env, 'ADMIN_TOKEN');
+  if (adminToken && adminToken.length < 16) {
+    throw new Error('ADMIN_TOKEN must be at least 16 characters (make one with: openssl rand -hex 24).');
+  }
+
   const mongodbUri = str(env, 'MONGODB_URI');
   const fingerprintSecret = str(env, 'FINGERPRINT_SECRET');
   if (mongodbUri && !fingerprintSecret) {
@@ -73,6 +80,7 @@ export function loadConfig(env: Env = process.env): GatewayConfig {
       .filter(Boolean),
     debug,
     debugToken: debug ? debugToken : null,
+    adminToken,
     mongodbUri,
     mongodbDb: str(env, 'MONGODB_DB') ?? 'tgate',
     fingerprintSecret,

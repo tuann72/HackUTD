@@ -3,7 +3,11 @@
 
 export type Action = "pending" | "delivered" | "blocked";
 /** `not_classified`: delivered without a check because there was no text (attachment, reaction, contact card). */
-export type Reason = "model_verdict" | "classifier_unavailable" | "not_classified" | null;
+/**
+ * `sender_blocked`: blocked without the model, because the sender is on the blocklist (`verdict` is null).
+ * `override`: a person marked it "Not a scam" and moved it to the inbox (the original verdict is kept).
+ */
+export type Reason = "model_verdict" | "classifier_unavailable" | "not_classified" | "sender_blocked" | "override" | null;
 
 /** What was sent over iMessage. */
 export type MessageKind = "text" | "link" | "attachment" | "reaction" | "contact" | "album";
@@ -125,5 +129,16 @@ export function summarize(m: Message): string {
 
 /** The gateway flagged it as a potential scam. Display only: never re-decide. */
 export function isPotentialScam(m: Message): boolean {
-  return m.verdict?.label === "scam";
+  if (m.reason === "override") return false;
+  return m.reason === "sender_blocked" || m.verdict?.label === "scam";
+}
+
+/** Blocked because the sender is a known scam sender, not by the model on this message. */
+export function isSenderBlocked(m: Message): boolean {
+  return m.action === "blocked" && m.reason === "sender_blocked";
+}
+
+/** A person marked it "Not a scam" and it was moved to the inbox. */
+export function isRestored(m: Message): boolean {
+  return m.reason === "override";
 }

@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { WEBHOOK_PATH, createApp } from './app.js';
+import { MemoryBlocklist, MongoBlocklist, ephemeralSecret, makeFingerprinter, type Blocklist } from './blocklist.js';
 import { HttpClassifier, StubClassifier, type Classifier } from './classifier.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db.js';
@@ -11,11 +12,25 @@ const classifier: Classifier = config.classifierUrl
   ? new HttpClassifier({ baseUrl: config.classifierUrl, token: config.classifierToken, timeoutMs: config.classifierTimeoutMs })
   : new StubClassifier();
 
-const app = createApp({ db, classifier, config });
+const rules = {
+  strikes: config.senderBlockStrikes,
+  highScore: config.senderBlockScore,
+  ttlMs: config.senderBlockTtlDays * 24 * 60 * 60 * 1000,
+};
+// Without Atlas, an in-process blocklist and a per-process key: both reset on restart.
+const blocklist: Blocklist = config.mongodbUri
+  ? new MongoBlocklist({ uri: config.mongodbUri, dbName: config.mongodbDb, rules })
+  : new MemoryBlocklist(rules);
+const fingerprinter = makeFingerprinter(config.fingerprintSecret ?? ephemeralSecret());
+
+const app = createApp({ db, classifier, config, blocklist, fingerprinter });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[gateway] listening on http://localhost:${info.port}`);
   console.log(`[gateway] db=${config.dbPath} classifier=${config.classifierUrl ? `http (${config.classifierUrl})` : 'stub'} threshold=${config.blockThreshold}`);
+  console.log(
+    `[gateway] blocklist=${config.mongodbUri ? `atlas (${config.mongodbDb})` : 'memory (resets on restart)'} strikes=${rules.strikes} score>=${rules.highScore} ttl=${config.senderBlockTtlDays}d admin=${config.adminToken ? 'ON' : 'off'}`,
+  );
   console.log(`[gateway] Photon webhook: POST ${WEBHOOK_PATH} (signature tolerance ${config.signatureToleranceSeconds}s) debug=${config.debug ? 'ON' : 'off'}`);
 });
 
@@ -25,6 +40,7 @@ function shutdown() {
   closing = true;
   server.close(async () => {
     await app.idle();
+    await blocklist.close().catch(() => {});
     db.close();
     process.exit(0);
   });

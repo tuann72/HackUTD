@@ -1,12 +1,13 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { MongoClient, type Collection } from 'mongodb';
+import { normalizeHandle } from './handle.js';
 
 // Sender blocklist and scam fingerprints (docs/features/sender-blocklist.md).
-// Only keyed hashes leave the gateway: never a raw phone number or message text.
+// Only keyed hashes leave the gateway: never a raw handle (number or email) or message text.
 
 export interface Fingerprinter {
-  /** Keyed hash of the sender's number. */
-  sender(phone: string): string;
+  /** Keyed hash of the sender's iMessage handle (number or Apple ID email). */
+  sender(handle: string): string;
   /** Keyed hash of the normalized message text. */
   text(body: string): string;
 }
@@ -33,7 +34,7 @@ export function makeFingerprinter(secret: string): Fingerprinter {
   if (!secret) throw new Error('fingerprint secret must not be empty');
   const hmac = (kind: string, value: string) => createHmac('sha256', secret).update(`${kind}:${value}`).digest('hex');
   return {
-    sender: (phone) => hmac('sender', normalizeNumber(phone)),
+    sender: (handle) => hmac('sender', normalizeHandle(handle)),
     text: (body) => hmac('text', normalizeText(body)),
   };
 }

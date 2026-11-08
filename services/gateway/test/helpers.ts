@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createApp, type AppDeps } from '../src/app.js';
+import { MemoryBlocklist, makeFingerprinter, type Blocklist, type BlocklistRules } from '../src/blocklist.js';
 import type { Classifier } from '../src/classifier.js';
 import { StubClassifier } from '../src/classifier.js';
 import { openDb } from '../src/db.js';
@@ -20,8 +21,19 @@ export const fixtureText: string = fixtureBody.message.content.text;
 
 export const silentLogger = { info: () => {}, warn: () => {} };
 
-export function makeApp(opts: { classifier?: Classifier; config?: Partial<AppDeps['config']> } = {}) {
+export const RULES: BlocklistRules = { strikes: 3, highScore: 0.95, ttlMs: 7 * 24 * 3600 * 1000 };
+export const fingerprinter = makeFingerprinter('test-fingerprint-secret-0123456789abcdef');
+
+/**
+ * Every test app gets an in-memory blocklist unless `blocklist: null` is passed.
+ * Pass `now` to move the clock (blocklist expiry).
+ */
+export function makeApp(
+  opts: { classifier?: Classifier; config?: Partial<AppDeps['config']>; blocklist?: Blocklist | null; now?: () => Date } = {},
+) {
+  const blocklist = opts.blocklist === undefined ? new MemoryBlocklist(RULES) : opts.blocklist;
   return createApp({
+    ...(blocklist ? { blocklist, fingerprinter } : {}),
     db: openDb(':memory:'),
     classifier: opts.classifier ?? new StubClassifier(),
     config: {
@@ -31,10 +43,11 @@ export function makeApp(opts: { classifier?: Classifier; config?: Partial<AppDep
       corsOrigins: ['http://localhost:3000'],
       debug: false,
       debugToken: null,
+      adminToken: null,
       ...opts.config,
     },
     logger: silentLogger,
-    now: () => NOW,
+    now: opts.now ?? (() => NOW),
   });
 }
 

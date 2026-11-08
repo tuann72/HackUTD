@@ -15,7 +15,7 @@ Vultr is the judge: the classifier on Vultr scores every message, and above `BLO
 Not-scam messages go through to the victim's inbox as today.
 
 ```
-Twilio ──webhook──> gateway (Vultr VM)
+Photon (iMessage) ──webhook──> gateway (Vultr VM)
                       │ 1. sender on the blocklist? ──yes──> blocked (reason: sender_blocked)
                       │ 2. no: POST /classify ──> classifier (Vultr)
                       │ 3. score ≥ BLOCK_THRESHOLD ──> blocked (model_verdict) + record fingerprint in Atlas
@@ -37,7 +37,7 @@ The classifier is wrong on roughly 1–1.5% of legitimate messages, and scammers
 
 Atlas is a third-party cloud database, so it never receives raw phone numbers or message text:
 
-- **Sender fingerprint:** `HMAC-SHA256(FINGERPRINT_SECRET, E.164 number)`, hex. The secret lives only in the gateway's `.env`. Without it, a hash can't be reversed by trying every phone number.
+- **Sender fingerprint:** `HMAC-SHA256(FINGERPRINT_SECRET, normalized iMessage handle)`, hex. The handle is the E.164 number, or the Apple ID email lowercased (`src/handle.ts`). The secret lives only in the gateway's `.env`. Without it, a hash can't be reversed by trying every phone number.
 - **Text fingerprint:** `HMAC-SHA256(FINGERPRINT_SECRET, normalized text)`, where normalized means lowercased, whitespace collapsed, and URLs and digit runs replaced by placeholders, so small variations of one scam match.
 - **Stored with them:** score, category, model, strike count, first/last seen, `blockedUntil`, `allowlisted`. No message ids that link back to SQLite are needed; the gateway's SQLite keeps the masked display and the message as today.
 - Vultr still receives only message text and an opaque id, as agreed.
@@ -66,7 +66,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
+| 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 | 1.2 | Gateway: fingerprint + blocklist module (store interface, MongoDB implementation, in-memory fake, tests) | — | 1.1, 1.3, 1.4 | Done | `feat/sender-blocklist-module` | Timothy + Claude Code | [#23](https://github.com/tuann72/HackUTD/pull/23) |
 | 1.3 | Atlas setup: M0 cluster, database user, IP allowlist, connection string in `.env` (person, not agent) | — | 1.1, 1.2, 1.4 | Not started | | Timothy | |
 | 1.4 | Vultr: train the model and deploy the classifier ([classifier plan](classifier-service.md), tasks 2.1 and 3.x) | — | 1.1, 1.2, 1.3 | Not started | | Tuan | |
@@ -75,8 +75,8 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
-| 2.2 | Override: admin route + script to unblock and allowlist a sender | 1.2 | 2.1 | In progress | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | TBD |
+| 2.1 | Gateway flow: blocklist check before classify, fingerprint after block, strikes/score/TTL rules | 1.1, 1.2 | 2.2 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
+| 2.2 | Override: admin route + script to unblock and allowlist a sender | 1.2 | 2.1 | In review | `feat/sender-blocklist-gateway-flow` | Tuan + Claude Code | [#27](https://github.com/tuann72/HackUTD/pull/27) |
 
 ### Stage 3: on Vultr, end to end
 
@@ -119,6 +119,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 - **Done when:** a test restores a blocked message and the sender's next scam is judged by the model again, not by the blocklist.
 
 ## Progress notes
+- **2026-11-08:** Tasks 1.1, 2.1 and 2.2 built (`feat/sender-blocklist-gateway-flow`, [#27](https://github.com/tuann72/HackUTD/pull/27), stacked on the Photon PR #24). The blocklist check runs before the classifier, model blocks are fingerprinted, Atlas fails open, the contract has reasons `sender_blocked` and `override`, and the override is `POST /admin/senders/allow` (`ADMIN_TOKEN`) plus `npm run sender:allow`. Email handles are normalized. **Proposals for Tuan:** block a blocklisted sender's text-less content; override as an operator tool, not a web button; restore all of the sender's blocked messages. Not run against Atlas (task 1.3 needs a person).
 
 - **2026-11-08:** Task 1.2 built: `services/gateway/src/blocklist.ts` (`MemoryBlocklist`, `MongoBlocklist`, keyed-hash fingerprints) and the `MONGODB_*`, `FINGERPRINT_SECRET`, `SENDER_BLOCK_*` settings. Not wired into the request flow yet (task 2.1). Tests: 54 pass; the 5 MongoDB tests also pass against a local `mongo:8` container (`MONGODB_TEST_URI`). Not yet run against Atlas (needs task 1.3).
 - **2026-11-08:** Plan written (Timothy + Claude Code). Decisions: fingerprint = keyed hash of the number + keyed hash of the normalized text; blocklist on strikes or a very high score, with expiry and an override; SQLite stays, Atlas adds fingerprints only. Nothing is set up on Vultr or Atlas yet.
