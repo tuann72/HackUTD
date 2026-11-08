@@ -3,10 +3,6 @@
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
 import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 import {
-  hideCleared,
-  loadClearedBefore,
-  newestReceivedAt,
-  saveClearedBefore,
   useMessages,
   type Message,
   type MessageChange,
@@ -105,25 +101,24 @@ export function MessagesView() {
     },
     [feed],
   );
-  const { messages: allMessages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
+  const { messages, mode, error, clear: clearSource } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
 
-  // "Clear" hides what's on screen in this browser only; nothing is deleted on the gateway.
-  // Reading storage at init is hydration-safe: messages arrive by polling, so the first render is empty either way.
-  const [clearedBefore, setClearedBefore] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : loadClearedBefore(),
-  );
-  const messages = useMemo(() => hideCleared(allMessages, clearedBefore), [allMessages, clearedBefore]);
-  const hiddenCount = allMessages.length - messages.length;
-  const clear = () => {
-    const cutoff = newestReceivedAt(allMessages);
-    if (cutoff == null) return;
-    setClearedBefore(cutoff);
-    saveClearedBefore(cutoff);
-  };
-  const showAll = () => {
-    setClearedBefore(null);
-    saveClearedBefore(null);
+  // "Clear chats" deletes every stored message on the gateway (or the Vercel backup), not just this screen.
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const clear = async () => {
+    if (!clearSource) return;
+    if (!window.confirm("Delete all messages? This removes them for everyone and can't be undone.")) return;
+    setClearing(true);
+    setClearError(null);
+    try {
+      await clearSource();
+    } catch (e) {
+      setClearError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setClearing(false);
+    }
   };
 
   const { inbox, blocked, deliveredCount } = useMemo(() => {
@@ -140,23 +135,14 @@ export function MessagesView() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
             <div className="flex items-center gap-2">
-              {hiddenCount > 0 && (
-                <button
-                  type="button"
-                  onClick={showAll}
-                  className="rounded-full px-2.5 py-1 text-xs font-medium text-zinc-500 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 dark:text-zinc-400 dark:hover:text-zinc-100"
-                >
-                  Show <span className="tabular-nums">{hiddenCount}</span> cleared
-                </button>
-              )}
               <button
                 type="button"
                 onClick={clear}
-                disabled={messages.length === 0}
-                title="Hide the current messages on this screen. Nothing is deleted on the gateway."
+                disabled={!clearSource || clearing || messages.length === 0}
+                title="Delete all messages from the gateway. This can't be undone."
                 className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
-                Clear chats
+                {clearing ? "Clearing…" : "Clear chats"}
               </button>
             </div>
           </div>
@@ -166,6 +152,14 @@ export function MessagesView() {
               className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
             >
               Couldn&apos;t refresh messages: {error}. Retrying…
+            </p>
+          )}
+          {clearError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
+            >
+              Couldn&apos;t clear messages: {clearError}
             </p>
           )}
         </header>
