@@ -15,8 +15,8 @@ export function formatRelative(iso: string, nowMs: number): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-/** Score (P(scam), 0..1) as a whole percentage, clamped. */
+/** Score (P(scam), 0..1) with two decimals, clamped. */
 export function formatScore(score: number): string {
   if (!Number.isFinite(score)) return "–";
-  return `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%`;
+  return Math.max(0, Math.min(1, score)).toFixed(2);
 }
