@@ -29,7 +29,8 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 |---|---|---|---|---|---|---|---|
 | 1.1 | `train.py`: MiniLM embeddings + LR head, eval on real val/test, write artifacts | — | 1.2 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 | 1.2 | Inference service (FastAPI), bearer auth, occlusion highlights, Dockerfile | — | 1.1 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
-| 1.3 | TF-IDF + LR model (`train.py --model tfidf`), served by the same service with coefficient-based highlights; the comparison baseline and a fallback | 1.1, 1.2 | 2.1 | Done (code merged; full-data run and tests still pending, see 2.1) | `feat/classifier-tfidf-lr` | Tuan + Claude Code | [#6](https://github.com/lytx02/HackUTD/pull/6) |
+| 1.3 | TF-IDF + LR model (`train.py --model tfidf`), served by the same service with coefficient-based highlights; the comparison baseline and a fallback | 1.1, 1.2 | 2.1 | Done (code merged; full-data run pending, see 2.1) | `feat/classifier-tfidf-lr` | Tuan + Claude Code | [#6](https://github.com/lytx02/HackUTD/pull/6) |
+| 1.4 | Artifact-free tests (tiny synthetic TF-IDF model, mocked MiniLM encoder) and laptop-side Vultr scripts for 2.1 and 3.1 (written, not run) | 1.1–1.3 | 2.1 | In progress | `chore/classifier-vultr-ready` | Tuan + Claude Code | TBD |
 
 ### Stage 2: train on Vultr
 
