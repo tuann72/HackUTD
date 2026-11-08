@@ -34,6 +34,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | Remove the Grandparent scam button from the Simulate sidebar | `feat/web-no-grandparent` | Tuan + Claude Code | In review | — |
 | Message UI | Wordmark shield (the U in T-GUARD) as tall as the letters everywhere | `feat/web-logo-shield` | Tuan + Claude Code | Done | [#73](https://github.com/tuann72/HackUTD/pull/73) |
 | Initial 3D scene | Shield/Hand switch above the scene (hand back as an option); Rapid fire button (50 msgs, 100 ms); iMessage demo and Smoke test removed | `feat/web-guard-toggle` | Tuan + Claude Code | Done | [#71](https://github.com/tuann72/HackUTD/pull/71) |
 | Message UI | Message text size follows length (short = larger, long = smaller) | `feat/web-text-size` | Tuan + Claude Code | Done | [#72](https://github.com/tuann72/HackUTD/pull/72) |

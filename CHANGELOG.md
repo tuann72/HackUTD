@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Grandparent scam button removed from Simulate
+
+- **Decision (Tuan):** remove the grandparent scam story from the Simulate sidebar. Its preset is gone from `apps/web/lib/sim/presets.ts`, so the sidebar now has Send a scam, Send a legit text, Random burst and Rapid fire. The scenario file `data/message_bank/scenarios/grandparent.jsonl` stays, like the removed iMessage demo and Smoke test presets, because the CLI simulator (`npm run sim -- scenario grandparent`) can still run it. The demo walkthrough in `docs/DEMO.md` runs `imessage-demo` from the CLI and is unchanged.
+
 ### 2026-11-08: Wordmark shield as tall as the letters
 
 - **Decision (Tuan):** the shield that stands for the U in T-GUARD is as tall as the capitals around it, on the landing page and wherever the wordmark appears (`/messages` and `/dashboard` headers). `ShieldLetter` sets its height to `1cap` (the font's cap height), so it matches Anton (0.86em) on the landing page and Inter (about 0.73em) in the headers. It was 0.74em, short of Anton's capitals. Browsers without the `cap` unit fall back to 0.8em.
