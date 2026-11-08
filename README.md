@@ -32,7 +32,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Message UI | Scam score with two decimals (0.95, not 95%) | `fix/web-score-two-decimals` | Tuan + Claude Code | In review | — |
+| Message UI | Scam score as a percentage with two decimals, truncated (95.43%) | `fix/web-score-two-decimals` | Tuan + Claude Code | In review | — |
 | Voice scam guard | Interview and master plan: Photon SIP feasibility, after-call test, live warning, and caller–victim bridge | `feat/voice-scam-detection` | Codex | In review | [#36](https://github.com/tuann72/HackUTD/pull/36) |
 | Classifier service | Stacked model option, `train.py --model stacked` (task 1.5), deployed on the gateway VM | `feat/classifier-service-stacked` | Timothy + Claude Code | Done | — |
 | Photon iMessage gateway | Photon 2.0 / Beta webhooks: registration script (`pho_prj_` → destinations API, `rotate`) and Standard Webhooks + `message.received` on the Vercel route | `feat/photon-beta-webhooks` | Tuan + Claude Code | Done | — |
