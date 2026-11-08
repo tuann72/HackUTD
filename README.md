@@ -21,10 +21,11 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Classifier service: MiniLM trained and served on Vultr | [classifier-service.md](docs/features/classifier-service.md) | MVP | In progress |
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
 | Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | Parked: wired but off by default, per-message blocking only (#22, #23, #27) |
-| Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (on `/` above the message lists, live polled data, #14, #19) |
-| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | Consolidated worker, classifier, and Vercel result flow in review; production configuration remains |
-| Potential Threat synthetic data: threat, coercion and fake-emergency extortion texts, proposed label 8 | [potential-threat-data.md](docs/features/potential-threat-data.md) | MVP | In progress (data only; label scheme TBD) |
-| Simulation panel: sidebar buttons on `/` that send simulated iMessages to the gateway | [simulation-panel.md](docs/features/simulation-panel.md) | MVP | Done (#54) |
+| Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (on `/messages` above the message lists, live polled data; magenta shield or hand guard, #14, #19, #68, #71) |
+| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | In progress: worker, after-call classifier and Vercel results merged (#63); Caddy classifier proxy (#78) and transcripts to the gateway (#82) in draft; production configuration remains |
+| Potential Threat synthetic data: threat, coercion and fake-emergency extortion texts, proposed label 8 | [potential-threat-data.md](docs/features/potential-threat-data.md) | MVP | Data merged (#43); label 8 is Threats & Extortion (Timothy) and the served model has 9 classes |
+| Simulation panel: sidebar buttons on `/messages` that send simulated iMessages to the gateway | [simulation-panel.md](docs/features/simulation-panel.md) | MVP | Done (#54; Rapid fire dataset #80) |
+| Nemotron review: second opinion with Nessie bank checks for the review band and large money asks | [nemotron-review.md](docs/features/nemotron-review.md) | MVP | Code merged (#59, #70); off by default behind `REVIEWER` |
 | Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
 | 3D conversation scene, Next.js + React Three Fiber (parked) | _Not written yet_ | Later | Not started |
 
@@ -34,13 +35,17 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Project docs | Sync `AGENTS.md` and the README trackers with merges #63 to #81 | `docs/sync-agents-readme` | Tuan + Claude Code | Done | — |
+| Voice scam guard | Send each call transcript to the VM gateway as a signed Photon-format message, like the simulator | `feat/voice-scam-detection` | JP | In progress (draft) | [#82](https://github.com/tuann72/HackUTD/pull/82) |
+| Voice scam guard | Expose only `POST /classify` to LiveKit through the VM's Caddy | `fix/voice-classifier-proxy` | JP | In progress (draft) | [#78](https://github.com/tuann72/HackUTD/pull/78) |
+| Message UI | Model comparison table behind the model name on message cards | `feat/web-model-comparison` | lytx02 + Claude Code | Done | [#81](https://github.com/tuann72/HackUTD/pull/81) |
 | Message UI | Remove the Simulate target line and the dashboard's "Masked by the gateway" note | `feat/web-trim-copy-2` | Tuan + Claude Code | Done | [#79](https://github.com/tuann72/HackUTD/pull/79) |
 | Message UI | Rapid fire dataset: 200 complete sentences, 40% scam; Rapid fire draws from it | `feat/sim-rapid-dataset` | Tuan + Claude Code | Done | [#80](https://github.com/tuann72/HackUTD/pull/80) |
 | Message UI | Remove small captions and the footer note on /messages; bigger Threats blocked / Delivered labels | `feat/web-trim-copy` | Tuan + Claude Code | Done | [#77](https://github.com/tuann72/HackUTD/pull/77) |
 | Message UI | Remove the Grandparent scam button from the Simulate sidebar | `feat/web-no-grandparent` | Tuan + Claude Code | Done | [#74](https://github.com/tuann72/HackUTD/pull/74) |
 | Message UI | Landing T: remove the black slab, add the right serif and two small pink squares beside the stem | `feat/landing-t-dots` | Tuan + Claude Code | Done | [#76](https://github.com/tuann72/HackUTD/pull/76) |
 | Initial 3D scene | Shield's T in Manrope ExtraBold (closest free match to T-Mobile's TeleNeo) | `feat/scene-shield-t-font` | Tuan + Claude Code | Done | [#75](https://github.com/tuann72/HackUTD/pull/75) |
-| Voice scam guard | Caller-only STT worker, after-call classifier, protected Vercel result API/UI, and LiveKit Cloud deployment (tasks 1.1–1.4, 1.6; call-script and production call evaluation pending) | `feat/voice-guard-call-results` | Codex | In review | [#63](https://github.com/tuann72/HackUTD/pull/63) |
+| Voice scam guard | Caller-only STT worker, after-call classifier, protected Vercel result API/UI, and LiveKit Cloud deployment (tasks 1.1–1.4, 1.6; call-script and production call evaluation pending) | `feat/voice-guard-call-results` | Codex | Done | [#63](https://github.com/tuann72/HackUTD/pull/63) |
 | Message UI | Wordmark shield (the U in T-GUARD) as tall as the letters everywhere | `feat/web-logo-shield` | Tuan + Claude Code | Done | [#73](https://github.com/tuann72/HackUTD/pull/73) |
 | Initial 3D scene | Shield/Hand switch above the scene (hand back as an option); Rapid fire button (50 msgs, 100 ms); iMessage demo and Smoke test removed | `feat/web-guard-toggle` | Tuan + Claude Code | Done | [#71](https://github.com/tuann72/HackUTD/pull/71) |
 | Message UI | Message text size follows length (short = larger, long = smaller) | `feat/web-text-size` | Tuan + Claude Code | Done | [#72](https://github.com/tuann72/HackUTD/pull/72) |
@@ -65,13 +70,13 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Message UI | Remove the "Live" source pill from the T-Guard header | `fix/web-remove-live-indicator` | Claude (agent) | Done | [#49](https://github.com/tuann72/HackUTD/pull/49) |
 | Initial 3D scene | Remove the legend overlay (Potential scam / Message) from the scene | `fix/scene-remove-legend` | Claude (agent) | Done | [#46](https://github.com/tuann72/HackUTD/pull/46) |
 | Message UI | "Clear chats" deletes every message (`DELETE /api/messages` on the gateway and the Vercel backup) instead of hiding them | `feat/web-clear-deletes` | Tuan + Claude Code | Done | [#45](https://github.com/tuann72/HackUTD/pull/45) |
-| Potential Threat data | Seeded synthetic threat/coercion rows (proposed label 8), hard negatives and held-out eval file (task 1.1) | `data/potential-threat-synthetic` | Tuan + Claude Code | In review (data built; label scheme TBD) | [#43](https://github.com/tuann72/HackUTD/pull/43) |
+| Potential Threat data | Seeded synthetic threat/coercion rows (proposed label 8), hard negatives and held-out eval file (task 1.1) | `data/potential-threat-synthetic` | Tuan + Claude Code | Done | [#43](https://github.com/tuann72/HackUTD/pull/43) |
 | Initial 3D scene | Sender label missing: draw each label inside its blob (bobs with it), pill background | `fix/scene-sender-label` | Tuan + Claude Code | Done | [#44](https://github.com/tuann72/HackUTD/pull/44) |
 | Message UI | Remove the count/category tags under the T-Guard title | `fix/web-header-remove-tags` | Tuan + Claude Code | Done | [#42](https://github.com/tuann72/HackUTD/pull/42) |
 | Message UI | Collapsible Inbox and Blocked sections | `feat/web-collapsible-lists` | Tuan + Claude Code | Done | [#41](https://github.com/tuann72/HackUTD/pull/41) |
 | Initial 3D scene | Sender/Receiver labels under the blobs, rename Victim → Receiver, drop "(protected)" | `fix/scene-blob-labels` | Tuan + Claude Code | Done | [#40](https://github.com/tuann72/HackUTD/pull/40) |
 | Message UI | Scam score as a percentage with two decimals, truncated (95.43%) | `fix/web-score-two-decimals` | Tuan + Claude Code | Done | [#39](https://github.com/tuann72/HackUTD/pull/39) |
-| Message UI | "Clear chats" button on `/`: hides the current inbox/blocked messages in this browser (nothing deleted on the gateway) | `feat/web-clear-chats` | JP + Claude Code | In review | [#38](https://github.com/tuann72/HackUTD/pull/38) |
+| Message UI | "Clear chats" button on `/`: hides the current inbox/blocked messages in this browser (nothing deleted on the gateway) | `feat/web-clear-chats` | JP + Claude Code | Done (later replaced by #45, which deletes) | [#38](https://github.com/tuann72/HackUTD/pull/38) |
 | Classifier service | Stacked model option, `train.py --model stacked` (task 1.5), deployed on the gateway VM | `feat/classifier-service-stacked` | Timothy + Claude Code | Done | — |
 | Photon iMessage gateway | Photon 2.0 / Beta webhooks: registration script (`pho_prj_` → destinations API, `rotate`) and Standard Webhooks + `message.received` on the Vercel route | `feat/photon-beta-webhooks` | Tuan + Claude Code | Done | — |
 | Photon iMessage gateway | Photon webhook on the Vercel site (`/webhooks/photon` + `/api/messages`, Atlas store), backup to the VM gateway | `feat/web-photon-webhook` | Tuan + Claude Code | In review | — |
