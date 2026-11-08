@@ -105,6 +105,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Voice scam guard | Live call: dial the victim's real phone into the call, score the caller every few seconds through a new gateway `/voice/score`, whisper a "potential scam" warning only the victim hears (tasks 2.1, 2.2, 3.1–3.3) | `feat/voice-guard-live-call` | LacsJP27 + Claude Code | In progress | TBD |
 | Project docs | Architecture diagram in the README; sync docs with #82 | `docs/architecture-diagram` | Tuan + Claude Code | Done | — |
 | Project docs | Sync `AGENTS.md` and the README trackers with merges #63 to #81 | `docs/sync-agents-readme` | Tuan + Claude Code | Done | — |
 | Voice scam guard | Send each call transcript to the VM gateway as a signed Photon-format message, like the simulator | `feat/voice-scam-detection` | JP | Done | [#82](https://github.com/tuann72/HackUTD/pull/82) |
