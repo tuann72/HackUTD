@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: End-to-end result and a model comparison on the message cards
+
+- **End to end, v0.5 plus Nemotron with Nessie, 606 real test texts (156 scams), cutoff 0.70:** accuracy 98.5%, F1 97.1%, 5 scams missed, 4 false blocks. Nemotron reviewed 18 of the 606, caught 3 more scams and added no false blocks. No text reached it through the money rule alone, so this doesn't measure that rule. Roughly, the true catch rate is 93-99% and the false-block rate 0.3-2.3%.
+- **Each model alone on the same 606 texts (missed / false blocks):** stacked LR 8 / 4, TF-IDF + SGD 11 / 2, TF-IDF + LR 10 / 7, MiniLM + LR 9 / 29. TF-IDF and MiniLM are the two halves of v0.5. SGD was trained on the same rows, with alpha picked on val, and isn't deployed.
+- **Web:** the model name on a card opens these figures as a fixed table labeled "Model comparison". It doesn't switch models.
+
 ### 2026-11-08: Less small text on /messages, bigger totals labels
 
 - **Decision (Tuan):** remove the small captions on `/messages`: "01 / The protector" and "Fictional senders. Real classifier." under the scene, "You're in good hands." and "Let through, untouched." under the totals, and the footer note "“Potential scam” is the classifier's verdict and can be wrong. Links and phone numbers in blocked messages are disabled." The "Threats blocked" and "Delivered" labels go from 10px to 20px (`text-xl`). Links and numbers in blocked messages are still disabled; only the note saying so is gone.

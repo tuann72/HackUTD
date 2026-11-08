@@ -4,6 +4,7 @@ import { isGroupChat, isNotClassified, isRestored, isSenderBlocked, isUnverified
 import { categoryClass, categoryLabel } from "./category";
 import { MessageBody } from "./MessageBody";
 import { MessageExtras } from "./MessageExtras";
+import { ModelComparison } from "./ModelComparison";
 import { formatRelative, formatScore } from "./time";
 
 const UNVERIFIED_TITLE = "The classifier was unavailable, so this was delivered without a check.";
@@ -140,13 +141,17 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
       )}
 
       {m.verdict && (
-        <footer className="mt-3 flex items-baseline justify-between gap-2 border-t border-rule pt-2 font-label text-[10px] uppercase tracking-[0.04em] text-muted">
+        <footer className="mt-3 flex flex-wrap items-baseline justify-between gap-2 border-t border-rule pt-2 font-label text-[10px] uppercase tracking-[0.04em] text-muted">
           <span>
             Scam score <span className="font-bold tabular-nums text-ink">{formatScore(m.verdict.score)}</span>
           </span>
-          <span className="truncate normal-case" title="Model">
-            {m.verdict.model}
-          </span>
+          {m.verdict.model.startsWith("stacked-lr") ? (
+            <ModelComparison model={m.verdict.model} />
+          ) : (
+            <span className="truncate normal-case" title="Model">
+              {m.verdict.model}
+            </span>
+          )}
         </footer>
       )}
     </article>
