@@ -11,7 +11,7 @@ A second line of defense for messages the stacked model is unsure about. When th
 
 ## Out of scope
 
-- Scores outside the band: they keep the model's decision.
+- Scores outside the band: they keep the model's decision, except that a message asking for at least `MONEY_WARN_AMOUNT` is reviewed even below the band, because the classifier can't weigh amounts.
 - The Vercel backup route, which classifies before it answers the webhook.
 - Real bank data. Nessie is a mock bank, and the fallback is local mock data.
 - Any reply to the sender.
