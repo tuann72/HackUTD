@@ -146,7 +146,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 | Classifier approach and label scheme | MiniLM on Vultr (Tuan), with TF-IDF + LR as the baseline; label scheme still open; see [classifier-service.md](classifier-service.md). The gateway calls either through the same `POST /classify` | Approach **agreed**; label scheme **TBD** |
 | Message bank file format | **JSONL** | **Decided** (Tuan, 2026-11-07) |
 | Message bank size and mix | Scenario files plus a small bank of SMS-style rows | **TBD** |
-| Where the message UI lives | **`apps/web`, route `/messages`**, so the 3D scene ([PR #2](https://github.com/lytx02/HackUTD/pull/2)) can take `/` later | **Decided** (Tuan, 2026-11-07) |
+| Where the message UI lives | **`apps/web`, route `/messages`**, so the 3D scene ([PR #2](https://github.com/lytx02/HackUTD/pull/2)) can take `/` later. **Changed (Tuan):** the list and the scene are now one page at `/` ([#19](https://github.com/tuann72/HackUTD/pull/19)); `/messages` redirects there | **Decided** (Tuan, 2026-11-07) |
 | Does the trial number accept texts from unverified phones? | Test it in task 1.1 | **TBD** |
 
 ## Tasks
