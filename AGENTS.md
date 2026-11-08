@@ -91,6 +91,8 @@ Do not commit to one approach in code or docs until the team chooses. **Keyword 
 
 **Scene (firm requirement from Tuan: keep it simple):** blob people (R3F meshes) wander and bob. When one sends a message, a chat bubble (HTML via drei `<Html>`, animated with Motion) appears above its head. Delivered messages float to the victim. A scam bubble turns red with a "Blocked" stamp and pops before it reaches the victim. New public senders spawn as new blobs (later scope).
 
+**Initial scene (Tuan, 2026-11-07; later scope, still parked):** when the scene is un-parked, build this first: one pink victim blob and one sender blob that shoots messages at it. Red messages are flagged as a **potential scam** (always say "potential scam", not "scam"), and each message either goes through or is blocked and pops. Plan: [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
+
 Everything above except the two firm requirements is a proposal. Open items stay **TBD**: where the gateway and event stream are hosted, WebSocket vs. SSE, Vultr products and cost, the block-category scheme, where the scam notice goes, panel login, the highlight method if MiniLM is chosen, fail-open vs. fail-closed when the classifier is down, block thresholds, storage, and moderation for the public demo.
 
 ## Open questions — do not guess

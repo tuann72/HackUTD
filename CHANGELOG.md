@@ -19,6 +19,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Still TBD:** the gateway framework (later: Hono, see above) and where it's hosted.
 - **Also:** this file was renamed from `DESIGN.md`.
 
+### 2026-11-07: Initial 3D scene is two blobs and message shots (later scope)
+
+- **Decision (Tuan):** when the parked scene is picked up, start with one **pink victim blob** and one **sender blob that shoots messages** at it. **Red** messages are flagged as a **potential scam**. Each message goes through to the victim or gets blocked and pops before it arrives. On-screen wording says "potential scam", never "scam".
+- **Why:** it's the simplest picture that shows T-Gate stopping potential scams while letting other messages through.
+- **Doesn't change:** the scene stays parked until the MVP works. The fuller scene below (crowd of blobs, chat bubbles) stays proposed.
+- **Details:** [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
+
 ### 2026-11-07: MVP UI is a basic Next.js message list; 3D scene parked
 
 - **Decision (Tuan):** the MVP UI is a basic Next.js page that shows delivered and blocked messages, polling a read-only `GET /api/messages`. The React Three Fiber scene, event stream, scam notice and blocked-scams panel move to later scope.
