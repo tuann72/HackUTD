@@ -4,8 +4,10 @@ Next.js 16 (App Router, React 19, Tailwind 4). It hosts:
 
 | Route | What | Plan |
 |---|---|---|
-| `/` | Placeholder home. The 3D scene may take this route | [`initial-3d-scene.md`](../../docs/features/initial-3d-scene.md) |
-| `/messages` | MVP message list: inbox (delivered) and blocked | [`twilio-mvp.md`](../../docs/features/twilio-mvp.md), tasks 1.3 and 2.2 |
+| `/` | The 3D scene band on top, then the MVP message list: inbox (delivered) and blocked. One `useMessages` poll feeds both | [`twilio-mvp.md`](../../docs/features/twilio-mvp.md) tasks 1.3 and 2.2, [`initial-3d-scene.md`](../../docs/features/initial-3d-scene.md) task 3.4 |
+| `/messages`, `/scene` | Redirect to `/` (`next.config.ts`) | |
+
+The scene's message bubbles are the images in `public/scene/` (`bubble.svg`, `bubble-scam.svg`). Replace those files to change the art.
 
 The 3D-scene packages are already installed, so scene work doesn't need to edit `package.json`: `@react-three/fiber` 9, `@react-three/drei` 10, `three`, `motion` (`motion/react`) and `maath`. Load the `<Canvas>` from a client component with `next/dynamic` and `{ ssr: false }`. Don't use `framer-motion-3d`.
 

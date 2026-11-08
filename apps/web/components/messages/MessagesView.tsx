@@ -1,8 +1,10 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
-import { useMemo, type ReactNode } from "react";
-import { useMessages, type Message, type SourceMode } from "@/lib/messages";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useMessages, type Message, type MessageChange, type SourceMode } from "@/lib/messages";
+import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
+import { SceneClient } from "@/components/scene/SceneClient";
 import { categoryClass, categoryLabel } from "./category";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
@@ -72,9 +74,21 @@ function Column({
   );
 }
 
-/** The /messages page: inbox (delivered, plus pending at top) and blocked. */
+/**
+ * The home page: the 3D scene on top, then the inbox (delivered, plus pending
+ * at top) and blocked lists. One poll feeds both, so the scene animates the
+ * same messages the lists show.
+ */
 export function MessagesView() {
-  const { messages, mode, error } = useMessages({ intervalMs: 1500 });
+  const [feed] = useState(createShotFeed);
+  // Each message fires a shot once the gateway has decided it.
+  const onChanges = useCallback(
+    (changes: MessageChange[]) => {
+      for (const c of changes) if (c.type === "resolved") feed.push(toSceneMessage(c.message));
+    },
+    [feed],
+  );
+  const { messages, mode, error } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
 
   const { inbox, blocked, deliveredCount, pendingCount, categories } = useMemo(() => {
@@ -101,7 +115,7 @@ export function MessagesView() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
         <header className="mb-6 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">T-Gate · Messages</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">T-Gate</h1>
             <SourceIndicator mode={mode} />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -134,6 +148,13 @@ export function MessagesView() {
             </p>
           )}
         </header>
+
+        <section
+          aria-label="Animation: each message flies to the victim; blocked ones pop before they arrive"
+          className="mb-8 h-[42dvh] min-h-64 overflow-hidden rounded-2xl"
+        >
+          <SceneClient feed={feed} />
+        </section>
 
         <LayoutGroup>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-6">

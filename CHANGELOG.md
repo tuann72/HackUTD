@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: Scene and message list on one page; 2D bubble image
+
+- **Decision (Tuan):** combine the initial scene and the message list into **one page at `/`**: the scene band on top, the inbox and blocked lists below. `/messages` and `/scene` redirect to `/` (temporary redirects, in case the routes split again).
+- **One data source:** the scene now animates the same `useMessages` poll as the lists. Each message fires a shot when it resolves to delivered or blocked, so the scene and the lists always show the same messages. This replaces the scene's hand-written fake messages and, for the polling MVP, covers what task 4.1 of the scene plan wanted (live data); an event stream is still later scope. With no `NEXT_PUBLIC_API_URL`, both run on the mock replay.
+- **Decision (Tuan):** the message projectile is a **flat 2D chat-bubble image** (a camera-facing sprite from `apps/web/public/scene/bubble.svg` and `bubble-scam.svg`) instead of a 3D ball. Swapping the art means replacing those files.
+- **Unchanged:** the scene still renders the gateway's `action` and verdict and never decides anything itself. Labels under the bubbles are defanged like the list.
+
 ### 2026-11-07: Gateway on a Vultr VM, web app on Vercel
 
 - **Decision (Tuan):** the gateway runs on a **Vultr VM** (option A in the Twilio MVP plan). Only `apps/web` deploys to **Vercel**, through a repo-root `vercel.json` with one service (`web`) that serves every path. The classifier stays on Vultr as agreed.

@@ -2,7 +2,7 @@
 
 - **Slug:** `initial-3d-scene` (used in branch names: `<type>/initial-3d-scene-<short-task>`)
 - **Phase:** Later. The rest of the 3D scene is still parked (see [`CHANGELOG.md`, "MVP UI is a basic Next.js message list; 3D scene parked"](../../CHANGELOG.md#2026-11-07-mvp-ui-is-a-basic-nextjs-message-list-3d-scene-parked)), but this first version was built early with fake data.
-- **Status:** In progress. Stages 1–3 are done in [#14](https://github.com/lytx02/HackUTD/pull/14) (`/scene`, fake messages). Stage 4 (live data) is not started.
+- **Status:** In progress. Stages 1–3 are done in [#14](https://github.com/lytx02/HackUTD/pull/14). Task 3.4 ([#19](https://github.com/tuann72/HackUTD/pull/19)) moved the scene onto `/` above the message lists and feeds it the same polled data, so it now shows live gateway messages when `NEXT_PUBLIC_API_URL` is set. Task 4.1 (event stream) is not started.
 - **Owner:** Tuan
 
 ## Goal
@@ -15,7 +15,7 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 
 - **Victim:** one **pink** blob in the scene. It idles (gentle bob) and reacts with a small bounce when a message reaches it.
 - **Sender:** one blob that shoots messages at the victim. It isn't colored red itself (Tuan dropped that idea). Built as neutral slate grey (`#94a3b8`).
-- **Messages:** each message is a small projectile, a blob or orb, that flies from the sender toward the victim.
+- **Messages:** each message is a small projectile that flies from the sender toward the victim. Since task 3.4 it's a **flat 2D chat-bubble image** (Tuan), not a 3D orb.
   - **Red** = flagged as a **potential scam**.
   - **Not flagged:** soft light blue (`#bfdbfe`), as built.
 - **Outcome:**
@@ -43,8 +43,8 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 
 ## Open questions
 
-- **Data source for 4.1:** the MVP has no event stream. Its UI polls `GET /api/messages`, which the gateway (#10) now serves. The scene could poll that same API first, mapping `action` and `verdict` onto shots, or wait for the event stream (TBD).
-- **Route:** built at `/scene`. Whether it later moves to `/` is TBD.
+- **Data source for 4.1:** task 3.4 took the polling route: the scene shares the page's `useMessages` poll of `GET /api/messages` and fires a shot for each message that resolves. Whether an event stream replaces polling later is TBD.
+- **Route:** decided (Tuan, task 3.4): the scene is the top band of the home page `/`, above the message lists. `/scene` redirects there.
 - **Event contract v1:** this plan assumes `message.delivered` / `message.blocked` events with `action`, a label and an opaque message id, as in `CHANGELOG.md`. The contract file (`contracts/events.v1.schema.json`) doesn't exist yet. Until it does, fixtures follow the shape in `CHANGELOG.md`.
 - **Speed:** #14 fires one message every 1.3 s. Whether the demo needs a slower first pass is TBD.
 
@@ -73,7 +73,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 | 3.1 | Mock event source → client store → scene: each fixture event fires a projectile, with color and outcome taken from the event | 1.2, 2.1, 2.2 | — | Done | `feat/initial-3d-scene-demo` | Tuan + Claude Code | [#14](https://github.com/lytx02/HackUTD/pull/14) |
 | 3.2 | Fix runtime warnings on `/scene`: duplicate shot keys, drei `<Html>` root unmounted during render, removed `PCFSoftShadowMap` | 3.1 | 4.1 | Done | `fix/initial-3d-scene-runtime-warnings` | Tuan + Claude Code | [#15](https://github.com/lytx02/HackUTD/pull/15) |
 | 3.3 | Make `/scene` smoother: cut wasted render work (unused shadow map, re-renders, per-shot geometry) | 3.2 | 4.1 | Done | `fix/initial-3d-scene-perf` | Tuan + Claude Code | [#17](https://github.com/tuann72/HackUTD/pull/17) |
-| 3.4 | One page at `/`: scene above the inbox/blocked lists, scene animates the same `useMessages` data, 2D bubble image instead of the 3D orb | 3.3 | — | In progress | `feat/initial-3d-scene-combined-page` | Tuan + Claude Code | |
+| 3.4 | One page at `/`: scene above the inbox/blocked lists, scene animates the same `useMessages` data, 2D bubble image instead of the 3D orb | 3.3 | — | In review | `feat/initial-3d-scene-combined-page` | Tuan + Claude Code | [#19](https://github.com/tuann72/HackUTD/pull/19) |
 
 ### Stage 4: Live (after the gateway exists)
 
@@ -120,6 +120,8 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 - **Done when:** a simulated message sent through the real gateway shows up in the scene.
 
 ## Progress notes
+
+- **2026-11-07:** task 3.4 (#19): scene and message list combined at `/` (`/scene` and `/messages` redirect). The scene animates the page's `useMessages` data through `components/scene/feed.ts` (shots queue 600 ms apart, at most 5 waiting), so `fakeMessages.ts` and the sender-bound replies are gone. The projectile is a 2D bubble sprite from `public/scene/*.svg`. The scene's own delivered/blocked counter is gone too; the list header shows the counts.
 
 - **2026-11-07:** Stages 1–3 built in #14 at `/scene` with fake messages in `components/scene/fakeMessages.ts` (not a contracts fixture). Plan updated to match: colours, shield flash and the text label are as built. Next: a browser check, then 4.1 (live data, probably polling `GET /api/messages`).
 - **2026-11-07:** rebased onto the merged Twilio MVP plan (PR #1). Phase set to Later, because that PR parked the 3D scene.
