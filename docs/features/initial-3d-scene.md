@@ -7,13 +7,13 @@
 
 ## Goal
 
-Make the simplest possible 3D scene that shows T-Gate working. It has two blobs: a **pink blob for the victim** and a **sender blob that shoots messages** at it. Each message is a small projectile. **Red** means the gateway flagged it as a **potential scam**. Each message either **goes through** to the victim or gets **blocked** before it arrives. Anyone watching can see at a glance that T-Gate stops potential scams before they reach the victim and lets everything else through.
+Make the simplest possible 3D scene that shows T-Guard working. It has two blobs: a **pink blob for the victim** and a **sender blob that shoots messages** at it. Each message is a small projectile. **Red** means the gateway flagged it as a **potential scam**. Each message either **goes through** to the victim or gets **blocked** before it arrives. Anyone watching can see at a glance that T-Guard stops potential scams before they reach the victim and lets everything else through.
 
 This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (simple, React Three Fiber)"](../../CHANGELOG.md#3d-scene-simple-react-three-fiber). It follows the stack and decoupling rules in [`AGENTS.md`](../../AGENTS.md#proposed-architecture-interception-gateway-and-demo-scene-not-agreed): Next.js, React Three Fiber, `motion/react` for the DOM layer. The scene consumes events only and contains no business logic.
 
 ## Scene design (Tuan, 2026-11-07)
 
-- **Victim:** one **pink** blob in the scene. It idles (gentle bob) and reacts with a small bounce when a message reaches it.
+- **Victim:** one **pink** blob in the scene. It idles (gentle bob) and reacts with a small bounce when a message reaches it. On screen it's labeled **Receiver** (Tuan, 2026-11-08), and the Sender/Receiver labels are drawn in the scene under each blob so they stay aligned at any width.
 - **Sender:** one blob that shoots messages at the victim. It isn't colored red itself (Tuan dropped that idea). Built as neutral slate grey (`#94a3b8`).
 - **Messages:** each message is a small projectile that flies from the sender toward the victim. Since task 3.4 it's a **flat 2D chat-bubble image** (Tuan), not a 3D orb.
   - **Red** = flagged as a **potential scam**.
@@ -37,16 +37,17 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 
 - Several senders, wandering crowds, or public senders spawning (later scope: [live public demo](../../AGENTS.md#later-live-public-demo)).
 - Chat bubbles with the full message text. Showing a short preview on hover or as a label is TBD (see open questions).
-- A with/without T-Gate comparison view (possible follow-up). Counters were added in #14.
+- A with/without T-Guard comparison view (possible follow-up). Counters were added in #14.
 - The blocked-scams panel (`/blocked`), the scam notice, and keyword highlights. Those are separate features.
 - Anything on the gateway, simulator or classifier side.
 
 ## Open questions
 
 - **Data source for 4.1:** task 3.4 took the polling route: the scene shares the page's `useMessages` poll of `GET /api/messages` and fires a shot for each message that resolves. Whether an event stream replaces polling later is TBD.
-- **Route:** decided (Tuan, task 3.4): the scene is the top band of the home page `/`, above the message lists. `/scene` redirects there.
+- **Route:** decided (Tuan, task 3.4): the scene is the top band of the home page `/`, above the message lists. `/scene` redirects there. **Band size (Tuan, 2026-11-08):** the band is taller, `65dvh` (min 20rem) from the `sm` breakpoint up and `45dvh` (min 16rem) on phones, and the camera sets its fov from the band's aspect ratio so both blobs, the shot arc and the labels always fit (`FitCamera` in `Scene.tsx`).
 - **Event contract v1:** this plan assumes `message.delivered` / `message.blocked` events with `action`, a label and an opaque message id, as in `CHANGELOG.md`. The contract file (`contracts/events.v1.schema.json`) doesn't exist yet. Until it does, fixtures follow the shape in `CHANGELOG.md`.
 - **Speed:** #14 fires one message every 1.3 s. Whether the demo needs a slower first pass is TBD.
+- **Flight speed profile (Tuan, 2026-11-08):** each bubble flies fast for the first 30% of the distance, slow (a third of the speed) through the middle 40%, and fast again for the last 30%, with smooth speed transitions. The whole flight takes 2.2 s, split about 18% / 64% / 18%. Blocked messages still stop at 80% of the distance. Code: `components/scene/flight.ts` (`flightDistance`), used by `MessageShot.tsx`.
 
 ## Tasks
 
@@ -120,6 +121,10 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 - **Done when:** a simulated message sent through the real gateway shows up in the scene.
 
 ## Progress notes
+
+- **2026-11-08:** the shield's check mark became a raised white block "T" (original letterform, not the T-Mobile logo), and the shield moved left to x 1.9.
+- **2026-11-08:** the hand and box were replaced by a pink (T-Mobile magenta) shield from Lucide `shield-check` in the same spot; blocked messages bounce off it, delivered ones arc over it to the Receiver bean (see `CHANGELOG.md`, "A pink shield replaces T-Guard's hand and box").
+- **2026-11-08:** the right (Receiver) blob is replaced by the pink T-GUARD box and a photographic hand (Tuan; art and strike timings from the T-GUARD offline prototype, `palm.webp`/`backhand.webp` in `public/scene/hand/`, clips in `components/scene/slap.ts`). Blocked potential scams stop within reach, drift to where the palm will land during the wind-up, and are slapped back toward the sender (plain slap, 3 in 10 backhands, every 7th a slow "delayed" slap); the shield flash is gone. Delivered messages land in the hand, which twitches while the box glows. The sender blob is unchanged. Sound from the prototype is not ported.
 
 - **2026-11-07:** task 3.4 (#19): scene and message list combined at `/` (`/scene` and `/messages` redirect). The scene animates the page's `useMessages` data through `components/scene/feed.ts` (shots queue 600 ms apart, at most 5 waiting), so `fakeMessages.ts` and the sender-bound replies are gone. The projectile is a 2D bubble sprite from `public/scene/*.svg`. The scene's own delivered/blocked counter is gone too; the list header shows the counts.
 

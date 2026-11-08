@@ -1,11 +1,13 @@
-# T-Gate web app (`apps/web`)
+# T-Guard web app (`apps/web`)
 
 Next.js 16 (App Router, React 19, Tailwind 4). It hosts:
 
 | Route | What | Plan |
 |---|---|---|
-| `/` | The 3D scene band on top, then the MVP message list: inbox (delivered) and blocked. One `useMessages` poll feeds both | [`twilio-mvp.md`](../../docs/features/twilio-mvp.md) tasks 1.3 and 2.2, [`initial-3d-scene.md`](../../docs/features/initial-3d-scene.md) task 3.4 |
-| `/messages`, `/scene` | Redirect to `/` (`next.config.ts`) | |
+| `/` | Landing page (T-Guard title, tagline, color blocks); **Start** opens `/messages` | |
+| `/messages` | The 3D scene band on top, then the MVP message list: inbox (delivered) and blocked. One `useMessages` poll feeds both | [`twilio-mvp.md`](../../docs/features/twilio-mvp.md) tasks 1.3 and 2.2, [`initial-3d-scene.md`](../../docs/features/initial-3d-scene.md) task 3.4 |
+| `/dashboard` | Overall analytics over the latest messages (`lib/messages/stats.ts`): totals, block rate, average score, most active (masked) numbers, scam categories, message types, score spread, outcomes and reasons. Linked from the **Dashboard** button on `/messages` | |
+| `/scene` | Redirects to `/messages` (`next.config.ts`) | |
 
 The scene's message bubbles are the images in `public/scene/` (`bubble.svg`, `bubble-scam.svg`). Replace those files to change the art.
 
@@ -22,6 +24,8 @@ npm run lint
 npm run build
 npm run check:contract # fails if lib/messages/fixture.v1.json is stale
 npm run sync:contract  # re-copies the fixture from contracts/
+npm run check:bank     # fails if lib/sim/bank.json is stale
+npm run sync:bank      # re-copies data/message_bank/ for the Simulate sidebar
 ```
 
 ## Data: `lib/messages`
@@ -52,11 +56,15 @@ const { messages, mode, error } = useMessages({
 | `replay` | Default when no URL is set, or `?source=replay` | Replays the contract fixture: a new message every 3 s, pending for 1.2 s, then delivered or blocked. Loops with fresh ids |
 | `static` | `?source=static` | The fixture as-is |
 
+The page doesn't show which source is active: the header's "Live" / "Replay (mock)" pill was removed by Tuan, 2026-11-08. `mode` is still used for the "Loading…" empty states.
+
 Display helpers: `isPotentialScam(m)` (the gateway's label is `scam`; say "potential scam" on screen) and `isUnverified(m)` (delivered because the classifier was down).
 
 ## Config
 
 Copy `.env.example` to `.env.local`. `NEXT_PUBLIC_API_URL` is the gateway base URL, for example `http://localhost:8787`. It ships to the browser, so never put secrets in `NEXT_PUBLIC_` variables.
+
+**Simulate sidebar.** The buttons on the right of `/` send simulated iMessages through `POST /api/simulate`, which signs them on the server and sends them to `SIM_WEBHOOK_URL` (default `${NEXT_PUBLIC_API_URL}/webhooks/photon`). Set `SIM_WEBHOOK_SECRET` to the target gateway's `PHOTON_WEBHOOK_SECRET` (default: this app's `PHOTON_WEBHOOK_SECRET`). Without a target or secret the panel says "Simulation is off". Edit `lib/sim/presets.ts` to change the buttons. See [`docs/features/simulation-panel.md`](../../docs/features/simulation-panel.md).
 
 ## Deploy (Vercel)
 

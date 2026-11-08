@@ -2,8 +2,8 @@ import type { Highlight } from "@/lib/messages";
 import { renderSegments } from "./highlight";
 
 const DEFANGED_TITLE = {
-  url: "Link disabled by T-Gate. Don't visit it.",
-  phone: "Number disabled by T-Gate. Don't call it.",
+  url: "Link disabled by T-Guard. Don't visit it.",
+  phone: "Number disabled by T-Guard. Don't call it.",
 } as const;
 
 /**
@@ -41,7 +41,7 @@ export function MessageBody({
           <mark
             key={seg.start}
             title={seg.highlight.text ? `Flagged word: ${seg.highlight.text}` : "Flagged word"}
-            className="rounded bg-amber-200/70 px-0.5 text-inherit dark:bg-amber-400/25"
+            className="bg-[#ffcee6] px-0.5 text-inherit"
           >
             {content}
           </mark>

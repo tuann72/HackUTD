@@ -26,6 +26,7 @@ GATEWAY_KEYS = {"messageId", "label", "score", "category", "model", "highlights"
 CATEGORIES = {
     "Imposter & Phishing", "Prizes, Lotteries & Advance-Fee", "Jobs, Business & Investment",
     "Loans, Credit & Debt", "Health & Pharmacy", "Shopping & Product Offers", "Internet, Telecom & Media",
+    "Threats & Extortion",
 }
 
 
@@ -61,13 +62,13 @@ def test_train_tfidf_writes_loadable_artifacts(tfidf_category_artifacts):
     assert meta["kind"] == "tfidf-lr"
     assert meta["labels"] == "category"
     assert meta["model"] == "tfidf-lr-category@0.1"
-    assert meta["label_names"][0] == "Ham" and len(meta["label_names"]) == 8
+    assert meta["label_names"][0] == "Ham" and len(meta["label_names"]) == 9
     metrics = json.loads((d / "metrics.json").read_text())
-    for split in ("val", "test"):
-        assert set(metrics[split]["scam_vs_ham"]) == {"precision", "recall", "f1"}
-        assert "sms_scam_vs_ham_f1" in metrics[split]
+    assert "test" not in metrics  # train.py must not score the test split
+    assert set(metrics["val"]["scam_vs_ham"]) == {"precision", "recall", "f1"}
+    assert "sms_scam_vs_ham_f1" in metrics["val"]
     # The tiny data is separable; a broken pipeline would land near chance.
-    assert metrics["test"]["scam_vs_ham"]["f1"] >= 0.9
+    assert metrics["val"]["scam_vs_ham"]["f1"] >= 0.9
     head = joblib.load(d / "head.joblib")
     assert 0 in head.classes_
     keywords = json.loads((d / "keywords.json").read_text())

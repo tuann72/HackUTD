@@ -1,4 +1,4 @@
-# T-Gate Changelog
+# T-Guard Changelog
 
 The team's decision log (newest first) and the detailed design spec behind it. Renamed from `DESIGN.md` on 2026-11-07.
 
@@ -25,15 +25,15 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 - **Verification:** the user placed a consented call after the `T-Gate Voice` SIP dispatch rule was assigned to `voice-guard`. The worker published a zero-amplitude audio track, LiveKit SIP status changed `ringing` → `active` → `hangup`, and AssemblyAI Universal-Streaming produced non-empty speech text. A one-call local log displayed the transcript at the user's request, then the logging change was removed; no transcript was persisted.
 - **Answer media:** the worker publishes a zero-amplitude audio track so the caller is answered without a spoken response. Caller audio remains the only audio sent to STT.
-- **Limit:** `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` were unset, so the worker logged `classifier_not_configured` and did not return a verdict. No call-result store or Vercel display exists yet.
-- **Deployment decision (user):** deploy the worker to LiveKit Cloud on the existing Build plan. The service now has a multi-stage Dockerfile, production build config, and `.dockerignore`. `npm run build` and `npm run typecheck` pass; the Cloud deployment itself is not yet complete.
+- **Limit:** `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` were unset, so no verdict was produced. At that point no call-result store or Vercel display existed yet.
+- **Deployment decision (user):** deploy the worker to LiveKit Cloud on the existing Build plan. The service has a multi-stage Dockerfile, production build config, and `.dockerignore`. `npm run build` and `npm run typecheck` passed; the Cloud deployment itself was not yet complete.
 - **Plan:** [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md), tasks 1.1, 1.2, and 1.6.
 
 ### 2026-11-08: Add the caller-only LiveKit STT worker
 
 - **What:** add `services/voice-guard/`, a TypeScript LiveKit Agents worker that subscribes only to SIP participant audio, streams to AssemblyAI Universal-Streaming through LiveKit Inference, buffers final transcript text in memory, and calls the existing classifier after the audio track ends using a random UUID as `messageId`.
-- **Privacy and failure behavior:** capture is disabled unless `VOICE_GUARD_CAPTURE_ENABLED=true`; audio and transcripts are not persisted, and transcript text is not logged. STT/classifier errors are caught so the worker does not explicitly terminate the call. No call-result store or Vercel display is added.
-- **Current status:** `npm run typecheck` passes. The worker is not deployed or attached to the SIP dispatch rule; Stage 1.1 audio verification and Stage 1.2 live transcription remain in progress. No test call or inference usage test was run.
+- **Privacy and failure behavior:** capture is disabled unless `VOICE_GUARD_CAPTURE_ENABLED=true`; audio and transcripts are not persisted, and transcript text is not logged. STT/classifier errors are caught so the worker does not explicitly terminate the call. No call-result store or Vercel display is added at this point in the history.
+- **Initial status:** `npm run typecheck` passed. The worker had not yet been deployed or attached to the SIP dispatch rule; Stage 1.1 audio verification and Stage 1.2 live transcription remained in progress. No test call or inference usage test was run at that stage.
 - **Reference:** [LiveKit job lifecycle and raw audio track processing](https://docs.livekit.io/agents/server/job/).
 
 ### 2026-11-08: Select STT for the voice scam guard
@@ -41,8 +41,190 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Decision (user):** use AssemblyAI Universal-Streaming through LiveKit Inference for the caller-only voice prototype. The model ID is `assemblyai/universal-streaming`; English is sufficient for the planned scripted proof.
 - **Why:** it integrates through the existing LiveKit room, needs no separate AssemblyAI API key, and the current LiveKit Build/Ship rate is `$0.0025/min`. LiveKit documents that Inference is zero-data-retention by default, including model audio and output; this does not define how T-Gate retains the final transcript.
 - **Implementation:** use a Node.js/TypeScript LiveKit agent worker, consistent with the repository service stack. Subscribe only to the SIP caller track, buffer final transcript text in memory, and call the text classifier after hangup. Do not write audio to persistent storage or print transcript text in logs.
-- **Still TBD:** worker deployment target, consent/disclosure process, transcript retention duration, result storage/API, and call-level classifier evaluation. No test call or paid usage test is part of this decision.
+- **Still TBD:** deployment target, consent/disclosure process, transcript retention duration, result storage/API, and call-level classifier evaluation. No test call or paid usage test was part of the original decision.
 - **References:** [LiveKit STT models](https://docs.livekit.io/agents/models/stt/), [LiveKit Inference privacy and authentication](https://docs.livekit.io/agents/models/inference/), and [LiveKit Inference pricing](https://livekit.com/pricing/inference).
+
+### 2026-11-08: Nemotron always reviews large money asks, new decision prompt
+
+- **Rule:** a message asking for at least `MONEY_WARN_AMOUNT` now goes to Nemotron even when its score is below `REVIEW_BAND_LOW`, because the classifier can't weigh amounts. Scores at or above `REVIEW_BAND_HIGH` stay blocked without review.
+- **Why the prompt changed first:** run on the live model, the old prompt blocked every money ask it reviewed, including "Can you venmo me $600 for your half of the flights", and blocked "free cinnamon rolls!". Its reasons were often just "no bank data". The new `DECIDE_PROMPT` says a request for money alone is not a scam sign, lists the warning signs (rushed, secret, new number, emergency, an amount that doesn't fit the reason) and says missing bank data means nothing for a personal message.
+- **Checks (hand-written, small, real Nemotron, mock bank):** in the texts the prompt was tuned on, "Free at last! No more school!", the $600 flights text and "free cinnamon rolls!" reach the inbox, and the $6000 bus fare is blocked. In a batch of 24 written before the final prompt (one wording tweak followed its first run): every harmless text that was reviewed was delivered (6 of 6), and 2 of 3 reviewed scams were blocked.
+- **Known limits:** "can you please help me with $1800, i got stranded and nobody else can help" is delivered with the money warning. Some harmless money asks score at or above 0.77 and are blocked without review ("can you transfer $900 for your share of rent", 88%). "the $800 for the security deposit like we talked about" is still blocked, with an inaccurate reason ("Urgent request for a large sum"). Nemotron has a rate limit; a 429 keeps the model's decision.
+
+### 2026-11-08: A "T" on the shield instead of the check mark; shield moved left
+
+- **Decision (Tuan):** put a "T" on the shield instead of the check mark, and move the shield a few pixels left. The T is a raised white block letter (crossbar over a stem) extruded on the shield's face. It is an original letterform, not T-Mobile's logo (the T with small squares beside it), which is their trademark; the magenta shield keeps the T-Mobile feel. The shield moved from x 2.2 to 1.9 world units (about 25 to 35 px).
+- **Wordmark (Tuan):** the "U" in "GUARD" is the magenta shield (`components/brand/ShieldLetter.tsx`, Lucide `shield` outline, filled `#e20074`) in the landing title and the `/messages` and `/dashboard` headers. Screen readers still read "U".
+
+### 2026-11-08: A pink shield replaces T-Guard's hand and box
+
+- **Decision (Tuan):** replace the hand and box with a shield icon, "pink like T-Mobile", in the same position. The shield is Lucide's `shield-check` (lucide.dev, ISC license): the outline is filled and extruded into a 3D badge in T-Mobile magenta `#e20074`, with the check mark in white on its face (`apps/web/components/scene/Shield.tsx`, built with three.js `SVGLoader`). It floats and sways and keeps the "T-Guard" label underneath.
+- **Behavior:** a blocked message flies to the shield's face, gets the "Potential scam · Blocked" stamp, and bounces back toward the sender while the shield punches, rocks back, glows and throws a pink ring. A delivered message arcs over the shield and lands on the Receiver bean, which bounces.
+- **Removed:** `Hand.tsx`, `slap.ts` and its tests, and `public/scene/hand/*.webp`. They came from the T-GUARD offline prototype and nothing else used them.
+
+### 2026-11-08: No em dashes, sortable senders, a "T" on the landing page
+
+- **Decision (Tuan):** no em dashes in the UI. The wordmark and box text read "T-GUARD", missing values show "N/A", and ranges use "to" (score buckets, the dashboard's time span, simulate error messages). Code comments and message-bank sample texts are not UI and were left alone.
+- **Dashboard:** the most-active-numbers table sorts by Messages, Blocked or Share (click a header; click again to flip). Share orders like Messages, since it is each sender's part of all messages. Sorting is `sortSenders` in `lib/messages/stats.ts`, tested.
+- **Landing:** the pink blocks now form a **T** in the same flat-block style: a crossbar (hot pink, light pink, deep-pink end cap), a light-pink serif under its left end, a stem with a deep-pink foot, the black slab beside the stem, and the thin rules.
+
+### 2026-11-08: Harmless official-sounding texts, model v0.5
+
+- **Problem (Timothy):** the 600 government, IRS, ID and health scam rows had no harmless counterparts, so words like "IRS", "Medicare" or "prescription" could become scam cues by themselves, the way "free" did. "Your order is ready for pickup at the pharmacy" scored 72%.
+- **Data:** `data/official_ham_synthetic.csv`, 700 label-0 template rows from `data/build_official_ham_synthetic.py`: taxes, government offices, IDs, doctors, pharmacy and appointment notices, with no threat, payment demand, link or request for ID numbers. 687 survive `build_splits.py`.
+- **Model `stacked-lr-category@0.5`, same cleaned test of 3,068 real messages, v0.4 → v0.5:** at the live cutoff 0.70, false blocks 17 → 17 and missed scams 45 → 43. At 0.5, false blocks 24 → 25, missed scams 29 → 31, SMS F1 0.959 → 0.955, ECE 0.008 → 0.007. These differences are within a few messages, so treat the two as tied on real text. Threat check file, blocked: 96.6% → 98.3%; hard negatives blocked 0% on both.
+- **Hand-written check, none in training, small and agent-written:** official-sounding harmless texts at or over 0.5: 1 of 12 → 0 of 12 (the pharmacy text dropped from 72% to 3%). Matching scams caught at 0.70: 7 of 8 → 8 of 8. Ordinary "free" texts over 0.5: 2 of 18 → 3 of 18, none over 0.77.
+- **Known limits:** "Can you lend me $6000 for the bus fare?" scores 24% and "my car broke down, can you zelle me $2500 asap" 32%, so both are delivered with the money warning. "Your health plan is cancelled..." is blocked at 72%, just over the threshold, and is named Health & Pharmacy.
+
+### 2026-11-08: Calm money requests: more data, a warning rule, block threshold 0.70
+
+- **Problem (Timothy):** "Can you lend me $6000 for the bus fare?" scored 0%. "lend me" appeared in no training row, and the model can't weigh amounts. Separately, ordinary texts like "Free at last!" were blocked because "free" alone read as a scam cue.
+- **Models:** `stacked-lr-category@0.3` added Tuan's 300 harmless "free" texts. `@0.4` adds `data/money_request_synthetic.csv`: polite large asks, the "new number" scam, strangers asking for money and government threats as label 1, small everyday asks and talk about large amounts as ham. "Bus fare" is deliberately absent from the templates. 843 of its 1,302 rows survive `build_splits.py`, because amounts normalize to the same text.
+- **Same cleaned test, 3,068 real messages, cutoff 0.5, v0.2 → v0.3 → v0.4:** false blocks 27 → 27 → 24, missed scams 33 → 32 → 29, SMS F1 0.952 → 0.955 → 0.959, ECE 0.007 → 0.006 → 0.008. Threat check file, blocked: 95% → 97% → 97%; hard negatives blocked 0% throughout.
+- **Hand-written check, none in training, small and agent-written (v0.4):** 12 of 12 scams caught, including the IRS warrant text the earlier models missed. Of 18 ordinary "free" texts, 2 are over 0.5 and none over 0.77.
+- **Warning rule (`services/gateway/src/money-rule.ts`, `MONEY_WARN_AMOUNT`, default $500):** a delivered message that asks the reader for at least that amount gets `verdict.warning: "large_money_request"`, and the web card shows a note. It never blocks, since real family ask for money too. Additive to query API v1.
+- **Threshold (Timothy):** the VM's `BLOCK_THRESHOLD` is **0.70**, a stopgap for false blocks that lowering would bring back. The repo default stays 0.5.
+- **Known limits:** "Can you lend me $6000 for the bus fare?" still scores 19% and is delivered with the warning. "my car broke down, can you zelle me $2500 asap" dropped from 76% to 37%, also delivered with the warning. "Your order is ready for pickup at the pharmacy" scores 72%, so it's a false block at 0.70.
+
+### 2026-11-08: Dashboard page; T-Guard moved left of the Receiver
+
+- **Decision (Tuan):** a **Dashboard** button left of Clear chats opens `/dashboard`, "overall analytics based on the messages sent and what they are composed of", noting the most prevalent values. It counts the gateway's decisions in the polled data (the latest 100 messages): totals, block rate, average scam score, the most active senders (masked numbers, with blocked counts), scam categories of blocked messages, message types, a score histogram, outcomes and reasons. The top row of each breakdown is tagged "Most common". Aggregation is a pure function (`lib/messages/stats.ts`, tested).
+- **Scene:** T-Guard's box and hand moved 0.8 units left so they no longer hide the Receiver bean; the bean moved a little forward and its label is under its feet like the Sender's. The "T—GUARD / Active defense system" text is back on the box, which is still labeled "T-Guard" underneath.
+
+### 2026-11-08: Thicker fonts, bean characters, T-Guard box label
+
+- **Decision (Tuan):** fonts were too thin. Body text and `font-label` are **Inter** (body weight 500, labels bold), replacing Arial and Courier New. Archivo was tried first and was hard to read. Anton stays for the big counter numbers.
+- **Buttons:** every enabled button shows a pointer cursor (Tailwind 4 defaults buttons to the arrow) and a visible hover. The Simulate buttons lost their ↗ arrows.
+- **Scene:** the sender sphere is now a jellybean character (capsule body, face patch with big eyes, stubby arms and feet; an original bean in a party-game style, not any game's art). A pink Receiver bean stands behind the hand, labeled above its head, and bounces when a message is delivered. The "T—GUARD / Active defense system" text is gone from the pink box; the label under the box says "T-Guard".
+
+### 2026-11-08: `/messages` restyled to match the T-GUARD prototype
+
+- **Decision (Tuan):** make `/messages` match the T-GUARD offline prototype (the source of the scene's hand) and the landing page. Palette from the prototype's `demo/style.css`: paper `#f2f0e9`, ink `#211e20`, hot pink `#ef167d`, rules `#c9c6c0`, cards `#fffdf9`. Anton for big numbers, Courier New for small uppercase labels. These are Tailwind theme tokens in `app/globals.css` (`bg-paper`, `text-ink`, `text-hot`, `border-rule`, `bg-card`, `text-muted`, `font-display`, `font-label`).
+- **Page:** `T—GUARD®` wordmark header linking to `/`, the scene on paper (was navy) with prototype-style captions, a "000 Threats blocked" / "Delivered" counter row, square cards (blocked ones with a pink edge), pink "Potential scam" stamps, pink keyword highlights, and the Simulate sidebar as outlined label buttons.
+- **Light only:** the prototype has no dark mode, so `dark:` utilities now apply only under a `.dark` class (nothing sets it). The OS dark setting no longer changes the site.
+
+### 2026-11-08: Government-threat, IRS, ID-request and health scam training texts
+
+Tuan asked for more synthetic scam data covering government threat scams, health scams, anything asking for ID, and IRS scams, 150 rows each, all scams. `data/build_gov_health_id_scam_synthetic.py` writes `data/gov_health_id_scam_synthetic.csv` (600 template rows). Labels follow `scam_categories.csv`: government threats, IRS and ID requests are impersonation or phishing, so label 1 (Imposter & Phishing); health scams are label 5 (Health & Pharmacy). They're not label 8 (Threats & Extortion), which covers personal threats and fake emergencies, not an agency threatening arrest. `classifier/build_splits.py` reads the file with the threat templates, so 15% of each scenario goes to val; its manifest key `val_threat_templates` is now `val_templates`. No hard negatives were added (real IRS or pharmacy texts), and the model was not retrained. See `data/README.md`, section 6.
+
+### 2026-11-08: Nemotron second-opinion review (proposal, off by default)
+
+- **What (Timothy + Claude Code):** when the stacked model's score is in the review band (default 0.22 to 0.77), NVIDIA Nemotron picks read-only checks from a fixed list, the gateway runs them against Nessie (Capital One's mock bank) or local mock data, and Nemotron returns block or deliver with a short reason. See `docs/features/nemotron-review.md`.
+- **Safety:** `REVIEWER=off` by default. Any failure or timeout keeps the model's decision. Nemotron gets no tools or URLs, only found flags, counts and short labels. VM gateway only; no database migration.
+- **Still TBD:** team agreement, the NVIDIA track, and whether bank results may go to NVIDIA beyond mock data.
+
+### 2026-11-08: A slapping hand replaces the Receiver blob
+
+Tuan: replace the right blob in the scene with a hand that slaps, after the T-GUARD offline prototype. The Receiver is now the prototype's pink box with its photographic hand (the two WebP images, about 340 KB) standing in it, cut off at the box top by a clipping plane. A blocked potential scam stops within reach; during the hand's wind-up it drifts to where the palm will be at contact, then it is knocked back toward the sender, spinning and fading. The strikes reuse the prototype's slap-left, backhand and delayed timings (`components/scene/slap.ts`, unit-tested). This replaces the shield flash and the bubble pop; the "Potential scam · Blocked" stamp stays. Not ported: the box lid animation, the notification cards and the synthesized sound. The scene still only animates the gateway's decision.
+
+### 2026-11-08: Free-ham rows merged into the 100k files
+
+Tuan: merge the 300 harmless "free" texts into the main dataset. They are appended to `scam_categories_100k_full.csv` and `scam_categories_100k.csv` (100,000 → 100,300 rows, `split = train`, `source = synthetic_free_ham`). `build_splits.py` no longer reads `free_ham_synthetic.csv` separately, which would duplicate them, so all 300 now train (none go to val). The threat files and `spam_ham_100k*` are unchanged.
+
+### 2026-11-08: Harmless "free" training texts
+
+Tuan: the classifier overfit on "free" and flagged texts like "Feel free to do this" or "Free pizza". Added `data/free_ham_synthetic.csv` (300 ham rows using "free" harmlessly: "feel free", "are you free", free food at events, "parking is free", idioms), built by `data/build_free_ham_synthetic.py`. `classifier/build_splits.py` merges it with the threat rows (255 train, 45 val). It only takes effect after a retrain, which hasn't been run. There's no held-out "free" ham eval yet. See `data/README.md`, section 5.
+
+### 2026-11-08: Landing page at `/`, app moves to `/messages`
+
+- **Decision (Tuan):** `/` is a landing page from Tuan's mock: "T-GUARD" in a heavy condensed face (Anton), the tagline "Security that moves with you." (Archivo), and a pink/black color-block composition on the right, plus a **Start** button.
+- **Start** opens the scene and inbox/blocked lists, which moved from `/` to `/messages` (the route the MVP plan first used). `/scene` now redirects to `/messages`; the old `/messages` → `/` redirect is gone.
+
+### 2026-11-08: Simulate sidebar on the home page
+
+- **Decision (Tuan):** run perpetrator simulations from buttons on `/`, configurable, instead of only from the CLI.
+- **How:** a sidebar (`components/sim/SimPanel.tsx`) with preset buttons from `apps/web/lib/sim/presets.ts` (one scam, one legit text, random burst, and the bank's scenarios), burst settings (count, scam share, interval, sender, seed), a custom message box, Stop, and a log of what was sent. The browser paces the run and posts one step at a time to `POST /api/simulate`, which signs a Photon `messages` webhook (`X-Spectrum-Signature`) and sends it to the gateway. Pacing in the browser keeps each request short (Vercel time limits) and makes Stop immediate.
+- **Why server-side signing:** the webhook secret must never reach the browser. The legacy `v0` signature uses the secret string as-is, so it works against the VM gateway and the Vercel backup even when their secret is a Beta `whsec_` value.
+- **Decoupling:** a second exception to "the web app never writes to the gateway", after Clear chats. Unauthenticated by choice; rails: fictional `+1555` numbers only, no `photon.codes` target, 1,000-character text, 60 sends a minute per server instance (best effort). Off (panel says why) when no target or secret is configured, which includes replay mode.
+- **Bank copy:** `npm run sync:bank` copies `data/message_bank/` into `apps/web/lib/sim/bank.json`, because Vercel builds only `apps/web`. `npm run check:bank` fails when it's stale.
+- **TBD:** authentication for `/api/simulate` before a public demo.
+
+### 2026-11-08: Project renamed to T-Guard
+
+- **Decision (Tuan):** the project is called **T-Guard**, not T-Gate. Every user-facing and written mention (web page title and header, UI strings, docs, comments, service descriptions, the Photon webhook destination name) now says T-Guard.
+- **Kept on purpose:** technical identifiers that the running deploy and stored data depend on still say `t-gate`/`tgate`: the query-API contract value `t-gate.query-api` (gateway and web must change together), npm package names, the VM's `/opt/t-gate` path, `tgate` system user and `t-gate-gateway` systemd unit, the `tgate` MongoDB database, the `TGATE_DOMAIN` variable, and the Vultr instance and SSH-key names. Renaming them needs a coordinated redeploy and data migration; whether to do it is TBD.
+
+### 2026-11-08: Retrained with a 9th category, Threats & Extortion, on leak-free splits
+
+- **Decision (Timothy):** add label 8 as a real category, shown as **"Threats & Extortion"** rather than "Potential Threat", which read as vague for a scam type. Rows in `potential_threat_*.csv` keep the old `category_name`; only the numeric label is used. Settles "binary vs. 8-class vs. 9-class" for the served model.
+- **Leak-free data (`classifier/build_splits.py`):** the real test split stays the anchor. Text matching a held-out message (after normalizing case, punctuation and digits, or the same word set reordered) is removed from train and val, along with synthetic children of held-out rows. That removed 2,674 leaking train rows and 96 val rows, plus 10,456 duplicates inside train and 87 inside test.
+- **Separate runs:** `train.py` reads `train_val.csv` and never loads the test file. `classifier/evaluate.py` scores the finished model on `test.csv` and `threat_eval.csv` through the service's own code.
+- **Val includes threat templates:** real val has no threats and the stacker is fit on val, so 15% of each threat scenario (592 rows) goes to val. Metrics and thresholds use real val rows only. Test stays 100% real.
+- **Results, same cleaned test (3,068 real messages, cutoff 0.5), old → new:** false blocks 26 → 27, missed scams 33 → 33, SMS F1 0.952 → 0.952, F1 0.981 → 0.980, category accuracy 0.944 → 0.943, ECE 0.008 → 0.007. Threat check file (58 threats, 42 hard negatives): threats blocked 22% → 95%, named correctly 0% → 93%, hard negatives blocked 5% → 0%. That file shares an author with the templates, so these numbers are optimistic.
+- **Also compared:** TF-IDF + SGD (log loss) against TF-IDF + LR on half of val: same F1 (0.982), 5 s against about 221 s to fit, slightly lower category accuracy. Not adopted: training time isn't a constraint.
+- **Real-world threat data:** public sets are scarce, and TExtPhish and ThreatCore are CC BY-NC-ND. The plan is TExtPhish as an external test only, never trained on and never committed (`evaluate.py --external`). Download is still blocked by a 403 on the gated files, so this test has not run.
+- **Still TBD:** the block threshold (suggested: 0.22 for 97% precision, 0.77 for 99%, picked on val), and whether self-harm-style messages should warn instead of block.
+
+### 2026-11-08: "Clear chats" deletes messages instead of hiding them
+
+- **What (Tuan + Claude Code):** the web UI's "Clear chats" button now deletes every stored message, after a confirm dialog. Before, it only hid them in that browser (a localStorage cutoff, [#38](https://github.com/tuann72/HackUTD/pull/38)), and that code is removed along with "Show N cleared". Both backends serve `DELETE /api/messages`: the VM gateway (SQLite, the same wipe as `POST /debug/reset`, CORS now allows DELETE) and the Vercel backup (`deleteMany` on the Atlas `inbox` collection). The page calls whichever one `NEXT_PUBLIC_API_URL` points at. In replay mode, clearing empties the mock list and the replay keeps going.
+- **Why:** Tuan asked for the button to clear the data, not just hide it.
+- **Trade-offs, accepted by Tuan:** this is the first write from the web app to the gateway, an exception to the one-way decoupling rule (`AGENTS.md`). It has **no authentication**, so anyone who opens the public page can wipe the inbox, judges included. A token prompt was offered and declined.
+
+### 2026-11-08: Potential Threat synthetic dataset (proposal)
+
+- **Problem (Tuan):** the classifier handles threat and coercion texts badly, for example "MOM IM DYING RIGHT NOW GIVE ME $900 OR I EXPLODE" and "YOUR WIFFE IS IN DANGER GIVE ME 500$".
+- **Why (coverage check, Claude Code):** the training data has almost no such texts. Kidnap/ransom/hostage words appear in 86 rows, mostly Enron spam noise labeled Health or Internet; "or else / I know where you live" in 34, mostly eBay phishing and ham; "hitman" in 2 ham rows. "Hi mum/dad" family-emergency scams exist (143 rows, 139 of them label 1, all synthetic) but carry no threat. No short ALL-CAPS text has a money amount, and 215 of 239 short ALL-CAPS texts are ham, so caps likely pushes toward ham.
+- **What (proposal):** `data/build_threat_synthetic.py`, a seeded, stdlib-only template generator, writes `data/potential_threat_synthetic.csv` (4,100 train rows: 2,650 with a new label **8 "Potential Threat"**, 1,450 hard negatives labeled ham) and `data/potential_threat_eval.csv` (100 held-out hand-written-style rows, `split = threat_eval`, including Tuan's two examples). Hard negatives get the same caps, typo and emoji noise so the model can't learn "caps = threat". All rows are synthetic and in `train`, so `val`/`test` stay 100% real. Details and caveats: `data/README.md`, section 4.
+- **Not changed:** the four 100k CSVs, `data/scam_categories.csv` (a 9th row would change `train.py`'s label names and break `classifier/tests/test_offline.py`), and all code in `classifier/`, `services/`, `apps/` and `contracts/`. The changes needed to train and serve a 9th class are listed in [`docs/features/potential-threat-data.md`](docs/features/potential-threat-data.md), stage 2.
+- **Still TBD:** binary vs. 8-class vs. 9-class (or folding threats into label 1, Imposter & Phishing); how the extra file joins training; whether the gateway warns instead of blocks for this class (self-harm coercion); and whether to add real or LLM-written threat examples to reduce template overfitting.
+
+### 2026-11-08: Stacked model option built (`train.py --model stacked`)
+
+- **What (Timothy + Claude Code, task 1.5):** the stacked flow recommended in the entry below is now a third model kind. `train.py --model stacked` trains TF-IDF + LR and MiniLM + LR on `train`, then the stacker (a small LR on both models' 16 class log-probabilities) on the real `val` split, and writes `head.joblib` (the stacker), `tfidf_head.joblib`, `minilm_head.joblib`, `vectorizer.joblib` and `keywords.json`. The service loads `kind: stacked-lr` from `model.json` and needs no API change, so the gateway can't tell which model is behind it.
+- **Highlights:** by occlusion through the whole stack (drop a word, re-score both models), so they explain the score actually returned. TF-IDF-only coefficient highlights would have been cheaper but would ignore the MiniLM half.
+- **Val does double duty, handled:** the stacker is fit on all of `val`, but the suggested thresholds in `metrics.json` are picked from 5-fold out-of-fold stacker scores on `val`, then checked on `test`. Val metrics for a stacked model are in-sample; judge it on test.
+- **Verified (laptop RTX 3050, full data, 8-class):** featurize 328 s, fit 168 s. Run through the service's own code path, the saved model reproduces the comparison exactly: at score ≥ 0.5 on test, 26 false blocks, 33 missed scams, SMS F1 0.952, ECE 0.008. `tests/test_service.py` passes (4/4). CPU latency on the laptop: about 70 ms for a scam with highlights, 29 ms for a legit message.
+- **Suggested thresholds** (picked on val, checked on test): **0.19** gives 97.1% precision and 99.3% recall; **0.75** gives 98.9% precision and 96.9% recall. These are inputs for the gateway's `BLOCK_THRESHOLD` (and a possible Nemotron review band), not a decision.
+- **Note on `train.py` metrics:** they count a message as scam when its top class isn't Ham, while the service uses P(scam) ≥ 0.5. For the stacked model that gives 22 false blocks / 39 missed on test instead of the service's 26 / 33. This was already true for the other kinds; the gateway sees the service's numbers.
+- **Deployed (Timothy, 2026-11-08):** the stacked model runs on the gateway's Vultr VM (the `MODE=shared` layout, Tuan informed): a Docker container on `127.0.0.1:8000`, token in `/etc/tgate/classifier.env`, and the gateway calls it over loopback. Artifacts came from the laptop run, so the Vultr GPU wasn't used. On the VM's one CPU, with a 2 GB plan: about 120 ms for a scam with highlights, 30 ms for a legit message. `BLOCK_THRESHOLD` stays 0.5.
+- **Still TBD:** whether stacked formally replaces MiniLM as the agreed model, the block threshold, and binary vs. 8-class labels.
+
+### 2026-11-07: TF-IDF vs. MiniLM, combined flows and zero-day test
+
+- **What ran (Timothy, laptop RTX 3050):** classifier task 2.1's full training runs on `data/scam_categories_100k_full.csv`, 8-class labels, for both models, then two experiments: [`classifier/experiments/compare.py`](classifier/experiments/compare.py) and [`zeroday.py`](classifier/experiments/zeroday.py). Everything tuned or fit is fit on the real `val` split; numbers below are the real `test` split (3,155 messages, 607 of them SMS). Both models pass `tests/test_service.py`. Binary-label runs are not done yet.
+- **Earlier numbers:** the MiniLM result going around (scam-vs-ham F1 0.949, macro-F1 0.80) is the 5k-row Mac smoke test, not a full run.
+
+**Each model alone (`train.py` metrics, full data):**
+
+| Test split | TF-IDF + LR | MiniLM + LR |
+|---|---|---|
+| Scam vs. ham precision / recall / F1 | 0.984 / 0.980 / **0.982** | 0.935 / 0.979 / 0.957 |
+| SMS-only scam vs. ham F1 | **0.936** | 0.875 |
+| 8-class accuracy / macro-F1 | **0.947 / 0.908** | 0.888 / 0.823 |
+| Train time (laptop) | 109 s features + 221 s fit, CPU | 311 s embeddings (GPU) + 43 s fit |
+
+TF-IDF wins every category, most on Imposter & Phishing (F1 0.852 vs 0.713).
+
+**Combined flows** (scam score = 1 − P(Ham), cutoff 0.5):
+
+| Setup | Precision | Recall | False blocks | Missed scams | SMS F1 | Calibration error (ECE) |
+|---|---|---|---|---|---|---|
+| TF-IDF + LR | 0.973 | 0.988 | 42 | 18 | 0.917 | 0.025 |
+| MiniLM + LR | 0.923 | 0.984 | 125 | 24 | 0.852 | 0.040 |
+| Average (0.8 TF-IDF + 0.2 MiniLM) | 0.976 | 0.990 | 37 | 15 | 0.935 | 0.031 |
+| Cascade (MiniLM only when TF-IDF score is 0.05–0.60, 14% of messages) | 0.976 | 0.990 | 37 | 15 | 0.935 | 0.027 |
+| TF-IDF recalibrated on `val` | 0.980 | 0.983 | 30 | 26 | 0.929 | **0.005** |
+| **Stacked** (small LR on both models' log-probabilities, fit on `val`) | **0.983** | 0.978 | **26** | 33 | **0.952** | 0.007 |
+
+On known scam categories the combinations gain only a few messages over TF-IDF alone, and most of the stacked model's calibration gain comes from refitting on real data (the recalibrated TF-IDF row).
+
+**Zero-day test:** for each of the 7 scam categories, both models were retrained as scam/ham with that whole category removed from training (and from the TF-IDF vocabulary); anything fit on `val` also excluded it. Recall on the never-seen category, test split, weighted by category size (1,526 messages over the 7 runs):
+
+| Setup | Unseen category caught (cutoff 0.5) | Unseen category caught (97%-precision threshold) | False blocks on ham |
+|---|---|---|---|
+| **Stacked** | **0.902** | **0.954** | **1.3%** |
+| Cascade | 0.900 | 0.950 | 1.6% |
+| Average | 0.898 | 0.950 | 1.5% |
+| TF-IDF + LR | 0.885 | 0.927 | 1.6% |
+| TF-IDF recalibrated | 0.880 | 0.927 | 1.5% |
+| MiniLM + LR | 0.874 | 0.771 | 4.4% |
+
+Adding MiniLM catches about 2.5 points more of a brand-new scam type (about 40 more messages here) with no more false blocks. It helps in 6 of 7 hold-outs; the exception is Jobs, Business & Investment (TF-IDF 0.925, stacked 0.868). MiniLM alone is the weakest setup everywhere.
+
+- **Recommendation (Timothy, proposed):** ship the **stacked** flow. TF-IDF + LR and MiniLM + LR both score every message, and a small LR fit on real `val` data combines them into one risk score. It has the best calibration of the combined flows (needed for a risk-score threshold), the fewest false blocks, the best SMS F1, and the best zero-day recall. The cascade is the fallback if MiniLM's CPU cost is a problem: same zero-day recall, MiniLM on only ~14% of messages, but less honest scores.
+- **Not built yet:** the service serves one model at a time. The stacked flow needs `train.py` to write both models plus the combiner, and `service/app.py` to load all three. `val` currently does double duty (combiner fit and threshold choice); split it in half when this is built.
+- **Still TBD:** binary vs. 8-class labels for the service, and the block threshold.
 
 ### 2026-11-08: VM gateway accepts Photon 2.0 / Beta webhooks
 
@@ -58,7 +240,7 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 - **User request:** explore a call guard that transcribes the caller, sends transcript text to the classifier, and shows a warning in the Vercel app. Keep it separate from the current iMessage MVP.
 - **Interview direction:** first have a human tester call the Photon voice number, capture caller speech, classify after hangup, and retain transcript plus verdict without retaining raw audio. The main follow-up is live classification and a warning during the call. A later stage bridges the caller to a human victim while the guard monitors the caller's audio. The exact victim endpoint remains TBD.
-- **Feasibility:** Photon voice is routed through SIP to a voice application; a normal Photon message webhook does not carry call audio. Photon Stable Spectrum currently marks voice webhooks as coming soon and says calls are not available in `app.messages` or `app.webhook()` ([voice docs](https://photon.codes/docs/spectrum-ts/providers/voice)). Photon 2.0/Beta documents routing inbound calls over SIP into a LiveKit room ([LiveKit cookbook](https://photon.codes/docs/beta/cookbooks/voice/livekit)), where an app can process the audio track. Therefore this is feasible if the call is routed through the Photon voice line and SIP media path; direct calls that bypass this route are not observable by T-Gate.
+- **Feasibility:** Photon voice is routed through SIP to a voice application; a normal Photon message webhook does not carry call audio. Photon Stable Spectrum currently marks voice webhooks as coming soon and says calls are not available in `app.messages` or `app.webhook()` ([voice docs](https://photon.codes/docs/spectrum-ts/providers/voice)). Photon 2.0/Beta documents routing inbound calls over SIP into a LiveKit room ([LiveKit cookbook](https://photon.codes/docs/beta/cookbooks/voice/livekit)), where an app can process the audio track. Therefore this is feasible if the call is routed through the Photon voice line and SIP media path; direct calls that bypass this route are not observable by T-Guard.
 - **Recommended path (inference):** Photon 2.0/Beta Voice profile → SIP → LiveKit → speech-to-text → existing `POST /classify` → read-only call-result API/contract → Vercel UI. This matches the repository's Photon 2.0/Beta webhook integration and the published LiveKit cookbook; confirm the team's line and product version before implementation.
 - **Important line constraint:** Photon 2.0/Beta docs say shared iMessage assignments do not support Voice. The repository's existing iMessage number is shared-pool; the voice number the user set up must be verified separately. No call audio or raw phone handles should be sent to the classifier.
 - **Classifier limitation:** the existing model is trained on text messages, not call transcripts. The MiniLM inference path truncates at 256 tokens, so long-call windowing, aggregation, and call-level evaluation are required before live thresholds can be trusted.
@@ -170,7 +352,7 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 ### 2026-11-07: Initial 3D scene is two blobs and message shots (later scope)
 
 - **Decision (Tuan):** when the parked scene is picked up, start with one **pink victim blob** and one **sender blob that shoots messages** at it. **Red** messages are flagged as a **potential scam**. Each message goes through to the victim or gets blocked and pops before it arrives. On-screen wording says "potential scam", never "scam".
-- **Why:** it's the simplest picture that shows T-Gate stopping potential scams while letting other messages through.
+- **Why:** it's the simplest picture that shows T-Guard stopping potential scams while letting other messages through.
 - **Doesn't change:** the scene stays parked until the MVP works. The fuller scene below (crowd of blobs, chat bubbles) stays proposed.
 - **Details:** [`docs/features/initial-3d-scene.md`](docs/features/initial-3d-scene.md).
 - **Update:** built early in #14 at `/scene` with fake messages, before the MVP was finished. Live data is still to come.
@@ -221,7 +403,7 @@ Newest first. Each entry: date, decision, rationale, and what it replaces.
 ### 2026-11-07: Leaning TypeScript; proposed scam notice, blocked-scams panel and keyword highlights
 
 - **Stack (Tuan's lean, not final):** TypeScript for the gateway, the perpetrator simulator and the Next.js web app. The model training and inference service stays Python. See [Technology stack](#technology-stack-typescript).
-- **Proposed:** when a scam is blocked, the victim gets a short notice ("T-Gate blocked a potential scam… View: <link>"). The link opens a **blocked-scams panel** in the Next.js app that lists every blocked message, why it was blocked and its category. The panel **highlights the keywords** that pushed the model toward "scam", so the victim learns to spot them in messages that get through.
+- **Proposed:** when a scam is blocked, the victim gets a short notice ("T-Guard blocked a potential scam… View: <link>"). The link opens a **blocked-scams panel** in the Next.js app that lists every blocked message, why it was blocked and its category. The panel **highlights the keywords** that pushed the model toward "scam", so the victim learns to spot them in messages that get through.
 - **Details:** [Scam notice to the victim](#scam-notice-to-the-victim), [Blocked-scams panel](#blocked-scams-panel), [Keyword highlighting](#keyword-highlighting).
 
 ### 2026-11-07: One Twilio number, simulated perpetrator
@@ -265,6 +447,7 @@ Newest first. Each entry: date, decision, rationale, and what it replaces.
 ### 2026-11-07: Project renamed to T-Gate
 
 - **Decision:** the project is called T-Gate, replacing the working name "Gate Guardian".
+- **Superseded:** renamed to T-Guard on 2026-11-08 (see "Project renamed to T-Guard" above).
 
 ## Architecture
 
@@ -479,13 +662,13 @@ TypeScript is agreed (Tuan, 2026-11-07), since the web app is Next.js. One excep
 
 When the gateway blocks a message, the Notifier sends the victim a short notice. Proposed text (one SMS segment, under 160 characters):
 
-> T-Gate blocked a potential scam from \*\*\*-\*\*\*-4821 (Imposter & Phishing). View: https://&lt;web-app&gt;/blocked/b_7Kq2
+> T-Guard blocked a potential scam from \*\*\*-\*\*\*-4821 (Imposter & Phishing). View: https://&lt;web-app&gt;/blocked/b_7Kq2
 
 - **Never include the scam's text or links in the notice.** The victim shouldn't be one tap away from the scammer's link. The notice names the category and links to our panel only.
 - **Where the notice goes (TBD):** the victim number is ours, and no phone sits behind it. Options:
-  1. **Virtual victim inbox (always):** the notice is added to the victim's inbox and published as `victim.notified`. The web app can show it in a phone-style view, and the scene can show it as a bubble from a "T-Gate" blob.
+  1. **Virtual victim inbox (always):** the notice is added to the victim's inbox and published as `victim.notified`. The web app can show it in a phone-style view, and the scene can show it as a bubble from a "T-Guard" blob.
   2. **Real SMS to a protected handset (optional):** the gateway texts a configured phone (for example, a teammate's) from the victim number. This is outbound SMS. A trial account can send only to **verified** numbers, with a trial prefix, which is fine for a teammate's phone. An upgraded account needs A2P 10DLC or toll-free verification.
-- **Real-product framing (Safe Signal):** in production, T-Gate would sit at the carrier. The notice would come from the carrier to the subscriber's own phone, and the link would open the subscriber's blocked-scams view.
+- **Real-product framing (Safe Signal):** in production, T-Guard would sit at the carrier. The notice would come from the carrier to the subscriber's own phone, and the link would open the subscriber's blocked-scams view.
 - **Rate limit:** batch notices if many scams arrive at once (for example, "3 potential scams blocked"). Threshold TBD.
 - **Link format:** `/blocked/<blockId>` with an unguessable id (for example, 128-bit random). The MVP has no login. The panel shows only masked numbers. Whether real accounts are needed is TBD.
 

@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
+/*
+ * T-Guard is light only, like the T-GUARD offline prototype it follows: paper,
+ * ink, one hot pink, thin rules. `dark:` utilities only apply under a `.dark`
+ * class (nothing sets it), so the OS dark setting can't half-darken a page.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f2f0e9;
+  --foreground: #211e20;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Prototype palette (demo/style.css). */
+  --color-paper: #f2f0e9;
+  --color-ink: #211e20;
+  --color-hot: #ef167d;
+  --color-hot-deep: #c80064;
+  --color-rule: #c9c6c0;
+  --color-card: #fffdf9;
+  --color-muted: #827b7e;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Condensed numbers (Anton, like the landing page) and Inter labels. */
+  --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
+  --font-label: var(--font-inter), Arial, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  font-weight: 500;
+}
+
+@layer base {
+  /* Labels (small uppercase Inter) are bold unless a utility says otherwise. */
+  .font-label {
+    font-weight: 700;
+  }
+  /* Tailwind 4 gives buttons the default arrow cursor; anything clickable shows a pointer. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
 }

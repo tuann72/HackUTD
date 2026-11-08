@@ -157,7 +157,7 @@ describe('Photon 2.0 / Beta (pho_prj_ project ids)', () => {
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization).toBe('Bearer pho_ask_secretvalue');
     expect(headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
-    expect(JSON.parse(init.body as string)).toEqual({ apiVersion: '2026-07-01', name: 'T-Gate gateway', url: HOOK_URL, enabledEvents: ['message.received'] });
+    expect(JSON.parse(init.body as string)).toEqual({ apiVersion: '2026-07-01', name: 'T-Guard gateway', url: HOOK_URL, enabledEvents: ['message.received'] });
     expect(out).toContain('registered webhook pho_whd_01xyz');
     expect(out).toContain('PHOTON_WEBHOOK_SECRET=whsec_c2VjcmV0');
     expect(out).not.toContain('pho_ask_secretvalue');

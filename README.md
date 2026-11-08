@@ -1,8 +1,8 @@
-# T-Gate
+# T-Guard
 
-T-Gate detects likely scam messages and warns the recipient. Built for HackUTD's **Safe Signal (T-Mobile)** and **Vultr** tracks.
+T-Guard detects likely scam messages and warns the recipient. Built for HackUTD's **Safe Signal (T-Mobile)** and **Vultr** tracks.
 
-The MVP uses one Photon iMessage line as the "victim". Real iMessages reach the gateway through Photon's webhooks, and a simulated "perpetrator" sends scam and legitimate messages from a message bank as Photon-format webhook calls. T-Gate classifies each message the victim receives as a potential scam or legitimate, blocks potential scams before they reach the victim's virtual inbox, and shows the result in the web app.
+The MVP uses one Photon iMessage line as the "victim". Real iMessages reach the gateway through Photon's webhooks, and a simulated "perpetrator" sends scam and legitimate messages from a message bank as Photon-format webhook calls. T-Guard classifies each message the victim receives as a potential scam or legitimate, blocks potential scams before they reach the victim's virtual inbox, and shows the result in the web app.
 
 Proposed, not final: the victim gets a short "potential scam blocked" notice with a link to a blocked-scams panel. The panel shows why each message was blocked, its category, and the scam keywords highlighted. For the MVP, a basic Next.js page lists delivered and blocked messages. A 3D scene (React Three Fiber) is planned for later. The stack is TypeScript for the gateway, simulator and web app, and Python for the classifier: MiniLM, trained and served on Vultr ([`classifier/`](classifier/README.md)).
 
@@ -22,7 +22,9 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
 | Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | Parked: wired but off by default, per-message blocking only (#22, #23, #27) |
 | Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (on `/` above the message lists, live polled data, #14, #19) |
-| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | LiveKit Cloud worker is deployed STT-only; consolidated worker, classifier, and Vercel result code is in review and needs production configuration |
+| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | Consolidated worker, classifier, and Vercel result flow in review; production configuration remains |
+| Potential Threat synthetic data: threat, coercion and fake-emergency extortion texts, proposed label 8 | [potential-threat-data.md](docs/features/potential-threat-data.md) | MVP | In progress (data only; label scheme TBD) |
+| Simulation panel: sidebar buttons on `/` that send simulated iMessages to the gateway | [simulation-panel.md](docs/features/simulation-panel.md) | MVP | Done (#54) |
 | Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
 | 3D conversation scene, Next.js + React Three Fiber (parked) | _Not written yet_ | Later | Not started |
 
@@ -33,6 +35,35 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
 | Voice scam guard | Caller-only STT worker, after-call classifier, protected Vercel result API/UI, and LiveKit Cloud deployment (tasks 1.1–1.4, 1.6; call-script and production call evaluation pending) | `feat/voice-guard-call-results` | Codex | In review | [#63](https://github.com/tuann72/HackUTD/pull/63) |
+| Initial 3D scene | Move the shield a little left (x 2.2 → 1.9); a white "T" replaces its check mark; the U in the GUARD wordmark is the shield | `fix/scene-shield-left` | Tuan + Claude Code | Done | [#69](https://github.com/tuann72/HackUTD/pull/69) |
+| Initial 3D scene | Replace the hand and box with a pink (T-Mobile magenta) Lucide shield in the same spot | `feat/scene-shield` | Tuan + Claude Code | Done | [#68](https://github.com/tuann72/HackUTD/pull/68) |
+| Message UI | No em dashes in UI, sortable most-active-numbers table, landing blocks form a "T" | `feat/web-ui-polish` | Tuan + Claude Code | Done | [#67](https://github.com/tuann72/HackUTD/pull/67) |
+| Message UI | Dashboard page (`/dashboard`) and button; move T-Guard left of the Receiver, box text back, Receiver label at the bottom | `feat/web-dashboard` | Tuan + Claude Code | Done | [#65](https://github.com/tuann72/HackUTD/pull/65) |
+| Message UI | Inter font (thicker), button hovers, no arrows on Simulate buttons, bean sender + Receiver bean behind the hand, "T-Guard" box label | `feat/web-theme-tweaks` | Tuan + Claude Code | Done | [#64](https://github.com/tuann72/HackUTD/pull/64) |
+| Message UI | Restyle `/messages` after the T-GUARD prototype (paper/ink/pink, labels, counter row, light only) | `feat/web-messages-theme` | Tuan + Claude Code | Done | [#62](https://github.com/tuann72/HackUTD/pull/62) |
+| Classifier data | 600 synthetic scam texts: government threats, IRS, ID/identification requests, health scams (150 each); merged by `build_splits.py` | `data/gov-health-id-irs-scams` | Tuan + Claude Code | Done (retrain not run) | [#61](https://github.com/tuann72/HackUTD/pull/61) |
+| Nemotron review | Second-opinion review in the score band, with Nessie bank checks, behind `REVIEWER=off` | `feat/nemotron-review` | Timothy + Claude Code | Done | [#59](https://github.com/tuann72/HackUTD/pull/59) |
+| Initial 3D scene | Replace the right (Receiver) blob with the T-GUARD pink box and a photographic hand that slaps blocked potential scams away (art and strike timings from the T-GUARD offline prototype) | `feat/scene-slap-hand` | Tuan + Claude Code | Done | [#60](https://github.com/tuann72/HackUTD/pull/60) |
+| Simulation panel | Remove the "Burst settings" inputs from the Simulate sidebar (bursts use fixed defaults) | `fix/web-sim-remove-burst-settings` | Tuan + Claude Code | Done | [#58](https://github.com/tuann72/HackUTD/pull/58) |
+| Classifier data | Merge the 300 free-ham rows into `scam_categories_100k(_full).csv` (100,300 rows); `build_splits.py` stops reading them separately | `data/free-ham-into-100k` | Tuan + Claude Code | Done (retrain not run) | [#57](https://github.com/tuann72/HackUTD/pull/57) |
+| Classifier data | 300 harmless "free" ham texts ("feel free", "free pizza") so "free" stops reading as a scam cue; merged by `build_splits.py` | `data/free-ham-synthetic` | Tuan + Claude Code | Done (retrain not run) | [#56](https://github.com/tuann72/HackUTD/pull/56) |
+| Message UI | Landing page at `/` with a Start button; scene + lists move to `/messages` | `feat/web-landing-page` | Tuan + Claude Code | Done | [#55](https://github.com/tuann72/HackUTD/pull/55) |
+| Simulation panel | Sidebar buttons on `/messages` that run configurable simulations (presets, random bursts, custom text) through a server-side signing route | `feat/web-sim-panel` | Tuan + Claude Code | Done | [#54](https://github.com/tuann72/HackUTD/pull/54) |
+| Project | Rename the project T-Gate → T-Guard (display name; technical ids unchanged) | `chore/rename-t-guard` | Tuan + Claude Code | Done | [#53](https://github.com/tuann72/HackUTD/pull/53) |
+| Initial 3D scene | Sender label still missing: draw both labels as DOM over the canvas, placed each frame from the blob anchors (no drei `<Html>`) | `fix/scene-sender-label-overlay` | Tuan + Claude Code | Done | [#50](https://github.com/tuann72/HackUTD/pull/50) |
+| Initial 3D scene | Bigger 3D scene band on `/` (taller band, camera reframed) | `feat/web-bigger-scene` | Claude (agent) | Done | [#48](https://github.com/tuann72/HackUTD/pull/48) |
+| Initial 3D scene | Fast-slow-fast message flight (fast first 30%, slow middle 40%, fast last 30% of the distance) | `feat/scene-flight-easing` | Claude (agent) | Done | [#47](https://github.com/tuann72/HackUTD/pull/47) |
+| Message UI | Remove the "Live" source pill from the T-Guard header | `fix/web-remove-live-indicator` | Claude (agent) | Done | [#49](https://github.com/tuann72/HackUTD/pull/49) |
+| Initial 3D scene | Remove the legend overlay (Potential scam / Message) from the scene | `fix/scene-remove-legend` | Claude (agent) | Done | [#46](https://github.com/tuann72/HackUTD/pull/46) |
+| Message UI | "Clear chats" deletes every message (`DELETE /api/messages` on the gateway and the Vercel backup) instead of hiding them | `feat/web-clear-deletes` | Tuan + Claude Code | Done | [#45](https://github.com/tuann72/HackUTD/pull/45) |
+| Potential Threat data | Seeded synthetic threat/coercion rows (proposed label 8), hard negatives and held-out eval file (task 1.1) | `data/potential-threat-synthetic` | Tuan + Claude Code | In review (data built; label scheme TBD) | [#43](https://github.com/tuann72/HackUTD/pull/43) |
+| Initial 3D scene | Sender label missing: draw each label inside its blob (bobs with it), pill background | `fix/scene-sender-label` | Tuan + Claude Code | Done | [#44](https://github.com/tuann72/HackUTD/pull/44) |
+| Message UI | Remove the count/category tags under the T-Guard title | `fix/web-header-remove-tags` | Tuan + Claude Code | Done | [#42](https://github.com/tuann72/HackUTD/pull/42) |
+| Message UI | Collapsible Inbox and Blocked sections | `feat/web-collapsible-lists` | Tuan + Claude Code | Done | [#41](https://github.com/tuann72/HackUTD/pull/41) |
+| Initial 3D scene | Sender/Receiver labels under the blobs, rename Victim → Receiver, drop "(protected)" | `fix/scene-blob-labels` | Tuan + Claude Code | Done | [#40](https://github.com/tuann72/HackUTD/pull/40) |
+| Message UI | Scam score as a percentage with two decimals, truncated (95.43%) | `fix/web-score-two-decimals` | Tuan + Claude Code | Done | [#39](https://github.com/tuann72/HackUTD/pull/39) |
+| Message UI | "Clear chats" button on `/`: hides the current inbox/blocked messages in this browser (nothing deleted on the gateway) | `feat/web-clear-chats` | JP + Claude Code | In review | [#38](https://github.com/tuann72/HackUTD/pull/38) |
+| Classifier service | Stacked model option, `train.py --model stacked` (task 1.5), deployed on the gateway VM | `feat/classifier-service-stacked` | Timothy + Claude Code | Done | — |
 | Photon iMessage gateway | Photon 2.0 / Beta webhooks: registration script (`pho_prj_` → destinations API, `rotate`) and Standard Webhooks + `message.received` on the Vercel route | `feat/photon-beta-webhooks` | Tuan + Claude Code | Done | — |
 | Photon iMessage gateway | Photon webhook on the Vercel site (`/webhooks/photon` + `/api/messages`, Atlas store), backup to the VM gateway | `feat/web-photon-webhook` | Tuan + Claude Code | In review | — |
 | Sender blocklist | `DNS_SERVERS` for Atlas on Windows; drop deprecated `timeoutMS` | `fix/sender-blocklist-dns` | Timothy + Claude Code | Done | [#29](https://github.com/tuann72/HackUTD/pull/29) |

@@ -1,3 +1,4 @@
+import type { Reviewer } from '../src/reviewer.js';
 import { readFileSync } from 'node:fs';
 import { createApp, type AppDeps } from '../src/app.js';
 import { MemoryBlocklist, makeFingerprinter, type Blocklist, type BlocklistRules } from '../src/blocklist.js';
@@ -30,22 +31,26 @@ export const fingerprinter = makeFingerprinter('test-fingerprint-secret-01234567
  * Pass `now` to move the clock (blocklist expiry).
  */
 export function makeApp(
-  opts: { classifier?: Classifier; config?: Partial<AppDeps['config']>; blocklist?: Blocklist | null; now?: () => Date } = {},
+  opts: { classifier?: Classifier; config?: Partial<AppDeps['config']>; blocklist?: Blocklist | null; now?: () => Date; reviewer?: Reviewer } = {},
 ) {
   const blocklist = opts.blocklist === undefined ? new MemoryBlocklist(RULES) : opts.blocklist;
   return createApp({
     ...(blocklist ? { blocklist, fingerprinter } : {}),
+    ...(opts.reviewer ? { reviewer: opts.reviewer } : {}),
     db: openDb(':memory:'),
     classifier: opts.classifier ?? new StubClassifier(),
     config: {
       photonWebhookSecret: SECRET,
       signatureToleranceSeconds: 300,
       blockThreshold: 0.5,
+      moneyWarnAmount: 500,
       corsOrigins: ['http://localhost:3000'],
       debug: false,
       debugToken: null,
       adminToken: null,
       senderBlocklist: false,
+      reviewBandLow: 0.22,
+      reviewBandHigh: 0.77,
       ...opts.config,
     },
     logger: silentLogger,

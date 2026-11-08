@@ -7,14 +7,14 @@ import { MessageExtras } from "./MessageExtras";
 import { formatRelative, formatScore } from "./time";
 
 const UNVERIFIED_TITLE = "The classifier was unavailable, so this was delivered without a check.";
-const SENDER_BLOCKED_TITLE = "This sender sent earlier scams, so T-Gate blocked this without checking it again.";
+const SENDER_BLOCKED_TITLE = "This sender sent earlier scams, so T-Guard blocked this without checking it again.";
 const RESTORED_TITLE = "Someone marked this message \"Not a scam\", so it was moved to the inbox.";
 const NOT_CLASSIFIED_TITLE = "No text to check (attachment, reaction or contact card), so this was delivered without a check.";
 
 export function CategoryBadge({ category }: { category: string | null | undefined }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClass(category)}`}
+      className={`inline-flex items-center rounded-sm px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] ring-1 ring-inset ${categoryClass(category)}`}
     >
       {categoryLabel(category)}
     </span>
@@ -32,20 +32,20 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
     <article
       aria-busy={pending || undefined}
       className={[
-        "rounded-xl border p-4 shadow-sm",
+        "border p-4 shadow-[5px_10px_20px_-12px_#2d233140]",
         blocked
-          ? "border-rose-200 bg-white dark:border-rose-900/60 dark:bg-zinc-900"
+          ? "border-rule border-l-4 border-l-hot bg-card"
           : pending
-            ? "border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/50"
-            : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900",
+            ? "border-dashed border-rule bg-paper"
+            : "border-rule bg-card",
       ].join(" ")}
     >
       <header className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-        <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">{m.from.display}</span>
+        <span className="font-label font-bold text-ink">{m.from.display}</span>
         {isGroupChat(m) && (
           <span
             title={`Group chat ${m.conversation?.id ?? ""}`}
-            className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 ring-1 ring-inset ring-sky-600/20 dark:bg-sky-500/15 dark:text-sky-300 dark:ring-sky-400/30"
+            className="inline-flex items-center rounded-sm bg-ink px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] text-paper"
           >
             Group chat
           </span>
@@ -54,22 +54,22 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
           dateTime={m.receivedAt}
           title={m.receivedAt}
           suppressHydrationWarning
-          className="text-zinc-500 tabular-nums dark:text-zinc-400"
+          className="font-label text-[11px] text-muted tabular-nums"
         >
           {time}
         </time>
         <span className="ml-auto flex flex-wrap items-center gap-1.5">
           {pending && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <span className="inline-flex items-center gap-1.5 font-label text-[10px] uppercase tracking-[0.04em] text-muted">
               <span
                 aria-hidden
-                className="size-3 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 motion-reduce:animate-none dark:border-zinc-600 dark:border-t-zinc-300"
+                className="size-3 animate-spin rounded-full border-2 border-rule border-t-hot motion-reduce:animate-none"
               />
               Checking…
             </span>
           )}
           {blocked && (
-            <span className="inline-flex items-center rounded-full bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white dark:bg-rose-500">
+            <span className="inline-flex items-center rounded-sm bg-hot px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] font-bold text-white">
               Potential scam
             </span>
           )}
@@ -77,7 +77,7 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
             <span
               title={RESTORED_TITLE}
               aria-label={`Restored. ${RESTORED_TITLE}`}
-              className="inline-flex cursor-help items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30"
+              className="inline-flex cursor-help items-center rounded-sm bg-emerald-100 px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] text-emerald-800 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30"
             >
               Restored
             </span>
@@ -86,7 +86,7 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
             <span
               title={NOT_CLASSIFIED_TITLE}
               aria-label={`Not checked. ${NOT_CLASSIFIED_TITLE}`}
-              className="inline-flex cursor-help items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 ring-1 ring-inset ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-400"
+              className="inline-flex cursor-help items-center rounded-sm bg-paper px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] text-muted ring-1 ring-inset ring-rule"
             >
               Not checked
             </span>
@@ -95,7 +95,7 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
             <span
               title={UNVERIFIED_TITLE}
               aria-label={`Unverified. ${UNVERIFIED_TITLE}`}
-              className="inline-flex cursor-help items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-600/30 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-400/30"
+              className="inline-flex cursor-help items-center rounded-sm bg-amber-100 px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] text-amber-800 ring-1 ring-inset ring-amber-600/30 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-400/30"
             >
               Unverified
             </span>
@@ -108,7 +108,7 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
           {isSenderBlocked(m) ? (
             <span
               title={SENDER_BLOCKED_TITLE}
-              className="inline-flex cursor-help items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-800 ring-1 ring-inset ring-rose-600/30 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/30"
+              className="inline-flex cursor-help items-center rounded-sm bg-rose-50 px-2 py-0.5 font-label text-[10px] uppercase tracking-[0.04em] text-rose-800 ring-1 ring-inset ring-rose-600/30 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/30"
             >
               Blocked: known scam sender
             </span>
@@ -121,12 +121,30 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
       {m.body && <MessageBody body={m.body} highlights={blocked ? m.verdict?.highlights : null} defang={blocked} />}
       <MessageExtras message={m} defang={blocked} />
 
+      {m.verdict?.warning === "large_money_request" && (
+        <p className="mt-3 rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
+          Asks for a large sum of money. Check it&apos;s really them before sending anything.
+        </p>
+      )}
+
+      {m.verdict?.review && (
+        <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-300">
+          <span className="font-semibold">Second opinion:</span> {m.verdict.review.reason}
+          {m.verdict.review.bankSource && (
+            <span className="text-zinc-400 dark:text-zinc-500">
+              {" "}
+              (checked {m.verdict.review.checks.length} against {m.verdict.review.bankSource === "mock" ? "mock bank data" : "Nessie"})
+            </span>
+          )}
+        </p>
+      )}
+
       {m.verdict && (
-        <footer className="mt-3 flex items-baseline justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <footer className="mt-3 flex items-baseline justify-between gap-2 border-t border-rule pt-2 font-label text-[10px] uppercase tracking-[0.04em] text-muted">
           <span>
-            Scam score <span className="font-semibold tabular-nums text-zinc-700 dark:text-zinc-300">{formatScore(m.verdict.score)}</span>
+            Scam score <span className="font-bold tabular-nums text-ink">{formatScore(m.verdict.score)}</span>
           </span>
-          <span className="truncate font-mono text-[11px] text-zinc-400 dark:text-zinc-500" title="Model">
+          <span className="truncate normal-case" title="Model">
             {m.verdict.model}
           </span>
         </footer>

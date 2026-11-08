@@ -1,4 +1,4 @@
-# T-Gate interception gateway
+# T-Guard interception gateway
 
 The gateway is the victim line's "carrier". Photon (Spectrum), or the perpetrator simulator, POSTs every inbound **iMessage** for the victim line to `POST /webhooks/photon`. The gateway verifies the signature, dedupes, stores the message, answers `200 ok` right away, then classifies the message in the background and either **delivers** it to the virtual inbox or **blocks** it. The web app reads the result from `GET /api/messages`.
 
@@ -43,7 +43,8 @@ curl -s localhost:8787/api/messages | jq
 | `CLASSIFIER_URL` | empty | Empty = built-in keyword stub (`stub@0`). Set = call `POST ${CLASSIFIER_URL}/classify` |
 | `CLASSIFIER_TOKEN` | empty | Sent as `Authorization: Bearer ...` when set |
 | `CLASSIFIER_TIMEOUT_MS` | `2500` | Abort the classifier call after this long |
-| `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold` (TBD, to be tuned on `val`) |
+| `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold`. The VM uses `0.7` |
+| `MONEY_WARN_AMOUNT` | `500` | Add `verdict.warning` to a delivered message asking the reader for at least this many dollars. Never blocks. `0` turns it off |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to `GET /api/*` |
 | `GATEWAY_DEBUG` | `0` | `1` registers `POST /debug/reset`. Startup fails if `DEBUG_TOKEN` is empty |
 | `DEBUG_TOKEN` | empty | Required `X-Debug-Token` value for debug routes |
@@ -77,7 +78,11 @@ Raw handles and Photon message and space ids live only in the SQLite file. They 
 
 ### `GET /api/messages?limit=N`
 
-Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET only.
+Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET and DELETE.
+
+### `DELETE /api/messages`
+
+Deletes every stored message, conversation and participant (the same as `POST /debug/reset`) and returns `{ok, cleared}`. The web app's "Clear chats" button calls it (Tuan, 2026-11-08). **No token:** anyone who can reach the gateway can wipe the inbox.
 
 ### `GET /healthz`
 
