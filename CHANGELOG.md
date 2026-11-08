@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: MVP implementation decisions
+
+- **Decisions (Tuan):** the Twilio MVP is being built now, so the scaffolding hold is lifted for the gateway, simulator and message UI. Gateway storage is **SQLite** (`node:sqlite`), with debug tools to clear it. When the classifier is down, the gateway **fails open**: it delivers the message with `reason: classifier_unavailable`, and the UI shows it as unverified. The message bank and scenarios are **JSONL**. The message UI is the **`/messages`** route in `apps/web`, leaving `/` for the 3D scene.
+- **Contract:** the read-only query API is defined in `contracts/query-api.v1.schema.json`, with sample fixtures. It's the only thing the gateway and web app share.
+- **Each package is standalone** (its own `package.json` and lockfile, no npm workspaces), so parallel branches don't conflict on a shared lockfile and each deploys alone.
+
 ### 2026-11-07: TF-IDF + LR implemented alongside MiniLM
 
 - **Change (Tuan):** `classifier/train.py --model tfidf` trains TF-IDF (word unigrams and bigrams) + logistic regression on the same data and splits as MiniLM. The same service serves it (`model.json` `kind` is `tfidf-lr`) behind the same `/classify` contract.

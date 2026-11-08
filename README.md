@@ -26,6 +26,11 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Twilio MVP | 1.1 Query API contract, synthetic Twilio fixture, MVP decisions | `feat/twilio-mvp-contract` | Tuan + Claude Code | In review | [#4](https://github.com/lytx02/HackUTD/pull/4) |
+| Twilio MVP + 3D scene | `apps/web` scaffold: Next.js 16, R3F packages, shared `lib/messages` data layer (unblocks scene 1.1) | `feat/twilio-mvp-web-scaffold` | Tuan + Claude Code | In review | [#5](https://github.com/lytx02/HackUTD/pull/5) |
+| Twilio MVP | 1.2 Gateway (Hono, SQLite) | `feat/twilio-mvp-gateway` | Tuan + Claude Code | In review | [#8](https://github.com/lytx02/HackUTD/pull/8) |
+| Twilio MVP | 1.3 + 2.2 Message UI (`apps/web`, `/messages`) | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | In progress | TBD |
+| Twilio MVP | 1.4 + 2.1 Message bank and perpetrator simulator | `feat/twilio-mvp-simulator` | Tuan + Claude Code | In review | [#7](https://github.com/lytx02/HackUTD/pull/7) |
 | Classifier service | MiniLM ([#3](https://github.com/lytx02/HackUTD/pull/3)) and TF-IDF ([#6](https://github.com/lytx02/HackUTD/pull/6)) code merged, **not yet run on full data**. Next: train both on Vultr (task 2.1; TF-IDF via README Option B), then deploy (task 3.1) | — | Tuan | Not started | — |
 
 Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).
