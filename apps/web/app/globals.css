@@ -27,11 +27,25 @@
   --font-mono: var(--font-geist-mono);
   /* Condensed headlines (Anton, like the landing page) and Courier labels. */
   --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
-  --font-label: "Courier New", Courier, ui-monospace, monospace;
+  --font-label: var(--font-space-mono), "Courier New", ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-archivo), Arial, Helvetica, sans-serif;
+  font-weight: 500;
+}
+
+@layer base {
+  /* Labels are bold unless a utility says otherwise. */
+  .font-label {
+    font-weight: 700;
+  }
+  /* Tailwind 4 gives buttons the default arrow cursor; anything clickable shows a pointer. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
 }

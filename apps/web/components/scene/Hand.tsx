@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useRef, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { easing } from "maath";
 import {
-  CanvasTexture,
   Plane,
-  SRGBColorSpace,
   Vector3,
   type Group,
   type Mesh,
@@ -45,33 +43,13 @@ interface HandProps {
   hitAt: RefObject<number>;
   /** The slap to play; a blocked message writes it. */
   slap: RefObject<SlapState>;
-  /** Point under the box where the "Receiver" label goes. */
+  /** Point under the box where the "T-Guard" label goes. */
   labelAnchor?: RefObject<Object3D | null>;
 }
 
-/** "T—GUARD" on the box's front face, drawn once into a canvas texture (no font download). */
-function useFrontLabel() {
-  return useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 256;
-    const c = canvas.getContext("2d");
-    if (!c) return null;
-    c.fillStyle = "#3c0523";
-    c.font = "900 112px Impact, Arial Black, Arial, sans-serif";
-    c.textAlign = "center";
-    c.fillText("T—GUARD", 256, 140);
-    c.font = "28px Courier New, monospace";
-    c.fillText("ACTIVE DEFENSE SYSTEM", 256, 196);
-    const texture = new CanvasTexture(canvas);
-    texture.colorSpace = SRGBColorSpace;
-    return texture;
-  }, []);
-}
-
 /**
- * The Receiver: a pink box with a photographic hand standing in it. When a
+ * T-Guard: a plain pink box with a photographic hand standing in it, in front
+ * of the Receiver bean. When a
  * message is blocked it slaps the bubble away toward the sender. It only
  * animates the gateway's decision; it never makes one.
  */
@@ -81,7 +59,6 @@ export function Hand({ hitAt, slap, labelAnchor }: HandProps) {
   const handMaterial = useRef<MeshBasicMaterial>(null);
   const boxMaterial = useRef<MeshStandardMaterial>(null);
   const textures = useTexture(HAND_IMAGES);
-  const frontLabel = useFrontLabel();
 
   useFrame((state, dt) => {
     const now = performance.now();
@@ -138,12 +115,6 @@ export function Hand({ hitAt, slap, labelAnchor }: HandProps) {
           <planeGeometry args={[BOX.w - 0.16, BOX.d - 0.16]} />
           <meshBasicMaterial color="#250f1d" />
         </mesh>
-        {frontLabel && (
-          <mesh position={[0, -0.02, BOX.d / 2 + 0.002]}>
-            <planeGeometry args={[BOX.w * 0.9, BOX.w * 0.45]} />
-            <meshBasicMaterial map={frontLabel} transparent depthWrite={false} toneMapped={false} />
-          </mesh>
-        )}
         {labelAnchor && <object3D ref={labelAnchor} position={[0, -BOX.h / 2 - 0.35, 0]} />}
       </group>
     </group>

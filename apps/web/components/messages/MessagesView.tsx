@@ -40,7 +40,7 @@ function Column({
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((o) => !o)}
-          className="-mx-1 flex items-baseline gap-2 px-1 uppercase hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          className="-mx-1 flex items-baseline gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
         >
           <svg
             aria-hidden
@@ -139,7 +139,7 @@ export function MessagesView() {
         <header className="col-span-full flex h-20 items-center justify-between gap-4 border-b border-rule">
           <Link
             href="/"
-            className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+            className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
           >
             T—GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
           </Link>
@@ -151,7 +151,7 @@ export function MessagesView() {
             onClick={clear}
             disabled={!clearSource || clearing || messages.length === 0}
             title="Delete all messages from the gateway. This can't be undone."
-            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+            className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
           >
             {clearing ? "Clearing…" : "Clear chats"}
             <span aria-hidden>↺</span>
