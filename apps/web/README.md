@@ -52,6 +52,8 @@ const { messages, mode, error } = useMessages({
 | `replay` | Default when no URL is set, or `?source=replay` | Replays the contract fixture: a new message every 3 s, pending for 1.2 s, then delivered or blocked. Loops with fresh ids |
 | `static` | `?source=static` | The fixture as-is |
 
+The page doesn't show which source is active: the header's "Live" / "Replay (mock)" pill was removed by Tuan, 2026-11-08. `mode` is still used for the "Loading…" empty states.
+
 Display helpers: `isPotentialScam(m)` (the gateway's label is `scam`; say "potential scam" on screen) and `isUnverified(m)` (delivered because the classifier was down).
 
 ## Config

@@ -143,15 +143,6 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
 
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} resolution={256} />
       </Canvas>
-
-      <div className="pointer-events-none absolute right-3 top-3 flex flex-col gap-1 rounded-lg bg-slate-900/70 px-3 py-2 text-xs text-slate-200">
-        <span className="flex items-center gap-2">
-          <i className="inline-block size-2.5 rounded-full bg-red-500" /> Potential scam
-        </span>
-        <span className="flex items-center gap-2">
-          <i className="inline-block size-2.5 rounded-full bg-blue-200" /> Message
-        </span>
-      </div>
     </div>
   );
 }
