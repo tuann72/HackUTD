@@ -6,7 +6,7 @@ The MVP uses one Twilio number as the "victim". A simulated "perpetrator" sends 
 
 Proposed, not final: the victim gets a short "potential scam blocked" notice with a link to a blocked-scams panel. The panel shows why each message was blocked, its category, and the scam keywords highlighted. For the MVP, a basic Next.js page lists delivered and blocked messages. A 3D scene (React Three Fiber) is planned for later. The stack is TypeScript for the gateway, simulator and web app, and Python for the classifier: MiniLM, trained and served on Vultr ([`classifier/`](classifier/README.md)).
 
-Status: **planning**. The classifier code exists; the gateway, simulator and web app don't yet. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`CHANGELOG.md`](CHANGELOG.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset.
+Status: **building the MVP**. On `main`: the classifier code, the query API contract, the `apps/web` scaffold, and the message bank and perpetrator simulator (`services/perpetrator-sim/`). The gateway and the `/messages` UI are in review. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`CHANGELOG.md`](CHANGELOG.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset.
 
 ## Feature board
 
@@ -28,7 +28,6 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 |---|---|---|---|---|---|
 | Twilio MVP | 1.2 Gateway (Hono, SQLite) | `feat/twilio-mvp-gateway` | Tuan + Claude Code | In review | [#8](https://github.com/lytx02/HackUTD/pull/8) |
 | Twilio MVP | 1.3 + 2.2 Message UI (`apps/web`, `/messages`) | `feat/twilio-mvp-message-ui` | Tuan + Claude Code | In review | [#9](https://github.com/lytx02/HackUTD/pull/9) |
-| Twilio MVP | 1.4 + 2.1 Message bank and perpetrator simulator | `feat/twilio-mvp-simulator` | Tuan + Claude Code | In review | [#7](https://github.com/lytx02/HackUTD/pull/7) |
 | Classifier service | MiniLM ([#3](https://github.com/lytx02/HackUTD/pull/3)) and TF-IDF ([#6](https://github.com/lytx02/HackUTD/pull/6)) code merged, **not yet run on full data**. Next: train both on Vultr (task 2.1; TF-IDF via README Option B), then deploy (task 3.1) | — | Tuan | Not started | — |
 
 Status values: **In progress**, **Blocked**, **In review**, **Done**. "Worked on by" names the person and, if applicable, the agent (for example, `Tuan + Claude Code`).
