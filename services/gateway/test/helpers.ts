@@ -25,7 +25,8 @@ export const RULES: BlocklistRules = { strikes: 3, highScore: 0.95, ttlMs: 7 * 2
 export const fingerprinter = makeFingerprinter('test-fingerprint-secret-0123456789abcdef');
 
 /**
- * Every test app gets an in-memory blocklist unless `blocklist: null` is passed.
+ * Every test app gets an in-memory blocklist unless `blocklist: null` is passed. It is only
+ * used when `config.senderBlocklist` is true; the default is off, as in production.
  * Pass `now` to move the clock (blocklist expiry).
  */
 export function makeApp(
@@ -44,6 +45,7 @@ export function makeApp(
       debug: false,
       debugToken: null,
       adminToken: null,
+      senderBlocklist: false,
       ...opts.config,
     },
     logger: silentLogger,

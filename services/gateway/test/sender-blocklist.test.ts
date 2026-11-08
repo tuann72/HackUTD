@@ -14,6 +14,9 @@ const validate = ajv.compile(readContract('contracts/query-api.v1.schema.json'))
 
 const SCAMMER = '+15555550166';
 
+/** The parked option: SENDER_BLOCKLIST=on. */
+const makeOn = (opts: Parameters<typeof makeApp>[0] = {}) => makeApp({ ...opts, config: { senderBlocklist: true, ...opts.config } });
+
 /** Scores every message `score`, and counts calls. */
 function fixedClassifier(score: number) {
   const calls: string[] = [];
@@ -37,10 +40,10 @@ async function send(app: ReturnType<typeof makeApp>, id: string, opts: { from?: 
   expect(res.status).toBe(200);
 }
 
-describe('sender blocklist in the webhook flow', () => {
+describe('SENDER_BLOCKLIST=on (parked option)', () => {
   it('after 3 model blocks, the 4th message is sender_blocked without a classifier call', async () => {
     const { classifier, calls } = fixedClassifier(0.8);
-    const app = makeApp({ classifier });
+    const app = makeOn({ classifier });
     for (const id of ['spc-1', 'spc-2', 'spc-3']) await send(app, id);
     await app.idle();
     expect(calls).toHaveLength(3);
@@ -54,7 +57,7 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('one very high score blocklists the sender at once', async () => {
     const { classifier, calls } = fixedClassifier(0.97);
-    const app = makeApp({ classifier });
+    const app = makeOn({ classifier });
     await send(app, 'spc-1');
     await app.idle();
     await send(app, 'spc-2');
@@ -65,11 +68,11 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('legit messages and other senders are unaffected', async () => {
     const { classifier } = fixedClassifier(0.97);
-    const app = makeApp({ classifier });
+    const app = makeOn({ classifier });
     await send(app, 'spc-1');
     await app.idle();
     const legit = fixedClassifier(0.1);
-    const other = makeApp({ classifier: legit.classifier });
+    const other = makeOn({ classifier: legit.classifier });
     await send(other, 'spc-2', { from: '+15555550101' });
     await other.idle();
     expect((await list(other)).messages[0]).toMatchObject({ action: 'delivered', reason: 'model_verdict' });
@@ -77,7 +80,7 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('blocks text-less content (attachment, reaction) from a blocklisted sender', async () => {
     const { classifier } = fixedClassifier(0.97);
-    const app = makeApp({ classifier });
+    const app = makeOn({ classifier });
     await send(app, 'spc-1');
     await app.idle();
     await send(app, 'spc-a', { content: { type: 'attachment', id: 'g', name: 'gift-card.jpg', mimeType: 'image/jpeg' } });
@@ -93,7 +96,7 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('fingerprints email handles case-insensitively', async () => {
     const { classifier, calls } = fixedClassifier(0.97);
-    const app = makeApp({ classifier });
+    const app = makeOn({ classifier });
     await send(app, 'spc-1', { from: 'Scammer@iCloud.com' });
     await app.idle();
     await send(app, 'spc-2', { from: 'scammer@icloud.com ' });
@@ -107,7 +110,7 @@ describe('sender blocklist in the webhook flow', () => {
   it('an expired block sends the sender back to the model', async () => {
     const { classifier, calls } = fixedClassifier(0.97);
     let clock = NOW;
-    const app = makeApp({ classifier, now: () => clock });
+    const app = makeOn({ classifier, now: () => clock });
     await send(app, 'spc-1');
     await app.idle();
     clock = new Date(NOW.getTime() + RULES.ttlMs + 1000);
@@ -131,10 +134,10 @@ describe('sender blocklist in the webhook flow', () => {
       close: async () => {},
     };
     const { classifier, calls } = fixedClassifier(0.1);
-    const app = makeApp({ classifier, blocklist: broken });
+    const app = makeOn({ classifier, blocklist: broken });
     await send(app, 'spc-1');
     const scam = fixedClassifier(0.99);
-    const app2 = makeApp({ classifier: scam.classifier, blocklist: broken });
+    const app2 = makeOn({ classifier: scam.classifier, blocklist: broken });
     await send(app2, 'spc-2');
     await app.idle();
     await app2.idle();
@@ -145,7 +148,7 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('works with the blocklist off (no deps)', async () => {
     const { classifier, calls } = fixedClassifier(0.99);
-    const app = makeApp({ classifier, blocklist: null });
+    const app = makeOn({ classifier, blocklist: null });
     await send(app, 'spc-1');
     await app.idle();
     await send(app, 'spc-2');
@@ -155,7 +158,7 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('sender_blocked output matches the contract and exposes no raw handle', async () => {
     const { classifier } = fixedClassifier(0.97);
-    const app = makeApp({ classifier });
+    const app = makeOn({ classifier });
     await send(app, 'spc-1', { from: 'scammer@icloud.com' });
     await app.idle();
     await send(app, 'spc-2', { from: 'scammer@icloud.com' });
@@ -169,7 +172,7 @@ describe('sender blocklist in the webhook flow', () => {
 
   it('the in-memory store never holds a raw handle', async () => {
     const blocklist = new MemoryBlocklist(RULES);
-    const app = makeApp({ classifier: fixedClassifier(0.97).classifier, blocklist });
+    const app = makeOn({ classifier: fixedClassifier(0.97).classifier, blocklist });
     await send(app, 'spc-1');
     await app.idle();
     const dump = JSON.stringify([...blocklist.senders.values(), ...blocklist.texts.values()]);
@@ -178,54 +181,115 @@ describe('sender blocklist in the webhook flow', () => {
   });
 });
 
-describe('POST /admin/senders/allow ("Not a scam")', () => {
+function spyBlocklist() {
+  const calls: string[] = [];
+  const inner = new MemoryBlocklist(RULES);
+  const list: Blocklist = {
+    isBlocked: (...a) => (calls.push('isBlocked'), inner.isBlocked(...a)),
+    recordScam: (...a) => (calls.push('recordScam'), inner.recordScam(...a)),
+    allow: (...a) => (calls.push('allow'), inner.allow(...a)),
+    close: () => inner.close(),
+  };
+  return { list, calls };
+}
+
+describe('SENDER_BLOCKLIST=off (default): block the message, not the sender', () => {
+  it('is off by default in config', async () => {
+    const { loadConfig } = await import('../src/config.js');
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't' }).senderBlocklist).toBe(false);
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'on' }).senderBlocklist).toBe(true);
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'yes' })).toThrow(/SENDER_BLOCKLIST/);
+    // Atlas settings aren't validated while off.
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', MONGODB_URI: 'mongodb+srv://x' })).not.toThrow();
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'on', MONGODB_URI: 'mongodb+srv://x' })).toThrow(/FINGERPRINT_SECRET/);
+  });
+
+  it('never calls the blocklist, even after repeated scams; the scammer’s next legit message is delivered', async () => {
+    const spy = spyBlocklist();
+    let score = 0.99;
+    const calls: string[] = [];
+    const classifier: Classifier = {
+      classify: async (r) => {
+        calls.push(r.text);
+        return { label: score >= 0.5 ? 'scam' : 'legit', score, category: score >= 0.5 ? 'Imposter & Phishing' : null, model: 'm', highlights: [] };
+      },
+    };
+    const app = makeApp({ classifier, blocklist: spy.list }); // default config: off
+    for (const id of ['spc-1', 'spc-2', 'spc-3', 'spc-4']) await send(app, id);
+    await send(app, 'spc-att', { content: { type: 'attachment', id: 'g', name: 'card.jpg' } });
+    await app.idle();
+    score = 0.05;
+    await send(app, 'spc-legit', { text: 'Running late, see you at 6' });
+    await app.idle();
+    expect(spy.calls).toEqual([]);
+    expect(calls).toHaveLength(5);
+    const [legit, att, ...scams] = (await list(app)).messages;
+    expect(legit).toMatchObject({ action: 'delivered', reason: 'model_verdict' });
+    expect(att).toMatchObject({ action: 'delivered', reason: 'not_classified' });
+    for (const m of scams) expect(m).toMatchObject({ action: 'blocked', reason: 'model_verdict' });
+    expect(JSON.stringify(await list(app))).not.toContain('sender_blocked');
+  });
+});
+
+describe('POST /admin/messages/restore ("Not a scam" for one message)', () => {
   const ADMIN = 'admin-token-0123456789';
-  const allow = (app: ReturnType<typeof makeApp>, body: unknown, token: string | null = ADMIN) =>
-    app.request('/admin/senders/allow', {
+  const restore = (app: ReturnType<typeof makeApp>, body: unknown, token: string | null = ADMIN) =>
+    app.request('/admin/messages/restore', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Admin-Token': token } : {}) },
       body: JSON.stringify(body),
     });
 
   it('is 404 when ADMIN_TOKEN is unset', async () => {
-    const app = makeApp();
-    expect((await allow(app, { messageId: 'msg_x' })).status).toBe(404);
+    expect((await restore(makeApp(), { messageId: 'msg_x' })).status).toBe(404);
   });
 
   it('checks the token and the body', async () => {
     const app = makeApp({ config: { adminToken: ADMIN } });
-    expect((await allow(app, { messageId: 'msg_x' }, null)).status).toBe(401);
-    expect((await allow(app, { messageId: 'msg_x' }, 'wrong-token-0000000')).status).toBe(403);
-    expect((await allow(app, {})).status).toBe(400);
-    expect((await allow(app, { messageId: 'msg_missing' })).status).toBe(404);
+    expect((await restore(app, { messageId: 'msg_x' }, null)).status).toBe(401);
+    expect((await restore(app, { messageId: 'msg_x' }, 'wrong-token-0000000')).status).toBe(403);
+    expect((await restore(app, {})).status).toBe(400);
+    expect((await restore(app, { messageId: 'msg_missing' })).status).toBe(404);
   });
 
-  it('restores the sender’s blocked messages and the model judges its next scam again', async () => {
+  it('off: restores only the named message, keeps its verdict, touches no blocklist', async () => {
+    const spy = spyBlocklist();
+    const app = makeApp({ classifier: fixedClassifier(0.97).classifier, blocklist: spy.list, config: { adminToken: ADMIN } });
+    await send(app, 'spc-1');
+    await send(app, 'spc-2');
+    await app.idle();
+    const [m2, m1] = (await list(app)).messages;
+    const res = await restore(app, { messageId: m1!.id });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, messageId: m1!.id, allowlisted: null });
+    const [a2, a1] = (await list(app)).messages;
+    expect(a1).toMatchObject({ id: m1!.id, action: 'delivered', reason: 'override', verdict: { label: 'scam' } });
+    expect(a2).toMatchObject({ id: m2!.id, action: 'blocked', reason: 'model_verdict' });
+    expect(validate(await list(app))).toBe(true);
+    expect(spy.calls).toEqual([]);
+    // Restoring it again, or a delivered message, is a conflict.
+    expect((await restore(app, { messageId: m1!.id })).status).toBe(409);
+  });
+
+  it('on: restores only the named message and allowlists the sender', async () => {
     const { classifier, calls } = fixedClassifier(0.97);
-    const app = makeApp({ classifier, config: { adminToken: ADMIN } });
+    const app = makeOn({ classifier, config: { adminToken: ADMIN } });
     await send(app, 'spc-1');
     await app.idle();
     await send(app, 'spc-2');
     await app.idle();
     const [m2, m1] = (await list(app)).messages;
     expect(m2!.reason).toBe('sender_blocked');
-
-    const res = await allow(app, { messageId: m1!.id });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, allowlisted: true, restored: 2 });
-    const after = (await list(app)).messages;
-    for (const m of after) expect(m).toMatchObject({ action: 'delivered', reason: 'override' });
-    expect(after[1]!.verdict).toMatchObject({ label: 'scam' }); // the verdict is kept for the record
-    expect(validate(await list(app))).toBe(true);
-
+    const res = await restore(app, { messageId: m1!.id });
+    expect(await res.json()).toEqual({ ok: true, messageId: m1!.id, allowlisted: true });
+    const [a2, a1] = (await list(app)).messages;
+    expect(a1).toMatchObject({ action: 'delivered', reason: 'override' });
+    expect(a2).toMatchObject({ action: 'blocked', reason: 'sender_blocked' });
+    // The sender is off the blocklist: its next scam goes to the model again.
     await send(app, 'spc-3');
     await app.idle();
     expect(calls).toHaveLength(2);
-    // Still judged one message at a time: the model blocks it, but the sender stays off the blocklist.
     expect((await list(app)).messages[0]).toMatchObject({ action: 'blocked', reason: 'model_verdict' });
-    await send(app, 'spc-4');
-    await app.idle();
-    expect(calls).toHaveLength(3);
   });
 });
 

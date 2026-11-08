@@ -1,4 +1,5 @@
 import type { SimConfig } from "./config.ts";
+import { contentPhones, describeContent } from "./content.ts";
 import { assertSafeNumber, assertSafeUrl } from "./safety.ts";
 import type { Step } from "./steps.ts";
 import { buildInboundMessage, maskNumber, signBody, type SpectrumPayload } from "./spectrum-request.ts";
@@ -34,11 +35,18 @@ export const SIM_WEBHOOK_ID = "00000000-0000-4000-8000-000000000000";
 
 export function buildSignedRequest(
   config: SimConfig,
-  step: Pick<Step, "from" | "body">,
+  step: Pick<Step, "from" | "body" | "content" | "group">,
   now: () => Date = () => new Date(),
 ): SignedRequest {
   const at = now();
-  const payload = buildInboundMessage({ from: step.from, line: config.victimNumber, body: step.body, timestamp: at.toISOString() });
+  const payload = buildInboundMessage({
+    from: step.from,
+    line: config.victimNumber,
+    body: step.body,
+    content: step.content,
+    group: step.group,
+    timestamp: at.toISOString(),
+  });
   const body = JSON.stringify(payload);
   const timestamp = String(Math.floor(at.getTime() / 1000));
   return {
@@ -72,7 +80,10 @@ export async function runSteps(config: SimConfig, steps: readonly Step[], opts: 
 
   assertSafeUrl(config.webhookUrl);
   assertSafeNumber(config.victimNumber, "VICTIM_NUMBER (line)", allowReal);
-  steps.forEach((s, i) => assertSafeNumber(s.from, `step ${i + 1} From`, allowReal));
+  steps.forEach((s, i) => {
+    assertSafeNumber(s.from, `step ${i + 1} sender`, allowReal);
+    contentPhones(s.content).forEach((p) => assertSafeNumber(p, `step ${i + 1} contact card phone`, allowReal));
+  });
 
   log(`${opts.dryRun ? "[dry run] " : ""}${steps.length} message(s) -> ${config.webhookUrl}`);
   const results: SendResult[] = [];
@@ -81,7 +92,9 @@ export async function runSteps(config: SimConfig, steps: readonly Step[], opts: 
     if (step.delayMs > 0 && !opts.dryRun) await sleep(step.delayMs);
     elapsed += step.delayMs;
     const req = buildSignedRequest(config, step);
-    const tag = `[${i + 1}/${steps.length}] +${(elapsed / 1000).toFixed(1)}s ${maskNumber(step.from)}`;
+    const where = step.group ? ` in group ${step.group}` : "";
+    const tag = `[${i + 1}/${steps.length}] +${(elapsed / 1000).toFixed(1)}s ${maskNumber(step.from)}${where}`;
+    const text = step.content ? describeContent(step.content) : step.body;
     const expected = step.expected ? ` expected=${step.expected}` : "";
     const base = { index: i, messageId: req.payload.message.id, from: step.from, expected: step.expected };
 
@@ -104,14 +117,14 @@ export async function runSteps(config: SimConfig, steps: readonly Step[], opts: 
       await res.text().catch(() => "");
       const status = `${res.status}${res.statusText ? " " + res.statusText : ""}`;
       if (res.ok) {
-        log(`${tag} -> ${status}${expected} ${preview(step.body)}`);
+        log(`${tag} -> ${status}${expected} ${preview(text)}`);
       } else {
-        log(`${tag} -> FAILED ${status}${expected} ${preview(step.body)}`);
+        log(`${tag} -> FAILED ${status}${expected} ${preview(text)}`);
       }
       results.push({ ...base, ok: res.ok, status: res.status });
     } catch (err) {
       const msg = (err as Error).cause ? String((err as Error).cause) : (err as Error).message;
-      log(`${tag} -> FAILED (${msg})${expected} ${preview(step.body)}`);
+      log(`${tag} -> FAILED (${msg})${expected} ${preview(text)}`);
       results.push({ ...base, ok: false, error: msg });
     }
   }

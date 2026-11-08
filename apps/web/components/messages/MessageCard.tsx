@@ -8,7 +8,7 @@ import { formatRelative, formatScore } from "./time";
 
 const UNVERIFIED_TITLE = "The classifier was unavailable, so this was delivered without a check.";
 const SENDER_BLOCKED_TITLE = "This sender sent earlier scams, so T-Gate blocked this without checking it again.";
-const RESTORED_TITLE = "Someone marked this sender \"Not a scam\", so it was moved to the inbox.";
+const RESTORED_TITLE = "Someone marked this message \"Not a scam\", so it was moved to the inbox.";
 const NOT_CLASSIFIED_TITLE = "No text to check (attachment, reaction or contact card), so this was delivered without a check.";
 
 export function CategoryBadge({ category }: { category: string | null | undefined }) {
