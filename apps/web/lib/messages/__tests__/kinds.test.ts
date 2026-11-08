@@ -41,3 +41,20 @@ describe("message kinds", () => {
     expect((fixture as MessagesResponse).messages.some(isGroupChat)).toBe(true);
   });
 });
+
+describe("blocklist reasons", () => {
+  it("treats sender_blocked as a potential scam and override as not", async () => {
+    const { isPotentialScam, isRestored, isSenderBlocked } = await import("../types");
+    const sb: Message = { ...base, action: "blocked", reason: "sender_blocked", verdict: null };
+    expect(isSenderBlocked(sb)).toBe(true);
+    expect(isPotentialScam(sb)).toBe(true);
+    const restored: Message = {
+      ...base,
+      reason: "override",
+      verdict: { label: "scam", score: 0.97, category: null, model: "m", highlights: [] },
+    };
+    expect(isRestored(restored)).toBe(true);
+    expect(isPotentialScam(restored)).toBe(false);
+    expect((fixture as MessagesResponse).messages.some(isSenderBlocked)).toBe(true);
+  });
+});

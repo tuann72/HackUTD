@@ -2,10 +2,11 @@ import { timingSafeEqual } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import type { Blocklist, Fingerprinter } from './blocklist.js';
 import type { Classifier } from './classifier.js';
 import type { GatewayConfig } from './config.js';
 import { Store } from './db.js';
-import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, isClassifiable, parseSpectrumEvent, verifySpectrumRequest } from './photon.js';
+import { EVENT_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER, isClassifiable, parseSpectrumEvent, verifySpectrumRequest, type InboundMessage } from './photon.js';
 import type { MessagesResponse, Verdict } from './types.js';
 
 /** Path Photon delivers inbound iMessage webhooks to. */
@@ -19,7 +20,24 @@ export interface Logger {
 export interface AppDeps {
   db: DatabaseSync;
   classifier: Classifier;
-  config: Pick<GatewayConfig, 'photonWebhookSecret' | 'signatureToleranceSeconds' | 'blockThreshold' | 'corsOrigins' | 'debug' | 'debugToken'>;
+  config: Pick<
+    GatewayConfig,
+    | 'photonWebhookSecret'
+    | 'signatureToleranceSeconds'
+    | 'blockThreshold'
+    | 'corsOrigins'
+    | 'debug'
+    | 'debugToken'
+    | 'adminToken'
+    | 'senderBlocklist'
+  >;
+  /**
+   * Sender blocklist (docs/features/sender-blocklist.md), a parked option. Used only when
+   * `config.senderBlocklist` is true and both are given; otherwise never called, and every message
+   * is judged on its own. Errors from the blocklist are logged and ignored (fail open).
+   */
+  blocklist?: Blocklist;
+  fingerprinter?: Fingerprinter;
   logger?: Logger;
   /** Clock for the signature timestamp check. Tests override it. */
   now?: () => Date;
@@ -42,12 +60,61 @@ function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
-export function createApp({ db, classifier, config, logger = consoleLogger, now = () => new Date() }: AppDeps): GatewayApp {
+export function createApp({
+  db,
+  classifier,
+  config,
+  blocklist,
+  fingerprinter,
+  logger = consoleLogger,
+  now = () => new Date(),
+}: AppDeps): GatewayApp {
   const store = new Store(db);
   const pending = new Set<Promise<void>>();
   const app = new Hono();
+  // Default (Tuan, 2026-11-08): block the message, not the sender. The blocklist is off unless configured on.
+  const bl = config.senderBlocklist && blocklist && fingerprinter ? { list: blocklist, fp: fingerprinter } : null;
 
-  async function classifyAndApply(id: string, body: string, display: string): Promise<void> {
+  /** True only if the blocklist answered yes. An error counts as "not blocked" (fail open). */
+  async function senderIsBlocked(id: string, senderFp: string): Promise<boolean> {
+    if (!bl) return false;
+    try {
+      return await bl.list.isBlocked(senderFp, now());
+    } catch (err) {
+      logger.warn(`${id}: blocklist unavailable (${(err as Error).message}); judging by the model`);
+      return false;
+    }
+  }
+
+  async function recordScam(id: string, senderFp: string, body: string, verdict: Verdict): Promise<void> {
+    if (!bl) return;
+    try {
+      const res = await bl.list.recordScam(
+        { senderFp, textFp: bl.fp.text(body), score: verdict.score, category: verdict.category, model: verdict.model },
+        now(),
+      );
+      if (res.blocked) logger.info(`${id}: sender now on the blocklist (strikes ${res.strikes}, until ${res.blockedUntil?.toISOString()})`);
+    } catch (err) {
+      logger.warn(`${id}: could not record fingerprint (${(err as Error).message}); ignored`);
+    }
+  }
+
+  async function decide(id: string, msg: InboundMessage, display: string): Promise<void> {
+    const senderFp = bl ? bl.fp.sender(msg.sender) : '';
+    // 1. Known scam sender: block without asking the model. Applies to text-less content too.
+    if (await senderIsBlocked(id, senderFp)) {
+      store.applyDecision(id, 'blocked', 'sender_blocked', null);
+      logger.info(`${id} (${msg.kind}) from ${display}: blocked, sender on the blocklist`);
+      return;
+    }
+    // 2. Nothing to judge (attachment, reaction, contact): deliver, marked not classified.
+    if (!isClassifiable(msg)) {
+      store.applyDecision(id, 'delivered', 'not_classified', null);
+      logger.info(`${id} (${msg.kind}) from ${display}: delivered, not classified (no text)`);
+      return;
+    }
+    // 3. Ask the model.
+    const body = msg.body;
     let verdict: Verdict | null = null;
     try {
       verdict = await classifier.classify({ messageId: id, text: body });
@@ -60,12 +127,14 @@ export function createApp({ db, classifier, config, logger = consoleLogger, now 
     const action = verdict.score >= config.blockThreshold ? 'blocked' : 'delivered';
     store.applyDecision(id, action, 'model_verdict', verdict);
     logger.info(`${id} from ${display}: ${action} (score ${verdict.score}, ${verdict.category ?? 'no category'}, ${verdict.model})`);
+    // 4. Fingerprint every model block; strikes or a very high score put the sender on the blocklist.
+    if (action === 'blocked') await recordScam(id, senderFp, body, verdict);
   }
 
-  function schedule(id: string, body: string, display: string): void {
-    // setImmediate so the webhook response goes out before classification starts.
+  function schedule(id: string, msg: InboundMessage, display: string): void {
+    // setImmediate so the webhook response goes out before the blocklist or classifier is asked.
     const job = new Promise<void>((resolve) => setImmediate(resolve))
-      .then(() => classifyAndApply(id, body, display))
+      .then(() => decide(id, msg, display))
       .catch((err: unknown) => logger.warn(`${id}: failed to record decision: ${(err as Error).message}`))
       .finally(() => pending.delete(job));
     pending.add(job);
@@ -107,13 +176,9 @@ export function createApp({ db, classifier, config, logger = consoleLogger, now 
     }
 
     const stored = store.insertInbound(parsed.message);
-    if (stored && isClassifiable(parsed.message)) {
+    if (stored) {
       logger.info(`${stored.id} (${parsed.message.kind}) received from ${stored.display}`);
-      schedule(stored.id, stored.body, stored.display);
-    } else if (stored) {
-      // No text to judge (attachment, reaction, contact): deliver to the inbox, marked not classified.
-      store.applyDecision(stored.id, 'delivered', 'not_classified', null);
-      logger.info(`${stored.id} (${parsed.message.kind}) from ${stored.display}: delivered, not classified (no text)`);
+      schedule(stored.id, parsed.message, stored.display);
     } else {
       logger.info('duplicate webhook ignored (already-seen message.id)');
     }
@@ -150,6 +215,42 @@ export function createApp({ db, classifier, config, logger = consoleLogger, now 
       store.reset();
       logger.warn(`debug reset: cleared ${cleared} messages`);
       return c.json({ ok: true, cleared });
+    });
+  }
+
+  // Admin tool, not part of the contract: "Not a scam" for one message. Exists only when ADMIN_TOKEN is set.
+  // Takes an opaque message id, never a handle. The web app must never call it.
+  if (config.adminToken) {
+    const token = config.adminToken;
+    app.post('/admin/messages/restore', async (c) => {
+      const given = c.req.header('X-Admin-Token');
+      if (!given) return c.json({ error: 'missing X-Admin-Token' }, 401);
+      if (!safeEqual(given, token)) return c.json({ error: 'bad X-Admin-Token' }, 403);
+      let messageId: unknown;
+      try {
+        messageId = ((await c.req.json()) as { messageId?: unknown }).messageId;
+      } catch {
+        return c.json({ error: 'body must be JSON: {"messageId": "msg_..."}' }, 400);
+      }
+      if (typeof messageId !== 'string' || !messageId) return c.json({ error: 'messageId is required' }, 400);
+      const decision = store.decisionOf(messageId);
+      if (!decision) return c.json({ error: 'no such message' }, 404);
+      if (decision.action !== 'blocked') return c.json({ error: `message is ${decision.action}, not blocked` }, 409);
+
+      // Only with the blocklist on: also allowlist the sender so the blocklist never blocks them again.
+      let allowlisted: boolean | null = null;
+      if (bl) {
+        allowlisted = false;
+        try {
+          await bl.list.allow(bl.fp.sender(store.senderHandleOf(messageId)!), now());
+          allowlisted = true;
+        } catch (err) {
+          logger.warn(`${messageId}: allowlist write failed (${(err as Error).message})`);
+        }
+      }
+      store.restoreMessage(messageId, now());
+      logger.warn(`admin restore: ${messageId} moved to the inbox${allowlisted === null ? '' : ` (sender allowlisted=${allowlisted})`}`);
+      return c.json({ ok: true, messageId, allowlisted });
     });
   }
 
