@@ -25,13 +25,27 @@
   --color-muted: #827b7e;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  /* Condensed headlines (Anton, like the landing page) and Courier labels. */
+  /* Condensed numbers (Anton, like the landing page) and Inter labels. */
   --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
-  --font-label: "Courier New", Courier, ui-monospace, monospace;
+  --font-label: var(--font-inter), Arial, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  font-weight: 500;
+}
+
+@layer base {
+  /* Labels (small uppercase Inter) are bold unless a utility says otherwise. */
+  .font-label {
+    font-weight: 700;
+  }
+  /* Tailwind 4 gives buttons the default arrow cursor; anything clickable shows a pointer. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
 }

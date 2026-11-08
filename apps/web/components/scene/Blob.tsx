@@ -3,89 +3,126 @@
 import { useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { easing } from "maath";
-import type { Group, Mesh, MeshBasicMaterial, Object3D } from "three";
+import type { Group, Object3D } from "three";
 
-export const BLOB_RADIUS = 0.9;
-const SHIELD_RADIUS = 1.45;
+/**
+ * A jellybean character (an original party-game-style bean): a capsule body,
+ * a pale face patch with two big glossy eyes, stubby arms and feet. Its origin
+ * is the body's center; it stands on y = position.y - BEAN.footY.
+ */
+export const BEAN = {
+  radius: 0.6,
+  /** Straight part of the capsule between the two half-sphere ends. */
+  length: 0.95,
+  /** From the body's center down to the soles. */
+  footY: 1.12,
+};
+/** Half the bean's width: shots leave the sender from its side. */
+export const BLOB_RADIUS = BEAN.radius;
 
-// Eye positions on the sphere surface (r ≈ 0.92), turned toward +x and the
-// camera; x is mirrored by `facing` so each blob looks at the other.
-const EYES: [number, number, number][] = [0.3, 0.62].map((x) => {
-  const y = 0.25;
-  return [x, y, Math.sqrt(0.92 ** 2 - x ** 2 - y ** 2)];
-});
+const TOP = BEAN.length / 2 + BEAN.radius;
+const FACE = { y: 0.42, z: BEAN.radius * 0.86 };
 
 interface BlobProps {
   position: [number, number, number];
   color: string;
-  /** +1 if the blob looks right (+x), -1 if it looks left. */
+  /** +1 if the bean looks right (+x), -1 if it looks left. */
   facing: 1 | -1;
-  /** performance.now() of the last message this blob received; triggers a bounce. */
+  /** performance.now() of the last message this bean received; triggers a squash. */
   hitAt: RefObject<number>;
-  /** performance.now() of the last message blocked in front of it; flashes a shield. */
-  shieldAt?: RefObject<number>;
-  /** Phase offset so two blobs don't bob in sync. */
+  /** Phase offset so two beans don't bob in sync. */
   phase?: number;
   /**
-   * Point under the blob where its name label goes. It bobs with the blob; the
-   * scene projects it to screen space and moves a plain DOM label there.
+   * Point where its name label goes, under the feet or above the head. It moves
+   * with the bean; the scene projects it to screen space and moves a DOM label there.
    */
   labelAnchor?: RefObject<Object3D | null>;
+  labelAt?: "below" | "above";
 }
 
-/** The label anchor sits this far below the blob's center. */
-const LABEL_Y = -(BLOB_RADIUS + 0.55);
-
-export function Blob({ position, color, facing, hitAt, shieldAt, phase = 0, labelAnchor }: BlobProps) {
+export function Blob({ position, color, facing, hitAt, phase = 0, labelAnchor, labelAt = "below" }: BlobProps) {
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
-  const shield = useRef<Mesh>(null);
+  const arms = useRef<Group>(null);
 
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime + phase;
     const now = performance.now();
     if (group.current) {
-      // Idle bob.
-      group.current.position.y = position[1] + Math.sin(t * 2) * 0.08;
+      // Idle bounce and a little side-to-side waddle.
+      group.current.position.y = position[1] + Math.abs(Math.sin(t * 2.2)) * 0.07;
+      group.current.rotation.z = Math.sin(t * 2.2) * 0.04;
     }
     if (body.current) {
-      // Squash-and-stretch for ~0.45s after a hit, then damp back to round.
+      // Squash-and-stretch for ~0.45s after a hit, then damp back.
       const since = (now - hitAt.current) / 1000;
       const target: [number, number, number] =
-        since < 0.12 ? [1.18, 0.78, 1.18] : since < 0.3 ? [0.92, 1.15, 0.92] : [1, 1, 1];
+        since < 0.12 ? [1.15, 0.82, 1.15] : since < 0.3 ? [0.94, 1.12, 0.94] : [1, 1, 1];
       easing.damp3(body.current.scale, target, 0.08, dt);
     }
-    if (shield.current && shieldAt) {
-      const since = (now - shieldAt.current) / 1000;
-      const mat = shield.current.material as MeshBasicMaterial;
-      mat.opacity = since < 0.6 ? 0.35 * (1 - since / 0.6) : 0;
-      shield.current.visible = mat.opacity > 0.001;
-      const s = 1 + Math.min(since, 0.6) * 0.15;
-      shield.current.scale.setScalar(s);
+    if (arms.current) {
+      // Arms swing gently, and fly up when hit.
+      const since = (now - hitAt.current) / 1000;
+      const lift = since < 0.35 ? 0.9 : 0;
+      arms.current.children.forEach((arm, i) => {
+        const side = i === 0 ? 1 : -1;
+        easing.damp(arm.rotation, "z", side * (0.35 + lift + Math.sin(t * 2.2 + i) * 0.12), 0.1, dt);
+      });
     }
   });
 
   return (
     <group ref={group} position={position}>
-      <group ref={body}>
+      {/* Turned a little toward whoever it faces, but still showing its face. */}
+      <group ref={body} rotation={[0, facing * 0.45, 0]}>
         <mesh>
-          <sphereGeometry args={[BLOB_RADIUS, 48, 48]} />
-          <meshStandardMaterial color={color} roughness={0.45} />
+          <capsuleGeometry args={[BEAN.radius, BEAN.length, 12, 32]} />
+          <meshStandardMaterial color={color} roughness={0.35} />
         </mesh>
-        {EYES.map(([x, y, z]) => (
-          <mesh key={x} position={[x * facing, y, z]}>
-            <sphereGeometry args={[0.1, 16, 16]} />
-            <meshStandardMaterial color="#111827" />
+
+        {/* Face patch: a flattened pale oval on the front of the head. */}
+        <mesh position={[0, FACE.y, FACE.z]} scale={[0.42, 0.34, 0.2]}>
+          <sphereGeometry args={[1, 32, 24]} />
+          <meshStandardMaterial color="#fff4ec" roughness={0.5} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <group key={side} position={[side * 0.15, FACE.y + 0.02, FACE.z + 0.17]}>
+            <mesh scale={[1, 1.25, 0.6]}>
+              <sphereGeometry args={[0.085, 20, 16]} />
+              <meshStandardMaterial color="#14101a" roughness={0.2} />
+            </mesh>
+            {/* Eye shine. */}
+            <mesh position={[0.025, 0.04, 0.05]}>
+              <sphereGeometry args={[0.022, 10, 8]} />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Stubby arms, pivoting at the shoulders. */}
+        <group ref={arms}>
+          {[1, -1].map((side) => (
+            <group key={side} position={[side * (BEAN.radius - 0.04), -0.05, 0]} rotation={[0, 0, side * 0.35]}>
+              <mesh position={[side * 0.08, -0.2, 0]}>
+                <capsuleGeometry args={[0.1, 0.22, 6, 12]} />
+                <meshStandardMaterial color={color} roughness={0.35} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+
+        {/* Feet. */}
+        {[-1, 1].map((side) => (
+          <mesh key={side} position={[side * 0.22, -BEAN.footY + 0.1, 0.08]} scale={[1, 0.6, 1.35]}>
+            <sphereGeometry args={[0.16, 16, 12]} />
+            <meshStandardMaterial color={color} roughness={0.4} />
           </mesh>
         ))}
       </group>
-      {shieldAt && (
-        <mesh ref={shield} visible={false}>
-          <sphereGeometry args={[SHIELD_RADIUS, 32, 32]} />
-          <meshBasicMaterial color="#f87171" transparent opacity={0} depthWrite={false} />
-        </mesh>
+
+      {labelAnchor && (
+        <object3D ref={labelAnchor} position={[0, labelAt === "above" ? TOP + 0.35 : -BEAN.footY - 0.4, 0]} />
       )}
-      {labelAnchor && <object3D ref={labelAnchor} position={[0, LABEL_Y, 0]} />}
     </group>
   );
 }
