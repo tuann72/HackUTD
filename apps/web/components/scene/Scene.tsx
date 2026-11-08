@@ -5,17 +5,20 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import { MathUtils, PerspectiveCamera, Vector3, type Object3D } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
-import { Hand, type SlapState } from "./Hand";
 import { MessageShot } from "./MessageShot";
-import type { SlapName } from "./slap";
+import { SHIELD, SHIELD_FRONT_Z, Shield } from "./Shield";
 import type { SceneMessage, ShotFeed } from "./feed";
 
 const SENDER_X = -3.2;
-/** The Receiver bean stands behind and to the right of T-Guard's box, clear of the hand. */
+/** The Receiver bean stands behind and to the right of T-Guard's shield. */
 const RECEIVER_POSITION: [number, number, number] = [3.95, 0, -0.9];
-/** Shots leave the sender bean's side and land in T-Guard's hand, a little in front of it. */
+/** Shots leave the sender bean's side. */
 const SENDER_EDGE = new Vector3(SENDER_X + BLOB_RADIUS, 0.1, 0);
-const RECEIVER_CATCH = new Vector3(1.7, 0.1, 0.3);
+/** Blocked shots hit the shield's face, a little left of its center. */
+const SHIELD_FACE = new Vector3(SHIELD.x - 0.25, 0.25, SHIELD_FRONT_Z + 0.2);
+/** Delivered shots land on the Receiver bean's face, arcing high enough to clear the shield. */
+const RECEIVER_FACE = new Vector3(3.6, 0.55, -0.4);
+const DELIVERED_ARC = 1.7;
 /** Minimum gap between shots, so a burst of messages doesn't fire all at once. */
 const SHOT_GAP_MS = 600;
 /**
@@ -26,10 +29,10 @@ const MAX_QUEUED = 5;
 const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
 /**
  * Half the width and height of world space, around the origin the camera
- * looks at, that must stay in view: the sender bean, T-Guard's box and hand
- * (x about 1.1 to 3.3, fingertips at y about 1.8), the Receiver bean behind
- * and right of it (x up to about 4.55), the shot arc and "Blocked" stamp,
- * and the labels (y about -1.75 to 1.5), plus a margin.
+ * looks at, that must stay in view: the sender bean, T-Guard's shield (x about
+ * 1.2 to 3.2, y about -1 to 1.1), the Receiver bean behind and right of it (x up
+ * to about 4.55), the shot arcs (delivered ones peak near y 2) and "Blocked"
+ * stamp, and the labels (y about -1.75), plus a margin.
  */
 const FRAME_HALF_W = 5.1;
 const FRAME_HALF_H = 2.1;
@@ -43,21 +46,16 @@ interface Shot {
 }
 
 /**
- * performance.now() of the last message delivered to each side, and the
- * Receiver's current slap. The blob and hand read these in useFrame to
- * animate; shots mark them.
+ * performance.now() of the last message delivered to the Receiver and of the
+ * last one blocked by the shield. The beans and shield read these in useFrame
+ * to animate; shots mark them.
  */
 function createHitClock() {
-  const at = { victim: { current: 0 }, sender: { current: 0 } };
-  const slap = { current: { at: 0, clip: "slap" } as SlapState };
+  const at = { victim: { current: 0 }, sender: { current: 0 }, shield: { current: 0 } };
   return {
     at,
-    slap,
     mark(kind: keyof typeof at) {
       at[kind].current = performance.now();
-    },
-    startSlap(clip: SlapName) {
-      slap.current = { at: performance.now(), clip };
     },
   };
 }
@@ -99,7 +97,7 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
   // Stable callbacks so memoized shots already in flight skip re-rendering
   // when a shot is added or removed.
   const onArrive = useCallback(() => hits.mark("victim"), [hits]);
-  const onBlocked = useCallback((clip: SlapName) => hits.startSlap(clip), [hits]);
+  const onBlocked = useCallback(() => hits.mark("shield"), [hits]);
   const onDone = useCallback((key: number) => {
     setShots((s) => s.filter((x) => x.key !== key));
   }, []);
@@ -110,7 +108,8 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
       shotKey={key}
       message={message}
       from={SENDER_EDGE}
-      to={RECEIVER_CATCH}
+      to={message.blocked ? SHIELD_FACE : RECEIVER_FACE}
+      arc={message.blocked ? undefined : DELIVERED_ARC}
       onArrive={onArrive}
       onBlocked={onBlocked}
       onDone={onDone}
@@ -182,8 +181,8 @@ function BlobLabel({ text, className, ref }: { text: string; className: string; 
 
 /**
  * The scene band on /messages: every message the page receives flies from the
- * sender bean to T-Guard's hand; the hand slaps blocked ones away, and
- * delivered ones make the Receiver bean behind it bounce.
+ * sender bean. Blocked ones bounce off T-Guard's pink shield; delivered ones
+ * arc over it onto the Receiver bean, which bounces.
  * It renders the gateway's decision and never makes one.
  */
 export default function Scene({ feed }: { feed: ShotFeed }) {
@@ -199,14 +198,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
     <div className="relative h-full w-full bg-paper">
       {/* No `shadows`: nothing receives a shadow map. ContactShadows draws the
           ground shadow on its own. */}
-      {/* Local clipping cuts the hand off at the top of its box. */}
-      <Canvas
-        camera={CAMERA}
-        dpr={DPR}
-        onCreated={({ gl }) => {
-          gl.localClippingEnabled = true;
-        }}
-      >
+      <Canvas camera={CAMERA} dpr={DPR}>
         <FitCamera />
         <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
         <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
@@ -224,7 +216,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           phase={1.3}
           labelAnchor={senderAnchor}
         />
-        {/* The person T-Guard protects, behind the hand. Delivered messages make it bounce. */}
+        {/* The person T-Guard protects, behind the shield. Delivered messages make it bounce. */}
         <Blob
           position={RECEIVER_POSITION}
           color="#f472b6"
@@ -233,9 +225,9 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           phase={0.6}
           labelAnchor={receiverAnchor}
         />
-        {/* The hand and bubble images load once; the sender blob doesn't wait on them. */}
+        <Shield blockedAt={hits.at.shield} labelAnchor={victimAnchor} />
+        {/* The bubble images load once; the beans and shield don't wait on them. */}
         <Suspense fallback={null}>
-          <Hand hitAt={hits.at.victim} slap={hits.slap} labelAnchor={victimAnchor} />
           <Shots feed={feed} hits={hits} />
         </Suspense>
 

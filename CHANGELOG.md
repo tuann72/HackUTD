@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: A pink shield replaces T-Guard's hand and box
+
+- **Decision (Tuan):** replace the hand and box with a shield icon, "pink like T-Mobile", in the same position. The shield is Lucide's `shield-check` (lucide.dev, ISC license): the outline is filled and extruded into a 3D badge in T-Mobile magenta `#e20074`, with the check mark in white on its face (`apps/web/components/scene/Shield.tsx`, built with three.js `SVGLoader`). It floats and sways and keeps the "T-Guard" label underneath.
+- **Behavior:** a blocked message flies to the shield's face, gets the "Potential scam · Blocked" stamp, and bounces back toward the sender while the shield punches, rocks back, glows and throws a pink ring. A delivered message arcs over the shield and lands on the Receiver bean, which bounces.
+- **Removed:** `Hand.tsx`, `slap.ts` and its tests, and `public/scene/hand/*.webp`. They came from the T-GUARD offline prototype and nothing else used them.
+
 ### 2026-11-08: No em dashes, sortable senders, a "T" on the landing page
 
 - **Decision (Tuan):** no em dashes in the UI. The wordmark and box text read "T-GUARD", missing values show "N/A", and ranges use "to" (score buckets, the dashboard's time span, simulate error messages). Code comments and message-bank sample texts are not UI and were left alone.
