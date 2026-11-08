@@ -11,7 +11,9 @@ import type { SlapName } from "./slap";
 import type { SceneMessage, ShotFeed } from "./feed";
 
 const SENDER_X = -3.2;
-/** Shots leave the sender blob's surface and land in the Receiver's hand, a little in front of it. */
+/** The Receiver bean stands behind T-Guard's hand box (further from the camera), peeking out on the right. */
+const RECEIVER_POSITION: [number, number, number] = [4.05, 0, -1.4];
+/** Shots leave the sender bean's side and land in T-Guard's hand, a little in front of it. */
 const SENDER_EDGE = new Vector3(SENDER_X + BLOB_RADIUS, 0.1, 0);
 const RECEIVER_CATCH = new Vector3(2.5, 0.1, 0.3);
 /** Minimum gap between shots, so a burst of messages doesn't fire all at once. */
@@ -24,9 +26,10 @@ const MAX_QUEUED = 5;
 const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
 /**
  * Half the width and height of world space, around the origin the camera
- * looks at, that must stay in view: the sender blob, the Receiver's box and
- * hand (x -4.1 to 4.1, fingertips at y about 1.8), the shot arc and "Blocked"
- * stamp, and the labels below (y about -1.75), plus a margin.
+ * looks at, that must stay in view: the sender bean, T-Guard's box and hand
+ * (fingertips at y about 1.8), the Receiver bean behind it (x up to about 4.65,
+ * further back so it projects inside that), the shot arc and "Blocked" stamp,
+ * and the labels (y about -1.75 to 1.5), plus a margin.
  */
 const FRAME_HALF_W = 5.1;
 const FRAME_HALF_H = 2.1;
@@ -179,7 +182,8 @@ function BlobLabel({ text, className, ref }: { text: string; className: string; 
 
 /**
  * The scene band on /messages: every message the page receives flies from the
- * sender to the Receiver's hand; the hand slaps blocked ones away.
+ * sender bean to T-Guard's hand; the hand slaps blocked ones away, and
+ * delivered ones make the Receiver bean behind it bounce.
  * It renders the gateway's decision and never makes one.
  */
 export default function Scene({ feed }: { feed: ShotFeed }) {
@@ -188,6 +192,8 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
   const victimAnchor = useRef<Object3D>(null);
   const senderLabel = useRef<HTMLSpanElement>(null);
   const victimLabel = useRef<HTMLSpanElement>(null);
+  const receiverAnchor = useRef<Object3D>(null);
+  const receiverLabel = useRef<HTMLSpanElement>(null);
 
   return (
     <div className="relative h-full w-full bg-paper">
@@ -204,6 +210,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
         <FitCamera />
         <TrackLabel anchorRef={senderAnchor} labelRef={senderLabel} />
         <TrackLabel anchorRef={victimAnchor} labelRef={victimLabel} />
+        <TrackLabel anchorRef={receiverAnchor} labelRef={receiverLabel} />
         <color attach="background" args={["#f2f0e9"]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 6, 5]} intensity={1.6} />
@@ -217,6 +224,16 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
           phase={1.3}
           labelAnchor={senderAnchor}
         />
+        {/* The person T-Guard protects, behind the hand. Delivered messages make it bounce. */}
+        <Blob
+          position={RECEIVER_POSITION}
+          color="#f472b6"
+          facing={-1}
+          hitAt={hits.at.victim}
+          phase={0.6}
+          labelAnchor={receiverAnchor}
+          labelAt="above"
+        />
         {/* The hand and bubble images load once; the sender blob doesn't wait on them. */}
         <Suspense fallback={null}>
           <Hand hitAt={hits.at.victim} slap={hits.slap} labelAnchor={victimAnchor} />
@@ -226,7 +243,8 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
         <ContactShadows position={[0, -1.1, 0]} opacity={0.5} scale={14} blur={2.4} far={3} resolution={256} />
       </Canvas>
       <BlobLabel ref={senderLabel} text="Sender" className="text-paper" />
-      <BlobLabel ref={victimLabel} text="Receiver" className="text-hot" />
+      <BlobLabel ref={victimLabel} text="T-Guard" className="text-hot" />
+      <BlobLabel ref={receiverLabel} text="Receiver" className="text-paper" />
     </div>
   );
 }

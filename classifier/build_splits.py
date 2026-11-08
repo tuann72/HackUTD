@@ -143,7 +143,7 @@ def main() -> None:
     base = pd.read_csv(data / "scam_categories_100k_full.csv", usecols=COLUMNS)
     # Template rows: split by scenario, 15% to val.
     threats = pd.concat([pd.read_csv(data / name, usecols=COLUMNS + ["scenario"])
-                         for name in ("potential_threat_synthetic.csv", "gov_health_id_scam_synthetic.csv", "money_request_synthetic.csv")],
+                         for name in ("potential_threat_synthetic.csv", "gov_health_id_scam_synthetic.csv", "money_request_synthetic.csv", "official_ham_synthetic.csv")],
                         ignore_index=True)
     threat_eval = pd.read_csv(data / "potential_threat_eval.csv", usecols=COLUMNS + ["scenario"])
     train_val, test, held_threats, stats = clean_splits(base, threats, threat_eval)

@@ -16,6 +16,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Threshold (Timothy):** the VM's `BLOCK_THRESHOLD` is **0.70**, a stopgap for false blocks that lowering would bring back. The repo default stays 0.5.
 - **Known limits:** "Can you lend me $6000 for the bus fare?" still scores 19% and is delivered with the warning. "my car broke down, can you zelle me $2500 asap" dropped from 76% to 37%, also delivered with the warning. "Your order is ready for pickup at the pharmacy" scores 72%, so it's a false block at 0.70.
 
+### 2026-11-08: Thicker fonts, bean characters, T-Guard box label
+
+- **Decision (Tuan):** fonts were too thin. Body text and `font-label` are **Inter** (body weight 500, labels bold), replacing Arial and Courier New. Archivo was tried first and was hard to read. Anton stays for the big counter numbers.
+- **Buttons:** every enabled button shows a pointer cursor (Tailwind 4 defaults buttons to the arrow) and a visible hover. The Simulate buttons lost their ↗ arrows.
+- **Scene:** the sender sphere is now a jellybean character (capsule body, face patch with big eyes, stubby arms and feet; an original bean in a party-game style, not any game's art). A pink Receiver bean stands behind the hand, labeled above its head, and bounces when a message is delivered. The "T—GUARD / Active defense system" text is gone from the pink box; the label under the box says "T-Guard".
+
 ### 2026-11-08: `/messages` restyled to match the T-GUARD prototype
 
 - **Decision (Tuan):** make `/messages` match the T-GUARD offline prototype (the source of the scene's hand) and the landing page. Palette from the prototype's `demo/style.css`: paper `#f2f0e9`, ink `#211e20`, hot pink `#ef167d`, rules `#c9c6c0`, cards `#fffdf9`. Anton for big numbers, Courier New for small uppercase labels. These are Tailwind theme tokens in `app/globals.css` (`bg-paper`, `text-ink`, `text-hot`, `border-rule`, `bg-card`, `text-muted`, `font-display`, `font-label`).

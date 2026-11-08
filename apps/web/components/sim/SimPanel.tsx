@@ -9,7 +9,7 @@ const field =
   "w-full border border-rule bg-card px-2 py-1 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-hot";
 /** The prototype's outlined control buttons: ink on hover. */
 const button =
-  "group flex items-start justify-between gap-3 border border-rule px-3 py-3 text-left hover:border-ink hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-rule disabled:hover:bg-transparent disabled:hover:text-ink";
+  "group flex items-start gap-3 border border-rule px-3 py-3 text-left transition-colors hover:border-ink hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-rule disabled:hover:bg-transparent disabled:hover:text-ink";
 
 const newSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -45,7 +45,7 @@ export function SimPanel() {
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((o) => !o)}
-          className="-mx-1 flex items-center gap-2 px-1 uppercase hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
+          className="-mx-1 flex items-center gap-2 px-1 uppercase underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
         >
           <svg aria-hidden viewBox="0 0 16 16" className={`size-3 transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`}>
             <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -88,9 +88,6 @@ export function SimPanel() {
                       : p.description}
                   </span>
                   </span>
-                  <span aria-hidden className="font-label text-sm">
-                    ↗
-                  </span>
                 </button>
               );
             })}
@@ -101,7 +98,7 @@ export function SimPanel() {
               <span>
                 {run.label}: {run.sent}/{run.total} sent
               </span>
-              <button type="button" onClick={stop} className="border border-hot px-2 py-0.5 font-bold text-hot hover:bg-hot hover:text-white">
+              <button type="button" onClick={stop} className="border border-hot px-2 py-0.5 font-bold text-hot transition-colors hover:bg-hot hover:text-white">
                 Stop
               </button>
             </div>
@@ -132,7 +129,7 @@ export function SimPanel() {
                   </option>
                 ))}
               </select>
-              <button type="submit" disabled={!enabled || busy || !text.trim()} className="bg-ink px-3 py-1.5 font-label text-[10px] font-bold uppercase tracking-[0.06em] text-paper hover:bg-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink">
+              <button type="submit" disabled={!enabled || busy || !text.trim()} className="bg-ink px-3 py-1.5 font-label text-[10px] font-bold uppercase tracking-[0.06em] text-paper transition-colors hover:bg-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink">
                 Send
               </button>
             </div>
