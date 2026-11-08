@@ -111,18 +111,28 @@ Each send should print status `200`:
 
 ## 6. Connect Photon (photon-imessage task 1.2) and iMessage from a real phone
 
-Register the webhook **on the VM** with `--write-env`, so the signing secret never leaves it. `read -s` keeps the project secret out of shell history. The project id and secret are in the Photon dashboard under Settings, or from `photon projects show`.
+The team's project is on **Photon 2.0 / Beta** ([app.beta.photon.codes](https://app.beta.photon.codes)). This is the same procedure as the Vercel route, with the VM's URL. The deployed VM's webhook URL is `https://149-28-243-66.sslip.io/webhooks/photon`.
+
+You need two values from the Beta dashboard:
+
+- the **project id**, which starts with `pho_prj_`
+- an **API key**, which starts with `pho_ask_` or `pho_sk_`. It goes in `PHOTON_PROJECT_SECRET`, and it's not the same as a Stable project secret
+
+Register the webhook **on the VM** with `--write-env`, so the signing secret (`whsec_...`) never leaves it. `read -s` keeps the key out of shell history. The script picks the Beta API from the `pho_prj_` id.
 
 ```bash
 cd /opt/t-gate/HackUTD/services/gateway
-read -rp 'Photon project id: ' PHOTON_PROJECT_ID; read -rsp 'Photon project secret: ' PHOTON_PROJECT_SECRET; echo
-sudo -u tgate env PHOTON_PROJECT_ID="$PHOTON_PROJECT_ID" PHOTON_PROJECT_SECRET="$PHOTON_PROJECT_SECRET" \
-  npm run photon:webhook -- register https://<gateway-host>/webhooks/photon --write-env
-unset PHOTON_PROJECT_SECRET
+read -rp 'Photon project id: ' PHOTON_PROJECT_ID; read -rsp 'Photon API key: ' PHOTON_PROJECT_SECRET; echo
+export PHOTON_PROJECT_ID PHOTON_PROJECT_SECRET
+sudo -E -u tgate npm run photon:webhook -- list
+sudo -E -u tgate npm run photon:webhook -- register https://149-28-243-66.sslip.io/webhooks/photon --write-env
+unset PHOTON_PROJECT_ID PHOTON_PROJECT_SECRET
 sudo systemctl restart t-gate-gateway
 ```
 
-You can also run `npm run photon:webhook -- register <url>` on your laptop. It prints the secret once; copy it into the VM's `.env` yourself. `list` and `delete <id>` manage existing webhooks. To rotate the secret, register again, update `.env`, then delete the old webhook.
+If `list` already shows the VM's URL, don't register it twice. Run `rotate <id> --write-env` instead of `register`, so the VM gets a secret that matches. On Beta, the old secret keeps working for one more hour after a rotation. `list` and `delete <id>` manage destinations. A Vercel destination in the list can stay: each destination gets its own copy of every message and has its own signing secret.
+
+For a project on Stable (a project id without `pho_prj_`), the same commands use the Stable API, with the Stable project secret in place of the API key.
 
 After this, the simulator only works if it signs with the real secret.
 
