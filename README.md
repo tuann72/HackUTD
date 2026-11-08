@@ -122,6 +122,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Message UI | Remove the Voice results page, its API route, store and contracts | `chore/remove-voice-page` | Tuan + Claude Code | Done | [#89](https://github.com/tuann72/HackUTD/pull/89) |
 | Message UI | Redesign /messages (inbox and blocked in a filterable left panel, fits the screen) and /dashboard, with Motion | `feat/web-ui-revamp` | Tuan + Claude Code | Done | [#88](https://github.com/tuann72/HackUTD/pull/88) |
 | Sender blocklist | Turn the blocklist on; password-protected (4321) Unblock button per blocked message and Clear blocks button that unblocks every sender | `feat/sender-blocklist-clear` | Tuan + Claude Code (subagents) | Done | [#86](https://github.com/tuann72/HackUTD/pull/86) |
+| Sender blocklist | Remove the Unblock and Clear blocks buttons from the web UI (not working) | `fix/web-remove-unblock-buttons` | Tuan + Claude Code | In review | [#93](https://github.com/tuann72/HackUTD/pull/93) |
 | Project docs | Add LiveKit to the tech stack (AGENTS.md, README) and the diagram | `docs/livekit-stack` | Tuan + Claude Code | Done | [#85](https://github.com/tuann72/HackUTD/pull/85) |
 | Project docs | Architecture diagram in the README; sync docs with #82 | `docs/architecture-diagram` | Tuan + Claude Code | Done | — |
 | Project docs | Sync `AGENTS.md` and the README trackers with merges #63 to #81 | `docs/sync-agents-readme` | Tuan + Claude Code | Done | — |

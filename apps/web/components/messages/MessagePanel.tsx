@@ -85,23 +85,19 @@ function Chip({ on, title, onClick, children }: { on: boolean; title: string; on
 /**
  * The left panel on /messages: tabs for All, Inbox and Blocked, then search, a
  * category menu, flag chips and sort, then the list itself (which scrolls on its own
- * on wide screens). `tools` sits in a footer under the list (Clear chats, Clear blocks).
+ * on wide screens). `tools` sits in a footer under the list (Clear chats).
  * On wide screens a chevron button collapses it to a thin strip at the left edge.
  */
 export function MessagePanel({
   messages,
   loading,
   now,
-  onUnblock,
-  unblockOff,
   tools,
   status,
 }: {
   messages: Message[];
   loading: boolean;
   now: number | null;
-  onUnblock: (m: Message) => void;
-  unblockOff: string | null;
   tools?: ReactNode;
   status?: ReactNode;
 }) {
@@ -294,7 +290,7 @@ export function MessagePanel({
                     exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
                     transition={{ type: "spring", stiffness: 420, damping: 36 }}
                   >
-                    <MessageCard message={m} now={now} onUnblock={onUnblock} unblockOff={unblockOff} />
+                    <MessageCard message={m} now={now} />
                   </motion.li>
                 ))}
               </AnimatePresence>

@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Unblock and Clear blocks buttons removed
+
+Tuan asked to remove the **Unblock** button on blocked cards and the **Clear blocks** button next to Clear chats, because they weren't working. Only the web UI changed: `useBlocklist` and its label test are gone and the password prompt now serves only Clear chats. The gateway and Vercel routes (`POST /api/messages/:id/unblock`, `GET /api/blocklist`, `POST /api/blocklist/clear`) and the web client's `blockActions` stay as they are. The sender blocklist itself stays on. To restore a message, use `npm run message:restore` (`ADMIN_TOKEN`). **TBD:** why the buttons failed, and whether to bring them back once fixed.
+
 ### 2026-11-08: Live call with the victim on a real phone and a whisper warning
 
 - **Decision (LacsJP27):** the victim joins the call on a **real phone**: the scammer calls the Photon voice number, and the voice-guard worker dials the victim into the same LiveKit room over an outbound SIP trunk. The warning is a **spoken whisper** only the victim hears, not a text.
