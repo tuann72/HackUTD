@@ -15,8 +15,13 @@ export function formatRelative(iso: string, nowMs: number): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-/** Score (P(scam), 0..1) as a whole percentage, clamped. */
+/**
+ * Score (P(scam), 0..1) as a percentage with two decimals, clamped. Truncated,
+ * not rounded, so an uncertain score never shows as 100.00%. The epsilon
+ * absorbs float error (0.29 * 10000 = 2899.9999…).
+ */
 export function formatScore(score: number): string {
   if (!Number.isFinite(score)) return "–";
-  return `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%`;
+  const clamped = Math.max(0, Math.min(1, score));
+  return `${(Math.floor(clamped * 10000 + 1e-6) / 100).toFixed(2)}%`;
 }
