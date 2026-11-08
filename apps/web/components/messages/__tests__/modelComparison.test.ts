@@ -18,7 +18,7 @@ describe("model comparison", () => {
   it("renders the card's model name and every model, closed by default", () => {
     const html = renderToStaticMarkup(createElement(ModelComparison, { model: "stacked-lr-category@0.5" }));
     expect(html).toContain("stacked-lr-category@0.5");
-    for (const r of MODEL_RESULTS) expect(html).toContain(r.name.replace("+", "+"));
-    expect(html).not.toMatch(/<details[^>]* open/);
+    for (const r of MODEL_RESULTS) expect(html).toContain(r.name);
+    expect(html).not.toMatch(/<details[^>]*sopen[s=>]/);
   });
 });
