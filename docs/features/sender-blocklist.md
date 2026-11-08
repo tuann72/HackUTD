@@ -2,7 +2,7 @@
 
 - **Slug:** `sender-blocklist`
 - **Phase:** MVP
-- **Status:** In progress (plan)
+- **Status:** In progress (plan and task 1.2 merged)
 - **Owner:** Timothy
 
 ## Goal
@@ -67,7 +67,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 1.1 | Contract: add reason `sender_blocked`; sync the web app's copy and render it | — | 1.2, 1.3, 1.4 | Not started | | | |
-| 1.2 | Gateway: fingerprint + blocklist module (store interface, MongoDB implementation, in-memory fake, tests) | — | 1.1, 1.3, 1.4 | Not started | | | |
+| 1.2 | Gateway: fingerprint + blocklist module (store interface, MongoDB implementation, in-memory fake, tests) | — | 1.1, 1.3, 1.4 | In review | `feat/sender-blocklist-module` | Timothy + Claude Code | [#23](https://github.com/tuann72/HackUTD/pull/23) |
 | 1.3 | Atlas setup: M0 cluster, database user, IP allowlist, connection string in `.env` (person, not agent) | — | 1.1, 1.2, 1.4 | Not started | | Timothy | |
 | 1.4 | Vultr: train the model and deploy the classifier ([classifier plan](classifier-service.md), tasks 2.1 and 3.x) | — | 1.1, 1.2, 1.3 | Not started | | Tuan | |
 
@@ -120,4 +120,5 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 ## Progress notes
 
+- **2026-11-08:** Task 1.2 built: `services/gateway/src/blocklist.ts` (`MemoryBlocklist`, `MongoBlocklist`, keyed-hash fingerprints) and the `MONGODB_*`, `FINGERPRINT_SECRET`, `SENDER_BLOCK_*` settings. Not wired into the request flow yet (task 2.1). Tests: 54 pass; the 5 MongoDB tests also pass against a local `mongo:8` container (`MONGODB_TEST_URI`). Not yet run against Atlas (needs task 1.3).
 - **2026-11-08:** Plan written (Timothy + Claude Code). Decisions: fingerprint = keyed hash of the number + keyed hash of the normalized text; blocklist on strikes or a very high score, with expiry and an override; SQLite stays, Atlas adds fingerprints only. Nothing is set up on Vultr or Atlas yet.
