@@ -1,0 +1,25 @@
+{
+  "name": "@t-gate/voice-guard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx src/agent.ts dev",
+    "start": "tsx src/agent.ts start",
+    "connect": "tsx src/agent.ts connect",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@livekit/agents": "^1.9.3",
+    "@livekit/rtc-node": "^1.1.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

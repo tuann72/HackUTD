@@ -6,6 +6,13 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Add the caller-only LiveKit STT worker
+
+- **What:** add `services/voice-guard/`, a TypeScript LiveKit Agents worker that subscribes only to SIP participant audio, streams to AssemblyAI Universal-Streaming through LiveKit Inference, buffers final transcript text in memory, and calls the existing classifier after the audio track ends using a random UUID as `messageId`.
+- **Privacy and failure behavior:** capture is disabled unless `VOICE_GUARD_CAPTURE_ENABLED=true`; audio and transcripts are not persisted, and transcript text is not logged. STT/classifier errors are caught so the worker does not explicitly terminate the call. No call-result store or Vercel display is added.
+- **Current status:** `npm run typecheck` passes. The worker is not deployed or attached to the SIP dispatch rule; Stage 1.1 audio verification and Stage 1.2 live transcription remain in progress. No test call or inference usage test was run.
+- **Reference:** [LiveKit job lifecycle and raw audio track processing](https://docs.livekit.io/agents/server/job/).
+
 ### 2026-11-08: Select STT for the voice scam guard
 
 - **Decision (user):** use AssemblyAI Universal-Streaming through LiveKit Inference for the caller-only voice prototype. The model ID is `assemblyai/universal-streaming`; English is sufficient for the planned scripted proof.
