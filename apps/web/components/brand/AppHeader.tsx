@@ -9,7 +9,6 @@ import { ShieldLetter } from "./ShieldLetter";
 const NAV = [
   { href: "/messages", label: "Messages" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/voice", label: "Voice results" },
 ] as const;
 
 /**
