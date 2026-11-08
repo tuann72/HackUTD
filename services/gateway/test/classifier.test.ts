@@ -95,7 +95,7 @@ describe('HttpClassifier', () => {
 
   it('drops highlight spans that do not fit the message', async () => {
     const fake = await startFakeClassifier({
-      respond: (b) => ({ messageId: b.messageId, label: 'legit', score: 0.1, category: null, model: 'x', highlights: [{ start: 0, end: 99, text: 'x', weight: 1 }, { start: 0, end: 2, text: 'hi', weight: 1 }] }),
+      respond: (b) => ({ messageId: b.messageId, label: 'legit', score: 0.1, category: null, model: 'x', highlights: [{ start: 0, end: 99, text: 'x', weight: 1 }, { start: 1, end: 1, text: '', weight: 1 }, { start: 0, end: 2, text: 'hi', weight: 1 }] }),
     });
     close = fake.close;
     const v = await new HttpClassifier({ baseUrl: fake.url, timeoutMs: 1000 }).classify({ messageId: 'm', text: 'hi there' });

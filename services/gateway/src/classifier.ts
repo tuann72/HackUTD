@@ -190,7 +190,7 @@ export function parseVerdict(json: unknown, input: ClassifyInput): Verdict {
     const ok =
       typeof x === 'object' && x !== null &&
       Number.isInteger(x.start) && Number.isInteger(x.end) &&
-      (x.start as number) >= 0 && (x.start as number) <= (x.end as number) && (x.end as number) <= input.text.length &&
+      (x.start as number) >= 0 && (x.start as number) < (x.end as number) && (x.end as number) <= input.text.length &&
       typeof x.weight === 'number' && Number.isFinite(x.weight);
     if (!ok) continue; // drop spans that don't fit the message rather than show wrong highlights
     const start = x.start as number;
