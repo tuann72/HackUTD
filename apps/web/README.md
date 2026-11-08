@@ -6,6 +6,7 @@ Next.js 16 (App Router, React 19, Tailwind 4). It hosts:
 |---|---|---|
 | `/` | Landing page (T-Guard title, tagline, color blocks); **Start** opens `/messages` | |
 | `/messages` | The 3D scene band on top, then the MVP message list: inbox (delivered) and blocked. One `useMessages` poll feeds both | [`twilio-mvp.md`](../../docs/features/twilio-mvp.md) tasks 1.3 and 2.2, [`initial-3d-scene.md`](../../docs/features/initial-3d-scene.md) task 3.4 |
+| `/dashboard` | Overall analytics over the latest messages (`lib/messages/stats.ts`): totals, block rate, average score, most active (masked) numbers, scam categories, message types, score spread, outcomes and reasons. Linked from the **Dashboard** button on `/messages` | |
 | `/scene` | Redirects to `/messages` (`next.config.ts`) | |
 
 The scene's message bubbles are the images in `public/scene/` (`bubble.svg`, `bubble-scam.svg`). Replace those files to change the art.

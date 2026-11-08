@@ -6,6 +6,14 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Harmless official-sounding texts, model v0.5
+
+- **Problem (Timothy):** the 600 government, IRS, ID and health scam rows had no harmless counterparts, so words like "IRS", "Medicare" or "prescription" could become scam cues by themselves, the way "free" did. "Your order is ready for pickup at the pharmacy" scored 72%.
+- **Data:** `data/official_ham_synthetic.csv`, 700 label-0 template rows from `data/build_official_ham_synthetic.py`: taxes, government offices, IDs, doctors, pharmacy and appointment notices, with no threat, payment demand, link or request for ID numbers. 687 survive `build_splits.py`.
+- **Model `stacked-lr-category@0.5`, same cleaned test of 3,068 real messages, v0.4 → v0.5:** at the live cutoff 0.70, false blocks 17 → 17 and missed scams 45 → 43. At 0.5, false blocks 24 → 25, missed scams 29 → 31, SMS F1 0.959 → 0.955, ECE 0.008 → 0.007. These differences are within a few messages, so treat the two as tied on real text. Threat check file, blocked: 96.6% → 98.3%; hard negatives blocked 0% on both.
+- **Hand-written check, none in training, small and agent-written:** official-sounding harmless texts at or over 0.5: 1 of 12 → 0 of 12 (the pharmacy text dropped from 72% to 3%). Matching scams caught at 0.70: 7 of 8 → 8 of 8. Ordinary "free" texts over 0.5: 2 of 18 → 3 of 18, none over 0.77.
+- **Known limits:** "Can you lend me $6000 for the bus fare?" scores 24% and "my car broke down, can you zelle me $2500 asap" 32%, so both are delivered with the money warning. "Your health plan is cancelled..." is blocked at 72%, just over the threshold, and is named Health & Pharmacy.
+
 ### 2026-11-08: Calm money requests: more data, a warning rule, block threshold 0.70
 
 - **Problem (Timothy):** "Can you lend me $6000 for the bus fare?" scored 0%. "lend me" appeared in no training row, and the model can't weigh amounts. Separately, ordinary texts like "Free at last!" were blocked because "free" alone read as a scam cue.
@@ -15,6 +23,11 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Warning rule (`services/gateway/src/money-rule.ts`, `MONEY_WARN_AMOUNT`, default $500):** a delivered message that asks the reader for at least that amount gets `verdict.warning: "large_money_request"`, and the web card shows a note. It never blocks, since real family ask for money too. Additive to query API v1.
 - **Threshold (Timothy):** the VM's `BLOCK_THRESHOLD` is **0.70**, a stopgap for false blocks that lowering would bring back. The repo default stays 0.5.
 - **Known limits:** "Can you lend me $6000 for the bus fare?" still scores 19% and is delivered with the warning. "my car broke down, can you zelle me $2500 asap" dropped from 76% to 37%, also delivered with the warning. "Your order is ready for pickup at the pharmacy" scores 72%, so it's a false block at 0.70.
+
+### 2026-11-08: Dashboard page; T-Guard moved left of the Receiver
+
+- **Decision (Tuan):** a **Dashboard** button left of Clear chats opens `/dashboard`, "overall analytics based on the messages sent and what they are composed of", noting the most prevalent values. It counts the gateway's decisions in the polled data (the latest 100 messages): totals, block rate, average scam score, the most active senders (masked numbers, with blocked counts), scam categories of blocked messages, message types, a score histogram, outcomes and reasons. The top row of each breakdown is tagged "Most common". Aggregation is a pure function (`lib/messages/stats.ts`, tested).
+- **Scene:** T-Guard's box and hand moved 0.8 units left so they no longer hide the Receiver bean; the bean moved a little forward and its label is under its feet like the Sender's. The "T—GUARD / Active defense system" text is back on the box, which is still labeled "T-Guard" underneath.
 
 ### 2026-11-08: Thicker fonts, bean characters, T-Guard box label
 

@@ -186,6 +186,12 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 
 ---
 
+## 8. Harmless official-sounding texts (`official_ham_synthetic.csv`)
+
+700 label-0 template rows from `build_official_ham_synthetic.py` (seeded, stdlib only): taxes, government offices, IDs, doctors, pharmacy and appointment notices, with no threat, payment demand, link or request for ID numbers. They are the harmless counterparts of `gov_health_id_scam_synthetic.csv`. `classifier/build_splits.py` merges them and sends 15% of each scenario to val; 687 survive dedupe. Same caveat as the other templates: judge on real messages, not on these.
+
+---
+
 ## Where the data comes from
 
 | `source` value | origin | style |

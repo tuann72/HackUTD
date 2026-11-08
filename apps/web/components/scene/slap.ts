@@ -43,7 +43,7 @@ const ANTICIPATION = -0.22;
  * `PALM_RADIUS` above the pivot along the arm, as in the prototype (205 of 410 px).
  */
 export const HAND = {
-  pivotX: 2.98,
+  pivotX: 2.18,
   pivotY: -0.39,
   size: 2.2,
   palmRadius: 1.1,
