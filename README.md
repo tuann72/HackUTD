@@ -4,11 +4,81 @@ T-Guard detects likely scam messages and warns the recipient. Built for HackUTD'
 
 The MVP uses one Photon iMessage line as the "victim". Real iMessages reach the gateway through Photon's webhooks, and a simulated "perpetrator" sends scam and legitimate messages from a message bank as Photon-format webhook calls. T-Guard classifies each message the victim receives as a potential scam or legitimate, blocks potential scams before they reach the victim's virtual inbox, and shows the result in the web app.
 
-Proposed, not final: the victim gets a short "potential scam blocked" notice with a link to a blocked-scams panel. The panel shows why each message was blocked, its category, and the scam keywords highlighted. For the MVP, a basic Next.js page lists delivered and blocked messages. A 3D scene (React Three Fiber) is planned for later. The stack is TypeScript for the gateway, simulator and web app, and Python for the classifier: MiniLM, trained and served on Vultr ([`classifier/`](classifier/README.md)).
+For the MVP, a Next.js page at `/messages` shows a 3D scene (React Three Fiber) above the delivered and blocked lists, with a Simulate sidebar and a dashboard at `/dashboard`. The stack is TypeScript for the gateway, simulator, voice worker and web app, and Python for the classifier: a stacked TF-IDF + MiniLM model served on Vultr ([`classifier/`](classifier/README.md)). Proposed, not final: a "potential scam blocked" notice that links to a blocked-scams panel with highlighted keywords.
 
-Status: **building the MVP**. On `main`: the classifier code, the query API contract, the `apps/web` scaffold, the message bank and perpetrator simulator (`services/perpetrator-sim/`), the gateway (`services/gateway/`), the gateway's Vultr deploy runbook, the sender-blocklist module, and the web UI: one page at `/` with the 3D scene above the inbox/blocked lists. Next: the real classifier (2.3), deployment (3.1) and wiring the sender blocklist into the gateway. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`CHANGELOG.md`](CHANGELOG.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset. The demo walkthrough is in [`docs/DEMO.md`](docs/DEMO.md).
+Status: **MVP working end to end.** On `main`: the gateway (`services/gateway/`) on a Vultr VM with the stacked classifier (`stacked-lr-category@0.5`, block threshold 0.70 on the VM), the web app on Vercel (landing page, `/messages`, `/dashboard`, and a backup Photon webhook), the perpetrator simulator and message bank, the money-request warning, the Nemotron review (off by default) and the sender blocklist (parked, off by default). The voice scam guard (`services/voice-guard/`) transcribes calls on LiveKit Cloud and sends transcripts to the gateway; its production redeploy is still pending. See [`AGENTS.md`](AGENTS.md) for project context and the working agreement, [`CHANGELOG.md`](CHANGELOG.md) for design decisions, and [`data/README.md`](data/README.md) for the dataset. The demo walkthrough is in [`docs/DEMO.md`](docs/DEMO.md).
 
 **Setting up accounts and credentials?** Start with [`docs/SETUP.md`](docs/SETUP.md) (Photon, Vultr, domain, Vercel, optional Atlas; Twilio isn't needed). Deploying the gateway: [`services/gateway/DEPLOY.md`](services/gateway/DEPLOY.md).
+
+## Architecture
+
+How the pieces connect on `main` (2026-11-08). Solid arrows are live paths; dotted ones are optional or off by default. The gateway alone decides deliver or block; the web app only reads and renders its decisions.
+
+```mermaid
+flowchart LR
+    subgraph Senders
+        iphone["iPhone<br/>(real iMessage)"]
+        caller["Phone caller"]
+        cli["perpetrator-sim CLI<br/>(TypeScript)"]
+    end
+
+    subgraph Photon["Photon"]
+        imsg["iMessage line<br/>(Spectrum webhooks)"]
+        sip["Voice line<br/>(SIP over TLS)"]
+    end
+
+    subgraph LiveKit["LiveKit Cloud"]
+        voice["voice-guard worker<br/>(LiveKit Agents, TypeScript)"]
+        stt["AssemblyAI STT<br/>(LiveKit Inference)"]
+    end
+
+    subgraph Vultr["Vultr VM"]
+        caddy["Caddy<br/>(HTTPS)"]
+        gw["Gateway<br/>(Hono, TypeScript)<br/>deliver / block policy"]
+        sqlite[("SQLite<br/>inbox + blocked log")]
+        clf["Classifier<br/>(FastAPI, Docker)<br/>stacked TF-IDF + MiniLM"]
+    end
+
+    subgraph Vercel["Vercel"]
+        web["Next.js web app<br/>/, /messages, /dashboard"]
+        sim["/api/simulate<br/>(signs server-side)"]
+        backup["Backup webhook<br/>/webhooks/photon + /api/messages"]
+    end
+
+    subgraph External["Other services"]
+        atlas[("MongoDB Atlas")]
+        nemo["NVIDIA Nemotron"]
+        nessie["Capital One Nessie<br/>(mock bank)"]
+    end
+
+    browser["Browser"]
+
+    iphone --> imsg
+    imsg -- "signed webhook" --> caddy
+    imsg -. "backup destination" .-> backup
+    cli -- "signed Photon-format webhook" --> caddy
+    caller --> sip -- "SIP" --> voice
+    voice <--> stt
+    voice -- "transcript as signed<br/>Photon-format webhook" --> caddy
+
+    caddy --> gw
+    gw -- "POST /classify<br/>(bearer token)" --> clf
+    gw --> sqlite
+    gw -. "review band and large money asks<br/>(REVIEWER, off by default)" .-> nemo
+    gw -. "read-only bank checks" .-> nessie
+    gw -. "sender blocklist<br/>(SENDER_BLOCKLIST, off)" .-> atlas
+
+    browser --> web
+    web -- "poll GET /api/messages<br/>DELETE /api/messages (Clear chats)" --> caddy
+    web --> sim -- "signed Photon-format webhook" --> caddy
+    backup -. "POST /classify" .-> clf
+    backup -.-> atlas
+```
+
+- **One decision path.** Real iMessages, simulated ones (CLI and the Simulate sidebar) and voice-call transcripts all arrive as signed Photon-format webhooks on `/webhooks/photon`, so the gateway handles them the same way: verify, dedupe, classify, apply policy (block threshold, review band, money warning), store, return `200`. It never replies to the sender.
+- **Only text leaves the gateway.** The classifier gets message text and an opaque id, never phone numbers. Nemotron sees only found flags, counts and short labels from the bank checks.
+- **Fail open.** If the classifier is down, the gateway delivers the message marked unverified.
+- **Web app.** It reads whichever gateway `NEXT_PUBLIC_API_URL` points at (the VM by default, or the Vercel backup). Its only writes are Clear chats and Simulate (see `AGENTS.md`, "Decoupling rules"). Training runs separately on a Vultr Cloud GPU instance (`classifier/`); the trained artifacts are copied to the VM.
 
 ## Feature board
 
@@ -22,7 +92,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
 | Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | Parked: wired but off by default, per-message blocking only (#22, #23, #27) |
 | Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (on `/messages` above the message lists, live polled data; magenta shield or hand guard, #14, #19, #68, #71) |
-| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | In progress: worker, after-call classifier and Vercel results merged (#63); Caddy classifier proxy (#78) and transcripts to the gateway (#82) in draft; production configuration remains |
+| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | In progress: STT worker on LiveKit Cloud (#63); transcripts go to the gateway webhook like simulated messages (#82). LiveKit Cloud redeploy with the gateway secrets remains |
 | Potential Threat synthetic data: threat, coercion and fake-emergency extortion texts, proposed label 8 | [potential-threat-data.md](docs/features/potential-threat-data.md) | MVP | Data merged (#43); label 8 is Threats & Extortion (Timothy) and the served model has 9 classes |
 | Simulation panel: sidebar buttons on `/messages` that send simulated iMessages to the gateway | [simulation-panel.md](docs/features/simulation-panel.md) | MVP | Done (#54; Rapid fire dataset #80) |
 | Nemotron review: second opinion with Nessie bank checks for the review band and large money asks | [nemotron-review.md](docs/features/nemotron-review.md) | MVP | Code merged (#59, #70); off by default behind `REVIEWER` |
@@ -35,9 +105,10 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Project docs | Architecture diagram in the README; sync docs with #82 | `docs/architecture-diagram` | Tuan + Claude Code | Done | — |
 | Project docs | Sync `AGENTS.md` and the README trackers with merges #63 to #81 | `docs/sync-agents-readme` | Tuan + Claude Code | Done | — |
-| Voice scam guard | Send each call transcript to the VM gateway as a signed Photon-format message, like the simulator | `feat/voice-scam-detection` | JP | In progress (draft) | [#82](https://github.com/tuann72/HackUTD/pull/82) |
-| Voice scam guard | Expose only `POST /classify` to LiveKit through the VM's Caddy | `fix/voice-classifier-proxy` | JP | In progress (draft) | [#78](https://github.com/tuann72/HackUTD/pull/78) |
+| Voice scam guard | Send each call transcript to the VM gateway as a signed Photon-format message, like the simulator | `feat/voice-scam-detection` | JP | Done | [#82](https://github.com/tuann72/HackUTD/pull/82) |
+| Voice scam guard | Expose only `POST /classify` to LiveKit through the VM's Caddy | `fix/voice-classifier-proxy` | JP | Draft (not needed for voice since #82) | [#78](https://github.com/tuann72/HackUTD/pull/78) |
 | Message UI | Model comparison table behind the model name on message cards | `feat/web-model-comparison` | lytx02 + Claude Code | Done | [#81](https://github.com/tuann72/HackUTD/pull/81) |
 | Message UI | Remove the Simulate target line and the dashboard's "Masked by the gateway" note | `feat/web-trim-copy-2` | Tuan + Claude Code | Done | [#79](https://github.com/tuann72/HackUTD/pull/79) |
 | Message UI | Rapid fire dataset: 200 complete sentences, 40% scam; Rapid fire draws from it | `feat/sim-rapid-dataset` | Tuan + Claude Code | Done | [#80](https://github.com/tuann72/HackUTD/pull/80) |
