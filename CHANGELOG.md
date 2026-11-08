@@ -6,6 +6,11 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: A "T" on the shield instead of the check mark; shield moved left
+
+- **Decision (Tuan):** put a "T" on the shield instead of the check mark, and move the shield a few pixels left. The T is a raised white block letter (crossbar over a stem) extruded on the shield's face. It is an original letterform, not T-Mobile's logo (the T with small squares beside it), which is their trademark; the magenta shield keeps the T-Mobile feel. The shield moved from x 2.2 to 1.9 world units (about 25 to 35 px).
+- **Wordmark (Tuan):** the "U" in "GUARD" is the magenta shield (`components/brand/ShieldLetter.tsx`, Lucide `shield` outline, filled `#e20074`) in the landing title and the `/messages` and `/dashboard` headers. Screen readers still read "U".
+
 ### 2026-11-08: A pink shield replaces T-Guard's hand and box
 
 - **Decision (Tuan):** replace the hand and box with a shield icon, "pink like T-Mobile", in the same position. The shield is Lucide's `shield-check` (lucide.dev, ISC license): the outline is filled and extruded into a 3D badge in T-Mobile magenta `#e20074`, with the check mark in white on its face (`apps/web/components/scene/Shield.tsx`, built with three.js `SVGLoader`). It floats and sways and keeps the "T-Guard" label underneath.

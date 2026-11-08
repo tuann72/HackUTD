@@ -30,7 +30,7 @@ const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
 /**
  * Half the width and height of world space, around the origin the camera
  * looks at, that must stay in view: the sender bean, T-Guard's shield (x about
- * 1.2 to 3.2, y about -1 to 1.1), the Receiver bean behind and right of it (x up
+ * 0.9 to 2.9, y about -1 to 1.1), the Receiver bean behind and right of it (x up
  * to about 4.55), the shot arcs (delivered ones peak near y 2) and "Blocked"
  * stamp, and the labels (y about -1.75), plus a margin.
  */

@@ -7,6 +7,8 @@ import {
   DoubleSide,
   ExtrudeGeometry,
   Matrix4,
+  Shape,
+  Vector2,
   type BufferGeometry,
   type Group,
   type Mesh,
@@ -16,18 +18,31 @@ import {
 } from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 
-// Outline and check mark of the Lucide `shield-check` icon (lucide.dev, ISC
-// license), in its 24 x 24 viewBox. The outline is filled and extruded into a
-// badge; the check is stroked on its face.
+// Outline of the Lucide `shield` icon (lucide.dev, ISC license), in its
+// 24 x 24 viewBox. It is filled and extruded into a badge, with a raised white
+// block "T" on its face (an original letterform, not T-Mobile's logo).
 const OUTLINE =
   "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z";
-const CHECK = "m9 12 2 2 4-4";
+/** The "T", in the same viewBox (y down): a crossbar over a stem, centered on the shield. */
+const T_GLYPH: [number, number][] = [
+  [7.25, 6.5],
+  [16.75, 6.5],
+  [16.75, 9.6],
+  [13.55, 9.6],
+  [13.55, 17.6],
+  [10.45, 17.6],
+  [10.45, 9.6],
+  [7.25, 9.6],
+];
+/** How far the T stands out from the badge's face, in icon units. */
+const T_DEPTH = 0.35;
+const T_BEVEL = 0.12;
 
 /** T-Mobile magenta. */
 export const SHIELD_PINK = "#e20074";
 
 /** Where T-Guard's shield stands (where the box and hand were) and how big it is. */
-export const SHIELD = { x: 2.2, y: 0.05, height: 2.1 };
+export const SHIELD = { x: 1.9, y: 0.05, height: 2.1 };
 /** World units per icon unit: the outline is 20 units tall (y 2 to 22). */
 const SCALE = SHIELD.height / 20;
 /** Half the shield's depth after extrusion and bevel, in world units. */
@@ -35,16 +50,15 @@ export const SHIELD_FRONT_Z = ((1.6 + 2 * 0.6) / 2) * SCALE;
 
 interface ShieldGeometry {
   body: BufferGeometry;
-  check: BufferGeometry;
+  mark: BufferGeometry;
 }
 
-/** Builds the badge and check-mark geometry from the icon paths, centered on the origin. */
+/** Builds the badge and the T, centered on the origin. */
 function buildShield(): ShieldGeometry | null {
   if (typeof DOMParser === "undefined") return null;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${OUTLINE}"/><path d="${CHECK}" fill="none"/></svg>`;
-  const { paths } = new SVGLoader().parse(svg);
-  const [outline, check] = paths;
-  if (!outline || !check) return null;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${OUTLINE}"/></svg>`;
+  const [outline] = new SVGLoader().parse(svg).paths;
+  if (!outline) return null;
 
   const body = new ExtrudeGeometry(SVGLoader.createShapes(outline), {
     depth: 1.6,
@@ -54,25 +68,28 @@ function buildShield(): ShieldGeometry | null {
     bevelSegments: 4,
     curveSegments: 24,
   });
-  const strokes = check.subPaths.map((sub) =>
-    SVGLoader.pointsToStroke(sub.getPoints(), SVGLoader.getStrokeStyle(2.4, "#fff", "round", "round")),
-  );
-  const checkGeometry = strokes[0];
-  if (!checkGeometry) return null;
+  const mark = new ExtrudeGeometry(new Shape(T_GLYPH.map(([x, y]) => new Vector2(x, y))), {
+    depth: T_DEPTH,
+    bevelEnabled: true,
+    bevelThickness: T_BEVEL,
+    bevelSize: T_BEVEL,
+    bevelSegments: 2,
+  });
 
   // SVG y points down: turn both upside down (a rotation, so faces keep their winding).
   const flip = new Matrix4().makeRotationX(Math.PI);
   body.applyMatrix4(flip);
-  checkGeometry.applyMatrix4(flip);
+  mark.applyMatrix4(flip);
   body.computeBoundingBox();
   const box = body.boundingBox!;
   const cx = (box.min.x + box.max.x) / 2;
   const cy = (box.min.y + box.max.y) / 2;
   const cz = (box.min.z + box.max.z) / 2;
   body.translate(-cx, -cy, -cz);
-  // The check sits just in front of the badge's front face.
-  checkGeometry.translate(-cx, -cy, box.max.z - cz + 0.05);
-  return { body, check: checkGeometry };
+  // After the flip the T spans z -(depth + bevel) to +bevel; sink its back
+  // slightly into the badge's front face so it stands out from it.
+  mark.translate(-cx, -cy, box.max.z - cz + T_DEPTH + T_BEVEL - 0.15);
+  return { body, mark };
 }
 
 interface ShieldProps {
@@ -83,7 +100,7 @@ interface ShieldProps {
 }
 
 /**
- * T-Guard: a pink shield (Lucide's shield-check) between the sender and the
+ * T-Guard: a pink shield (Lucide's shield outline, a white "T" on it) between the sender and the
  * Receiver. Blocked messages bounce off its face; delivered ones arc over it.
  * It only animates the gateway's decision; it never makes one.
  */
@@ -98,7 +115,7 @@ export function Shield({ blockedAt, labelAnchor }: ShieldProps) {
   useEffect(
     () => () => {
       geometry?.body.dispose();
-      geometry?.check.dispose();
+      geometry?.mark.dispose();
     },
     [geometry],
   );
@@ -146,8 +163,8 @@ export function Shield({ blockedAt, labelAnchor }: ShieldProps) {
                 metalness={0.1}
               />
             </mesh>
-            <mesh geometry={geometry.check}>
-              <meshBasicMaterial color="#ffffff" side={DoubleSide} toneMapped={false} />
+            <mesh geometry={geometry.mark}>
+              <meshStandardMaterial color="#ffffff" roughness={0.4} />
             </mesh>
           </group>
         )}

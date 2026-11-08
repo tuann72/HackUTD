@@ -122,6 +122,7 @@ Tasks are grouped into ordered stages. Tasks in the same stage can run **in para
 
 ## Progress notes
 
+- **2026-11-08:** the shield's check mark became a raised white block "T" (original letterform, not the T-Mobile logo), and the shield moved left to x 1.9.
 - **2026-11-08:** the hand and box were replaced by a pink (T-Mobile magenta) shield from Lucide `shield-check` in the same spot; blocked messages bounce off it, delivered ones arc over it to the Receiver bean (see `CHANGELOG.md`, "A pink shield replaces T-Guard's hand and box").
 - **2026-11-08:** the right (Receiver) blob is replaced by the pink T-GUARD box and a photographic hand (Tuan; art and strike timings from the T-GUARD offline prototype, `palm.webp`/`backhand.webp` in `public/scene/hand/`, clips in `components/scene/slap.ts`). Blocked potential scams stop within reach, drift to where the palm will land during the wind-up, and are slapped back toward the sender (plain slap, 3 in 10 backhands, every 7th a slow "delayed" slap); the shield flash is gone. Delivered messages land in the hand, which twitches while the box glows. The sender blob is unchanged. Sound from the prototype is not ported.
 
