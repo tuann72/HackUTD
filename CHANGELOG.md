@@ -28,6 +28,15 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 Newest first. Each entry: date, decision, rationale, and what it replaces.
 
+### 2026-11-07: MiniLM, trained and served on Vultr; Vultr track added
+
+- **Decision (Tuan):** the classifier is **MiniLM** (frozen `all-MiniLM-L6-v2` embeddings + logistic-regression head). It's **trained on a Vultr Cloud GPU** and **served from Vultr Cloud Compute** as a CPU FastAPI service. The project now also enters the **Vultr** track.
+- **Replaces:** "Classifier candidates" and "Considering Vultr for the model" below, for the classifier and its hosting. TF-IDF + LR becomes the baseline to beat, not the plan.
+- **Rationale:** the team has Vultr credits, and Vultr hosting fulfills a track. MiniLM may generalize better to paraphrased scam wording than TF-IDF. A GPU isn't needed for inference: a CPU takes about 15–120 ms per message, including highlights.
+- **First result (smoke test, 5k train rows, Mac):** 8-class head, real test split: scam-vs-ham F1 0.949, macro-F1 0.80. A full-data run on Vultr is next.
+- **Consequences:** keyword highlights use occlusion instead of TF-IDF coefficients. Fine-tuning is a fallback. Label scheme and thresholds are still TBD.
+- **Details:** [Classifier service on Vultr](#classifier-service-on-vultr), [`classifier/README.md`](classifier/README.md), [`docs/features/classifier-service.md`](docs/features/classifier-service.md).
+
 ### 2026-11-07: React Three Fiber and Motion for the web app
 
 - **Decision (Tuan):** build the 3D scene with **React Three Fiber** (`@react-three/fiber`, plus `@react-three/drei` helpers) instead of plain Three.js, and use the **Motion** library ([motion.dev](https://motion.dev/), the `motion` package) for animation.
@@ -73,7 +82,7 @@ Newest first. Each entry: date, decision, rationale, and what it replaces.
 - **Block tracking:** every blocked message is recorded with **why** it was blocked: scam category, score, model version and time.
 - **Scene hosting:** the Three.js scene would be a Next.js website, deployable on Vercel.
 - **Rationale:** not recorded yet. Vultr offers cloud GPU and compute for training and serving. Next.js on Vercel is a quick way to put the scene on a public URL.
-- **Details:** see [Classifier service on Vultr](#classifier-service-on-vultr-under-consideration), [Blocked-message tracking](#blocked-message-tracking) and [Scene hosting](#scene-hosting-nextjs-on-vercel-under-consideration).
+- **Details:** see [Classifier service on Vultr](#classifier-service-on-vultr), [Blocked-message tracking](#blocked-message-tracking) and [Scene hosting](#scene-hosting-nextjs-on-vercel-under-consideration).
 
 ### 2026-11-07: Proposed interception gateway and decoupled demo scene
 
@@ -218,7 +227,7 @@ Example:
     "body": "Your bank account is locked. Reply with your PIN to restore access."
   },
   "verdict": {
-    "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "tfidf-lr@0.1",
+    "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "minilm-lr-category@0.1",
     "highlights": [
       { "start": 5, "end": 9, "text": "bank", "weight": 0.41 },
       { "start": 18, "end": 24, "text": "locked", "weight": 0.37 },
@@ -251,11 +260,11 @@ Contract rules:
 - **Secrets:** Twilio account SID, auth token and the victim number live in `.env`. Commit only `.env.example`.
 - **Storage:** in-memory or SQLite is enough for the MVP (TBD). It holds the inbox, the block log (quarantine) and the number → participant map.
 
-#### Classifier service on Vultr (under consideration)
+#### Classifier service on Vultr
 
-The team is considering [Vultr](https://www.vultr.com/) for training the model and running it.
+**Agreed (Tuan, 2026-11-07):** MiniLM, trained on a [Vultr](https://www.vultr.com/) Cloud GPU and served from Vultr Cloud Compute. Implementation: [`classifier/`](classifier/README.md).
 
-- **Training:** run training jobs (TF-IDF + LR, or MiniLM fine-tuning, which benefits more from a GPU) on Vultr compute, using [`data/scam_categories_100k_full.csv`](#2026-11-07-training-data-is-scam_categories_100k_fullcsv). Evaluate only on the real `val`/`test` splits. Model artifacts are stored outside git (location TBD).
+- **Training:** embed with MiniLM and fit a logistic-regression head on a Vultr Cloud GPU instance (destroyed after each run; fine-tuning only if needed), using [`data/scam_categories_100k_full.csv`](#2026-11-07-training-data-is-scam_categories_100k_fullcsv). Evaluate only on the real `val`/`test` splits. Model artifacts are stored outside git (location TBD).
 - **Inference:** host the trained model as a small HTTP service on Vultr. Proposed contract (TBD):
 
   ```http
@@ -265,7 +274,7 @@ The team is considering [Vultr](https://www.vultr.com/) for training the model a
 
   200 OK
   {
-    "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "tfidf-lr@0.1",
+    "label": "scam", "score": 0.97, "category": "Imposter & Phishing", "model": "minilm-lr-category@0.1",
     "highlights": [ { "start": 50, "end": 53, "text": "PIN", "weight": 0.88 } ]
   }
   ```
@@ -275,7 +284,7 @@ The team is considering [Vultr](https://www.vultr.com/) for training the model a
 - **Swappable:** the gateway reaches Vultr only through its classifier port. A local fake (keyword rules) works for development and tests, and a different host can replace Vultr without gateway changes.
 - **Send only what's needed:** message text and an opaque message id. No phone numbers or Twilio identifiers go to the model service.
 - **Security:** the service requires an auth token (stored in `.env`) and uses HTTPS.
-- **Open (TBD):** which Vultr products (cloud compute, GPU, serverless inference), cost, region and latency, and whether training and inference both run there or only one.
+- **Open (TBD):** instance sizes, region, container registry, HTTPS setup, and where model artifacts are stored.
 
 #### Blocked-message tracking
 
@@ -416,7 +425,7 @@ The scene would be a **Next.js** website, ready to deploy on **Vercel**.
 - Separate gateway service vs. Next.js route handlers on Vercel.
 - Where the scam notice goes: virtual inbox only, or also a real SMS to a protected handset. Notice batching threshold.
 - Whether the panel needs real login, or unguessable links are enough for the MVP.
-- Highlight method if MiniLM is chosen (occlusion vs. attribution vs. hybrid). Whether delivered borderline messages get soft highlights.
+- Highlights use occlusion (MiniLM agreed). Whether delivered borderline messages get soft highlights.
 - Training-row filtering in `scam_categories_100k_full.csv` (by `label_confidence`, template-synthetic rows).
 - Message bank: how many rows, the dataset/generated mix, the generation method and the file format.
 - WebSocket vs. SSE for the event stream. Where the gateway is hosted for the demo (tunnel vs. deployed).
@@ -425,7 +434,7 @@ The scene would be a **Next.js** website, ready to deploy on **Vercel**.
 - Storage choice and retention of message bodies.
 - Moderation and privacy rules before message bodies are shown on a public screen.
 - Scene state store (for example, Zustand) and whether `maath` damping or `@react-spring/three` animates the blobs.
-- Vultr: which products, cost, region and latency; whether it hosts training, inference or both; where model artifacts live.
+- Vultr: instance sizes, region, registry, HTTPS, and where model artifacts live (training and inference both run on Vultr, agreed).
 - Category scheme for block reasons (multi-class model vs. binary check plus a category step), and who sees block reports.
 - Where the gateway and its event stream are hosted, since Vercel can't host the WebSocket stream.
 

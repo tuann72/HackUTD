@@ -136,7 +136,7 @@ Replying before classifying (step 4 before step 5) keeps Twilio from timing out 
 | Where the gateway runs: **A.** a separate small TS service on Railway, Render, Fly or a Vultr VM, with the UI on Vercel; or **B.** Next.js route handlers on Vercel plus a hosted DB | **A**: matches the decoupling rules, and a UI deploy can't break interception | **TBD** |
 | Storage | In memory or SQLite | **TBD** |
 | Block threshold and classifier-down behavior (fail open or fail closed) | Decide after classifier evaluation | **TBD** |
-| Classifier approach and label scheme | TF-IDF + LR is leading; see `AGENTS.md` | **TBD** |
+| Classifier approach and label scheme | MiniLM on Vultr (Tuan); label scheme still open; see [classifier-service.md](classifier-service.md) | Approach **agreed**; label scheme **TBD** |
 | Message bank size, mix and file format | Scenario files plus a small bank of SMS-style rows | **TBD** |
 | Does the trial number accept texts from unverified phones? | Test it in task 1.1 | **TBD** |
 
@@ -149,7 +149,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 0.1 | Choose gateway hosting (A or B) and storage; record in `CHANGELOG.md` | — | 0.2 | Not started | | | |
-| 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | Not started | | | |
+| 0.2 | Choose classifier approach and label scheme; record in `CHANGELOG.md` | — | 0.1 | In progress (approach done: MiniLM on Vultr; label scheme after the Vultr training run) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 1: foundations
 
@@ -159,7 +159,7 @@ Tasks in the same stage can run **in parallel**. Each task touches its own folde
 | 1.2 | Gateway: webhook, signature check, dedupe, stub classifier, storage, query API | 0.1 | 1.1, 1.3–1.5 | Not started | | | |
 | 1.3 | Message UI: Next.js page reading fixtures | — | 1.1, 1.2, 1.4, 1.5 | Not started | | | |
 | 1.4 | Message bank and demo scenario files | — | 1.1–1.3, 1.5 | Not started | | | |
-| 1.5 | Classifier: train, evaluate on `val`/`test`, export | 0.2 | 1.1–1.4 | Not started | | | |
+| 1.5 | Classifier: train, evaluate on `val`/`test`, export. Tracked in [classifier-service.md](classifier-service.md) | 0.2 | 1.1–1.4 | In progress (code done; Vultr training next) | | Tuan | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 
 ### Stage 2: integration
 

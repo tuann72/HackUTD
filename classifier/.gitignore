@@ -1,0 +1,6 @@
+# Trained model files and cached embeddings live outside git (see README).
+artifacts/
+*.npy
+.venv/
+__pycache__/
+deploy/.env
