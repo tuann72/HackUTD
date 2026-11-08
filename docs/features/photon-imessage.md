@@ -77,6 +77,7 @@ You can also register it in the dashboard (app.photon.codes, the "Webhook" tab).
 | 1.4 | Real-path check: a teammate iMessages the line, it shows in the UI | 1.2 | — | Not started | — | — | — |
 | 1.5 | Wire the sender blocklist on handles (normalize email handles too; `normalizeNumber` only handles numbers today) | 1.1, sender-blocklist task 2.x | — | Not started | — | — | — |
 | 1.6 | Attachments, reactions, contact cards and group chats in the gateway, contract and UI | 1.1 | — | In review | `feat/photon-imessage-gateway` | Tuan + Claude Code | [#24](https://github.com/tuann72/HackUTD/pull/24) |
+| 1.8 | Simulator: send attachments, reactions, contact cards, links, albums and group chats; `imessage-demo` scenario; `docs/DEMO.md` demo script | 1.6 | Yes | In progress | `feat/photon-sim-rich-content` | Tuan + Claude Code | TBD |
 
 ## Open questions (TBD)
 
