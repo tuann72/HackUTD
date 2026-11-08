@@ -334,7 +334,7 @@ describe('GET /api/messages', () => {
       method: 'OPTIONS',
       headers: { Origin: 'http://localhost:3000', 'Access-Control-Request-Method': 'GET' },
     });
-    expect(preflight.headers.get('access-control-allow-methods')).toBe('GET');
+    expect(preflight.headers.get('access-control-allow-methods')).toBe('GET,DELETE');
   });
 
   it('serves /healthz', async () => {
@@ -368,5 +368,31 @@ describe('POST /debug/reset', () => {
     // The same message id is accepted again after a reset.
     await app.request(signedRequest(fixtureBody));
     expect(app.store.count()).toBe(1);
+  });
+});
+
+describe('DELETE /api/messages', () => {
+  it('deletes every message without a token, and the id is accepted again', async () => {
+    const app = makeApp();
+    await app.request(signedRequest(fixtureBody));
+    await app.idle();
+    expect(app.store.count()).toBe(1);
+
+    const res = await app.request('/api/messages', { method: 'DELETE' });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, cleared: 1 });
+    expect((await list(app)).messages).toEqual([]);
+
+    await app.request(signedRequest(fixtureBody));
+    expect(app.store.count()).toBe(1);
+  });
+
+  it('allows DELETE in the CORS preflight', async () => {
+    const app = makeApp({ config: { corsOrigins: ['https://web.example'] } });
+    const res = await app.request('/api/messages', {
+      method: 'OPTIONS',
+      headers: { Origin: 'https://web.example', 'Access-Control-Request-Method': 'DELETE' },
+    });
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('DELETE');
   });
 });

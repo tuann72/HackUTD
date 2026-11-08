@@ -128,3 +128,15 @@ describe("Vercel Photon webhook, Photon 2.0 / Beta deliveries", () => {
     );
   });
 });
+
+describe("MemoryStore.clear", () => {
+  it("deletes every message and returns the count", async () => {
+    const store = new MemoryStore();
+    const msg = { id: "msg_1", receivedAt: "2026-11-08T00:00:00.000Z" } as Parameters<MemoryStore["insert"]>[1];
+    await store.insert("k1", msg);
+    await store.insert("k2", { ...msg, id: "msg_2" });
+    expect(await store.clear()).toBe(2);
+    expect(await store.list(100)).toEqual([]);
+    expect(await store.insert("k1", msg)).toBe(true);
+  });
+});
