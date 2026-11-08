@@ -372,13 +372,36 @@ describe('POST /debug/reset', () => {
 });
 
 describe('DELETE /api/messages', () => {
-  it('deletes every message without a token, and the id is accepted again', async () => {
+  const clearChats = (password?: string): RequestInit => ({
+    method: 'DELETE',
+    headers: password === undefined ? {} : { 'X-Action-Password': password },
+  });
+
+  it('needs the action password: none or a wrong one is a 401 and deletes nothing', async () => {
+    const app = makeApp();
+    await app.request(signedRequest(fixtureBody));
+    await app.idle();
+
+    for (const res of [await app.request('/api/messages', clearChats()), await app.request('/api/messages', clearChats('1234'))]) {
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: 'wrong password' });
+    }
+    expect(app.store.count()).toBe(1);
+  });
+
+  it('checks UI_ACTION_PASSWORD when it is set', async () => {
+    const app = makeApp({ config: { uiActionPassword: 'hunter2' } });
+    expect((await app.request('/api/messages', clearChats('4321'))).status).toBe(401);
+    expect((await app.request('/api/messages', clearChats('hunter2'))).status).toBe(200);
+  });
+
+  it('deletes every message with the password, and the id is accepted again', async () => {
     const app = makeApp();
     await app.request(signedRequest(fixtureBody));
     await app.idle();
     expect(app.store.count()).toBe(1);
 
-    const res = await app.request('/api/messages', { method: 'DELETE' });
+    const res = await app.request('/api/messages', clearChats('4321'));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, cleared: 1 });
     expect((await list(app)).messages).toEqual([]);
