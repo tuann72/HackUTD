@@ -1,10 +1,11 @@
 import Ajv2020Module from 'ajv/dist/2020.js';
 import addFormatsModule from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
-import { EMPTY_TWIML } from '../src/app.js';
 import { HttpClassifier, type Classifier } from '../src/classifier.js';
+import { maskHandle } from '../src/db.js';
+import { spectrumSignature } from '../src/photon.js';
 import type { MessagesResponse } from '../src/types.js';
-import { fixtureForm, form, makeApp, readContract, signedRequest } from './helpers.js';
+import { NOW_S, SECRET, fixtureBody, fixtureText, makeApp, payload, readContract, signedRequest } from './helpers.js';
 import { startFakeClassifier } from './fake-classifier.js';
 
 // CJS interop: these packages export the class/function as module.exports.default.
@@ -20,18 +21,17 @@ async function list(app: ReturnType<typeof makeApp>, query = ''): Promise<Messag
   return (await res.json()) as MessagesResponse;
 }
 
-describe('POST /twilio/sms', () => {
-  it('accepts a validly signed fixture request with empty TwiML and stores it', async () => {
+describe('POST /webhooks/photon', () => {
+  it('accepts a validly signed fixture delivery with 200 ok and stores it', async () => {
     const app = makeApp();
-    const res = await app.request(signedRequest(fixtureForm));
+    const res = await app.request(signedRequest(fixtureBody));
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toMatch(/^text\/xml/);
-    expect(await res.text()).toBe(EMPTY_TWIML);
+    expect(await res.text()).toBe('ok');
 
     // Stored as pending before classification runs.
     const before = await list(app);
     expect(before.messages).toHaveLength(1);
-    expect(before.messages[0]).toMatchObject({ body: fixtureForm.Body, action: 'pending', reason: null, verdict: null });
+    expect(before.messages[0]).toMatchObject({ body: fixtureText, action: 'pending', reason: null, verdict: null });
     expect(before.messages[0]!.from.display).toBe('***-***-0142');
 
     await app.idle();
@@ -39,61 +39,159 @@ describe('POST /twilio/sms', () => {
     expect(after.messages[0]!.action).not.toBe('pending');
   });
 
-  it('rejects a missing signature with 403', async () => {
+  it('rejects missing signature or timestamp headers with 400', async () => {
     const app = makeApp();
-    const res = await app.request(signedRequest(fixtureForm, { signature: null }));
-    expect(res.status).toBe(403);
+    expect((await app.request(signedRequest(fixtureBody, { signature: null }))).status).toBe(400);
+    expect((await app.request(signedRequest(fixtureBody, { timestamp: null }))).status).toBe(400);
     expect(app.store.count()).toBe(0);
   });
 
-  it('rejects a bad signature, a wrong token, or tampered params with 403', async () => {
+  it('rejects a stale or future timestamp with 400 (replay window)', async () => {
     const app = makeApp();
-    expect((await app.request(signedRequest(fixtureForm, { signature: 'bm9wZQ==' }))).status).toBe(403);
-    expect((await app.request(signedRequest(fixtureForm, { token: 'other-token' }))).status).toBe(403);
-    const req = signedRequest(fixtureForm);
-    const tampered = new Request(req.url, {
-      method: 'POST',
-      headers: req.headers,
-      body: new URLSearchParams({ ...fixtureForm, Body: 'tampered' }).toString(),
-    });
-    expect((await app.request(tampered)).status).toBe(403);
+    expect((await app.request(signedRequest(fixtureBody, { timestamp: NOW_S - 301 }))).status).toBe(400);
+    expect((await app.request(signedRequest(fixtureBody, { timestamp: NOW_S + 301 }))).status).toBe(400);
+    expect((await app.request(signedRequest(payload({ id: 'spc-msg-edge' }), { timestamp: NOW_S - 300 }))).status).toBe(200);
+    expect(app.store.count()).toBe(1);
+  });
+
+  it('rejects a bad signature, a wrong secret, or a tampered body with 401', async () => {
+    const app = makeApp();
+    expect((await app.request(signedRequest(fixtureBody, { signature: 'v0=' + '0'.repeat(64) }))).status).toBe(401);
+    expect((await app.request(signedRequest(fixtureBody, { signature: 'nope' }))).status).toBe(401);
+    expect((await app.request(signedRequest(fixtureBody, { secret: 'other-secret' }))).status).toBe(401);
+    const raw = JSON.stringify(fixtureBody);
+    const sig = spectrumSignature(SECRET, String(NOW_S), raw);
+    expect((await app.request(signedRequest(null, { raw: raw.replace('Grandma', 'Grandpa'), signature: sig }))).status).toBe(401);
     expect(app.store.count()).toBe(0);
   });
 
-  it('validates against PUBLIC_WEBHOOK_URL when set', async () => {
-    const publicUrl = 'https://gateway.example.com/twilio/sms';
-    const app = makeApp({ config: { publicWebhookUrl: publicUrl } });
-    // Signed for the public URL, delivered to the local one (as behind a proxy or tunnel).
-    const params = fixtureForm;
-    const sig = (await import('twilio')).default.getExpectedTwilioSignature('test-auth-token', publicUrl, params);
-    expect((await app.request(signedRequest(params, { signature: sig }))).status).toBe(200);
-    // Signed for the local URL is now rejected.
-    expect((await app.request(signedRequest(form({ MessageSid: 'SM2' })))).status).toBe(403);
+  it('verifies over the raw bytes, so whitespace a re-serializer would drop still counts', async () => {
+    const app = makeApp();
+    const raw = JSON.stringify(fixtureBody, null, 2);
+    expect((await app.request(signedRequest(null, { raw }))).status).toBe(200);
+    expect(app.store.count()).toBe(1);
   });
 
-  it('ignores a duplicate MessageSid (Twilio retry)', async () => {
+  it('ignores a duplicate message.id (Photon retry)', async () => {
     const app = makeApp();
-    const r1 = await app.request(signedRequest(fixtureForm));
-    const r2 = await app.request(signedRequest(fixtureForm));
+    const r1 = await app.request(signedRequest(fixtureBody));
+    const r2 = await app.request(signedRequest(fixtureBody));
     expect(r1.status).toBe(200);
     expect(r2.status).toBe(200);
-    expect(await r2.text()).toBe(EMPTY_TWIML);
     await app.idle();
     expect(app.store.count()).toBe(1);
   });
 
-  it('keeps one participant id per sender number', async () => {
+  it('acks but ignores unknown events, unknown content types and empty text', async () => {
     const app = makeApp();
-    await app.request(signedRequest(form({ MessageSid: 'SMa' })));
-    await app.request(signedRequest(form({ MessageSid: 'SMb' })));
-    await app.request(signedRequest(form({ MessageSid: 'SMc', From: '+15555550177' })));
+    for (const body of [
+      payload({ event: 'typing' }),
+      payload({ id: 'spc-msg-poll', content: { type: 'poll', question: '?' } }),
+      payload({ id: 'spc-msg-e', text: '   ' }),
+      payload({ id: 'spc-msg-g', content: { type: 'group', items: [] } }),
+    ]) {
+      expect((await app.request(signedRequest(body))).status).toBe(200);
+    }
+    expect(app.store.count()).toBe(0);
+  });
+
+  it('delivers attachments, reactions and contact cards unclassified, with their metadata', async () => {
+    const calls: string[] = [];
+    const spy: Classifier = {
+      classify: async (r) => {
+        calls.push(r.text);
+        return { label: 'legit', score: 0, category: null, model: 'spy', highlights: [] };
+      },
+    };
+    const app = makeApp({ classifier: spy });
+    await app.request(signedRequest(payload({ id: 'spc-msg-a', content: { type: 'attachment', id: 'GUID-1', name: 'invoice.pdf', mimeType: 'application/pdf', size: 1234 } })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-r', content: { type: 'reaction', emoji: '👍', target: { id: 'x', platform: 'imessage', contentPreview: 'See you at 5' } } })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-c', content: { type: 'contact', name: 'Bank Fraud Dept', phones: ['+15555550199'] } })));
     await app.idle();
-    const { messages } = await list(app);
-    const [c, b, a] = messages;
+    expect(calls).toEqual([]);
+    const [c, r, a] = (await list(app)).messages;
+    for (const m of [a, r, c]) expect(m).toMatchObject({ action: 'delivered', reason: 'not_classified', verdict: null, body: '' });
+    expect(a).toMatchObject({ kind: 'attachment', attachments: [{ name: 'invoice.pdf', mimeType: 'application/pdf', size: 1234 }] });
+    expect(r).toMatchObject({ kind: 'reaction', reaction: { emoji: '👍', targetPreview: 'See you at 5' } });
+    expect(c).toMatchObject({ kind: 'contact', contact: { name: 'Bank Fraud Dept', phones: ['***-***-0199'] } });
+    const text = await (await app.request('/api/messages')).text();
+    expect(text).not.toContain('GUID-1');
+    expect(text).not.toContain('+15555550199');
+    expect(validate(JSON.parse(text))).toBe(true);
+  });
+
+  it('classifies rich links and album text, and lists album attachments', async () => {
+    const app = makeApp();
+    await app.request(signedRequest(payload({ id: 'spc-msg-l', content: { type: 'richlink', url: 'https://bit.ly/acct-verify' } })));
+    const album = {
+      type: 'group',
+      items: [
+        payload({ id: 'i1', text: 'Your account is locked' }).message,
+        payload({ id: 'i2', content: { type: 'attachment', id: 'g', name: 'IMG_1.HEIC', mimeType: 'image/heic' } }).message,
+      ],
+    };
+    await app.request(signedRequest(payload({ id: 'spc-msg-g', content: album })));
+    const photosOnly = { type: 'group', items: [payload({ id: 'i3', content: { type: 'attachment', id: 'h', name: 'a.jpg' } }).message] };
+    await app.request(signedRequest(payload({ id: 'spc-msg-p', content: photosOnly })));
+    await app.idle();
+    const [p, g, l] = (await list(app)).messages;
+    expect(l).toMatchObject({ kind: 'link', body: 'https://bit.ly/acct-verify', reason: 'model_verdict' });
+    expect(g).toMatchObject({
+      kind: 'album',
+      body: 'Your account is locked',
+      reason: 'model_verdict',
+      attachments: [{ name: 'IMG_1.HEIC', mimeType: 'image/heic', size: null }],
+    });
+    expect(p).toMatchObject({ kind: 'album', body: '', reason: 'not_classified', action: 'delivered' });
+  });
+
+  it('tracks group chats as one opaque conversation, separate from DMs', async () => {
+    const app = makeApp();
+    const group = (id: string, from: string, text: string) => {
+      const b = payload({ id, from, text });
+      b.space = { id: 'chat-guid-123', platform: 'imessage', type: 'group', phone: '+15555550100' };
+      b.message.space = { ...b.space };
+      return b;
+    };
+    await app.request(signedRequest(group('spc-msg-1', '+15555550142', 'Hi all')));
+    await app.request(signedRequest(group('spc-msg-2', '+15555550177', 'Hey')));
+    await app.request(signedRequest(payload({ id: 'spc-msg-3', from: '+15555550142', text: 'Just you' })));
+    await app.idle();
+    const [dm, g2, g1] = (await list(app)).messages;
+    expect(g1!.conversation).toEqual(g2!.conversation);
+    expect(g1!.conversation.type).toBe('group');
+    expect(g1!.from.participantId).not.toBe(g2!.from.participantId);
+    expect(dm!.conversation.type).toBe('dm');
+    expect(dm!.conversation.id).not.toBe(g1!.conversation.id);
+    expect(g1!.conversation.id).toMatch(/^c_[0-9a-f]{16}$/);
+    expect(await (await app.request('/api/messages')).text()).not.toContain('chat-guid');
+  });
+
+  it('rejects a signed but malformed payload with 400', async () => {
+    const app = makeApp();
+    expect((await app.request(signedRequest(null, { raw: '{not json' }))).status).toBe(400);
+    const noSender = payload();
+    delete noSender.message.sender;
+    expect((await app.request(signedRequest(noSender))).status).toBe(400);
+    expect(app.store.count()).toBe(0);
+  });
+
+  it('keeps one participant id per handle, and masks email handles', async () => {
+    const app = makeApp();
+    await app.request(signedRequest(payload({ id: 'spc-msg-a' })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-b' })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-c', from: '+15555550177' })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-d', from: 'Scammer@iCloud.com' })));
+    await app.request(signedRequest(payload({ id: 'spc-msg-e', from: 'scammer@icloud.com' })));
+    await app.idle();
+    const [e, d, c, b, a] = (await list(app)).messages;
     expect(a!.from.participantId).toBe(b!.from.participantId);
     expect(c!.from.participantId).not.toBe(a!.from.participantId);
+    expect(d!.from.participantId).toBe(e!.from.participantId);
     expect(c!.from.display).toBe('***-***-0177');
+    expect(d!.from.display).toBe('s***@icloud.com');
     expect(a!.from.participantId).toMatch(/^p_[0-9a-f]{16}$/);
+    expect(maskHandle('+15555550142')).toBe('***-***-0142');
   });
 });
 
@@ -101,7 +199,7 @@ describe('classification and policy', () => {
   it('blocks a scam with a category and highlights whose spans match the body', async () => {
     const app = makeApp();
     const body = "I'm in trouble, I need $800 in gift cards, please don't tell mom";
-    await app.request(signedRequest(form({ MessageSid: 'SMscam', Body: body })));
+    await app.request(signedRequest(payload({ id: 'SMscam', text: body })));
     await app.idle();
     const [m] = (await list(app)).messages;
     expect(m!.action).toBe('blocked');
@@ -115,7 +213,7 @@ describe('classification and policy', () => {
 
   it('delivers a legitimate message', async () => {
     const app = makeApp();
-    await app.request(signedRequest(form({ MessageSid: 'SMlegit', Body: 'Dinner Sunday still on?' })));
+    await app.request(signedRequest(payload({ id: 'SMlegit', text: 'Dinner Sunday still on?' })));
     await app.idle();
     const [m] = (await list(app)).messages;
     expect(m).toMatchObject({ action: 'delivered', reason: 'model_verdict' });
@@ -125,11 +223,11 @@ describe('classification and policy', () => {
   it('respects BLOCK_THRESHOLD', async () => {
     const fixed: Classifier = { classify: async () => ({ label: 'scam', score: 0.6, category: 'Imposter & Phishing', model: 'fixed', highlights: [] }) };
     const strict = makeApp({ classifier: fixed, config: { blockThreshold: 0.7 } });
-    await strict.request(signedRequest(fixtureForm));
+    await strict.request(signedRequest(fixtureBody));
     await strict.idle();
     expect((await list(strict)).messages[0]!.action).toBe('delivered');
     const loose = makeApp({ classifier: fixed, config: { blockThreshold: 0.6 } });
-    await loose.request(signedRequest(fixtureForm));
+    await loose.request(signedRequest(fixtureBody));
     await loose.idle();
     expect((await list(loose)).messages[0]!.action).toBe('blocked');
   });
@@ -137,7 +235,7 @@ describe('classification and policy', () => {
   it('fails open when the classifier throws', async () => {
     const broken: Classifier = { classify: async () => { throw new Error('boom'); } };
     const app = makeApp({ classifier: broken });
-    const res = await app.request(signedRequest(fixtureForm));
+    const res = await app.request(signedRequest(fixtureBody));
     expect(res.status).toBe(200);
     await app.idle();
     const [m] = (await list(app)).messages;
@@ -149,7 +247,7 @@ describe('classification and policy', () => {
     try {
       const app = makeApp({ classifier: new HttpClassifier({ baseUrl: fake.url, timeoutMs: 100 }) });
       const t0 = Date.now();
-      const res = await app.request(signedRequest(fixtureForm));
+      const res = await app.request(signedRequest(fixtureBody));
       expect(res.status).toBe(200);
       expect(Date.now() - t0).toBeLessThan(100);
       await app.idle();
@@ -172,13 +270,18 @@ describe('GET /api/messages', () => {
       'Dinner Sunday still on?',
     ];
     for (const [i, Body] of bodies.entries()) {
-      await app.request(signedRequest(form({ MessageSid: `SM${String(i).padStart(32, '0')}`, Body, From: `+1555555010${i}` })));
+      await app.request(signedRequest(payload({ id: `spc-msg-${i}`, text: Body, from: `+1555555010${i}` })));
     }
     // One left pending: add after idle without awaiting it.
     await app.idle();
-    await app.request(signedRequest(form({ MessageSid: 'SMpending', Body: 'See you soon' })));
+    await app.request(signedRequest(payload({ id: 'spc-pending', text: 'See you soon' })));
     return { app, bodies };
   }
+
+  it('the contract fixture itself matches the schema', () => {
+    expect(validate(readContract('contracts/fixtures/messages.v1.sample.json'))).toBe(true);
+    expect(validate.errors ?? []).toEqual([]);
+  });
 
   it('matches the v1 contract schema, newest first', async () => {
     const { app, bodies } = await seeded();
@@ -201,14 +304,15 @@ describe('GET /api/messages', () => {
     expect(validate(await list(app))).toBe(true);
   });
 
-  it('never exposes raw phone numbers or Twilio SIDs', async () => {
+  it('never exposes raw handles or Photon message/space ids', async () => {
     const { app } = await seeded();
     await app.idle();
     const text = await (await app.request('/api/messages')).text();
     expect(text).not.toContain('+1555');
     expect(text).not.toContain('5555550');
-    expect(text).not.toMatch(/\b(SM|AC)[0-9a-zA-Z]{8,}/);
-    expect(text).not.toContain('SMpending');
+    expect(text).not.toContain('spc-msg');
+    expect(text).not.toContain('any;-;');
+    expect(text).not.toContain('spc-pending');
   });
 
   it('applies limit and rejects bad values', async () => {
@@ -248,7 +352,7 @@ describe('POST /debug/reset', () => {
 
   it('requires the debug token and clears all data when on', async () => {
     const app = makeApp({ config: { debug: true, debugToken: 'secret-debug' } });
-    await app.request(signedRequest(fixtureForm));
+    await app.request(signedRequest(fixtureBody));
     await app.idle();
     expect(app.store.count()).toBe(1);
 
@@ -261,8 +365,8 @@ describe('POST /debug/reset', () => {
     expect(await res.json()).toEqual({ ok: true, cleared: 1 });
     expect((await list(app)).messages).toEqual([]);
 
-    // The same MessageSid is accepted again after a reset.
-    await app.request(signedRequest(fixtureForm));
+    // The same message id is accepted again after a reset.
+    await app.request(signedRequest(fixtureBody));
     expect(app.store.count()).toBe(1);
   });
 });

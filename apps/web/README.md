@@ -26,7 +26,7 @@ npm run sync:contract  # re-copies the fixture from contracts/
 
 ## Data: `lib/messages`
 
-The only data layer. The web app talks to the gateway's read-only `GET /api/messages` ([`contracts/`](../../contracts/README.md)) and never writes to it, calls Twilio, or decides scam vs. legitimate.
+The only data layer. The web app talks to the gateway's read-only `GET /api/messages` ([`contracts/`](../../contracts/README.md)) and never writes to it, calls Photon, or decides scam vs. legitimate.
 
 ```tsx
 "use client";

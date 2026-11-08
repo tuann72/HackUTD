@@ -1,50 +1,82 @@
 import { readFileSync } from 'node:fs';
-import twilio from 'twilio';
 import { createApp, type AppDeps } from '../src/app.js';
+import { MemoryBlocklist, makeFingerprinter, type Blocklist, type BlocklistRules } from '../src/blocklist.js';
 import type { Classifier } from '../src/classifier.js';
 import { StubClassifier } from '../src/classifier.js';
 import { openDb } from '../src/db.js';
+import { spectrumSignature } from '../src/photon.js';
 
-export const AUTH_TOKEN = 'test-auth-token';
-export const WEBHOOK_URL = 'http://localhost/twilio/sms';
+export const SECRET = 'test-photon-webhook-secret';
+export const WEBHOOK_URL = 'http://localhost/webhooks/photon';
+/** Fixed clock so signature timestamps are deterministic. */
+export const NOW = new Date('2026-11-08T15:04:05.000Z');
+export const NOW_S = Math.floor(NOW.getTime() / 1000);
 
 const repoRoot = new URL('../../../', import.meta.url);
 export const readContract = (rel: string) => JSON.parse(readFileSync(new URL(rel, repoRoot), 'utf8'));
 
-export const fixtureForm: Record<string, string> = readContract('contracts/fixtures/twilio-inbound-sms.sample.json').form;
+export type Payload = { event: string; space: Record<string, unknown>; message: Record<string, any> };
+export const fixtureBody: Payload = readContract('contracts/fixtures/photon-inbound-imessage.sample.json').body;
+export const fixtureText: string = fixtureBody.message.content.text;
 
 export const silentLogger = { info: () => {}, warn: () => {} };
 
-export function makeApp(opts: { classifier?: Classifier; config?: Partial<AppDeps['config']> } = {}) {
+export const RULES: BlocklistRules = { strikes: 3, highScore: 0.95, ttlMs: 7 * 24 * 3600 * 1000 };
+export const fingerprinter = makeFingerprinter('test-fingerprint-secret-0123456789abcdef');
+
+/**
+ * Every test app gets an in-memory blocklist unless `blocklist: null` is passed. It is only
+ * used when `config.senderBlocklist` is true; the default is off, as in production.
+ * Pass `now` to move the clock (blocklist expiry).
+ */
+export function makeApp(
+  opts: { classifier?: Classifier; config?: Partial<AppDeps['config']>; blocklist?: Blocklist | null; now?: () => Date } = {},
+) {
+  const blocklist = opts.blocklist === undefined ? new MemoryBlocklist(RULES) : opts.blocklist;
   return createApp({
+    ...(blocklist ? { blocklist, fingerprinter } : {}),
     db: openDb(':memory:'),
     classifier: opts.classifier ?? new StubClassifier(),
     config: {
-      twilioAuthToken: AUTH_TOKEN,
-      publicWebhookUrl: null,
+      photonWebhookSecret: SECRET,
+      signatureToleranceSeconds: 300,
       blockThreshold: 0.5,
       corsOrigins: ['http://localhost:3000'],
       debug: false,
       debugToken: null,
+      adminToken: null,
+      senderBlocklist: false,
       ...opts.config,
     },
     logger: silentLogger,
+    now: opts.now ?? (() => NOW),
   });
 }
 
-export function form(overrides: Record<string, string> = {}): Record<string, string> {
-  const f = { ...fixtureForm, ...overrides };
-  if (overrides.MessageSid) {
-    f.SmsMessageSid = overrides.MessageSid;
-    f.SmsSid = overrides.MessageSid;
+/** The fixture payload with a new message id, sender and/or text (or a whole content block). */
+export function payload(o: { id?: string; from?: string; text?: string; content?: unknown; event?: string } = {}): Payload {
+  const p: Payload = structuredClone(fixtureBody);
+  if (o.event) p.event = o.event;
+  if (o.id) p.message.id = o.id;
+  if (o.from) {
+    p.message.sender = { id: o.from, platform: 'imessage' };
+    p.space.id = `any;-;${o.from}`;
+    p.message.space = { ...p.space };
   }
-  return f;
+  if (o.text !== undefined) p.message.content = { type: 'text', text: o.text };
+  if (o.content !== undefined) p.message.content = o.content;
+  return p;
 }
 
-export function signedRequest(params: Record<string, string>, opts: { signature?: string | null; url?: string; token?: string } = {}) {
-  const url = opts.url ?? WEBHOOK_URL;
-  const headers: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' };
-  const sig = opts.signature === undefined ? twilio.getExpectedTwilioSignature(opts.token ?? AUTH_TOKEN, url, params) : opts.signature;
-  if (sig !== null) headers['X-Twilio-Signature'] = sig;
-  return new Request(url, { method: 'POST', headers, body: new URLSearchParams(params).toString() });
+export function signedRequest(
+  body: unknown,
+  opts: { signature?: string | null; timestamp?: number | null; secret?: string; raw?: string } = {},
+) {
+  const raw = opts.raw ?? JSON.stringify(body);
+  const ts = opts.timestamp === undefined ? NOW_S : opts.timestamp;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Spectrum-Event': 'messages' };
+  if (ts !== null) headers['X-Spectrum-Timestamp'] = String(ts);
+  const sig = opts.signature === undefined ? spectrumSignature(opts.secret ?? SECRET, String(ts), raw) : opts.signature;
+  if (sig !== null) headers['X-Spectrum-Signature'] = sig;
+  return new Request(WEBHOOK_URL, { method: 'POST', headers, body: raw });
 }

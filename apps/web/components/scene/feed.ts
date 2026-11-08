@@ -3,7 +3,7 @@
 // so the page can use this without pulling the scene into its bundle.
 
 import { defangText } from "@/components/messages/defang";
-import { isPotentialScam, type Message } from "@/lib/messages";
+import { isPotentialScam, summarize, type Message } from "@/lib/messages";
 
 /** What the scene needs to animate one resolved message. */
 export interface SceneMessage {
@@ -39,7 +39,7 @@ const LABEL_CHARS = 34;
 
 /** Display mapping only: the action and verdict come from the gateway. */
 export function toSceneMessage(m: Message): SceneMessage {
-  const text = defangText(m.body);
+  const text = defangText(summarize(m));
   return {
     label: text.length > LABEL_CHARS ? `${text.slice(0, LABEL_CHARS - 1)}…` : text,
     potentialScam: isPotentialScam(m),

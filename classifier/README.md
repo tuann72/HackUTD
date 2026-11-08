@@ -35,6 +35,18 @@ Prices vary, so check what `vultr-cli plans list` shows before you create anythi
 
 > **Want an AI agent to do this for you?** Skip to [Let an AI agent set it up](#let-an-ai-agent-set-it-up). It has a ready-to-paste prompt.
 
+> **Shortcut: one command per step** ([`vultr/`](vultr/), written but **not yet run against a real account**, so read them first). They use the Vultr API with `curl` + `jq` (no `vultr-cli` needed), ask before anything that costs money, and never print your key or token:
+>
+> ```bash
+> export VULTR_API_KEY=...                                  # Account → API; never commit it
+> bash classifier/vultr/train_gpu.sh --list                 # GPU plans + prices in $REGION (default ewr)
+> GPU_PLAN=<id> bash classifier/vultr/train_gpu.sh          # step 1: create GPU → train → copy back → DELETE GPU
+> MODE=shared HOST=<gateway-vm-ip> bash classifier/vultr/deploy_inference.sh   # step 2, on the gateway VM
+> MODE=separate CREATE=1 bash classifier/vultr/deploy_inference.sh             # step 2, on its own server
+> ```
+>
+> `train_gpu.sh` deletes the GPU instance on success, failure or Ctrl-C (a `trap`), unless you set `KEEP_INSTANCE=1`. Still run `vultr-cli instance list` afterwards to be sure. For the two `MODE`s, see [Where the classifier runs](#where-the-classifier-runs-tbd).
+
 ## Before you start
 
 - [ ] A Vultr account with credits
@@ -207,6 +219,17 @@ CLASSIFIER_URL=https://45-76-1-2.sslip.io
 CLASSIFIER_TOKEN=the-token-you-made
 ```
 
+## Where the classifier runs (TBD)
+
+The gateway runs on a Vultr VM with systemd and Caddy ([`services/gateway/DEPLOY.md`](../services/gateway/DEPLOY.md)). That leaves two ways to host the classifier. `deploy_inference.sh` supports both:
+
+| `MODE` | Where | Gateway setting | Cost | Trade-off |
+|---|---|---|---|---|
+| `shared` | The gateway's VM, as a container on `127.0.0.1:8000` | `CLASSIFIER_URL=http://127.0.0.1:8000` | One server. It needs ≥ 2 GB RAM, so the gateway VM can't be the 1 GB plan | No public classifier URL to protect. One box to manage. A classifier memory spike shares the box with interception |
+| `separate` | Its own CPU server, behind its own Caddy at `https://<ip-dashes>.sslip.io` (steps 2–3 below) | `CLASSIFIER_URL=https://…sslip.io` | Two servers | The classifier can be rebuilt or resized without touching the gateway. It's internet-facing, so it relies on the token |
+
+`shared` is the one-server idea from Timothy's unmerged commit `d28ebd5` ("Host the gateway on the classifier's Vultr server"), adapted to the gateway's systemd setup on `main` instead of running the gateway inside this Compose file. The bearer token is required either way. The team hasn't picked one yet.
+
 ## Option B: the TF-IDF model (no GPU)
 
 TF-IDF trains on an ordinary CPU, so you can train it **on the inference server itself**. No GPU rental, and nothing to copy back.
@@ -304,9 +327,30 @@ classifier/
   service/requirements.txt   service packages
   Dockerfile                 packages the service, MiniLM and the model into one image
   deploy/                    docker-compose.yml + Caddyfile + .env.example for the CPU server
-  tests/test_service.py      checks auth, a scam, a normal message and a long email
+  tests/test_offline.py      runs anywhere: tiny synthetic TF-IDF model + fake MiniLM encoder
+  tests/test_service.py      against real artifacts (skipped without them)
+  requirements-test.txt      just enough for test_offline.py (no PyTorch)
+  vultr/                     laptop-side scripts: train_gpu.sh, deploy_inference.sh, common.sh
   artifacts/                 the trained model (created by training; gitignored)
 ```
+
+### Tests that run anywhere (no model, no GPU, no PyTorch)
+
+```bash
+cd classifier
+python3 -m venv .venv-test && .venv-test/bin/pip install -r requirements-test.txt   # ~300 MB, no torch
+.venv-test/bin/python -m pytest tests
+```
+
+`tests/test_offline.py` trains a TF-IDF model on ~60 synthetic rows in a temp dir, then checks:
+- `train.py` writes loadable artifacts and metrics.
+- `/healthz` works.
+- `/classify` needs the bearer token.
+- Every response has exactly the shape the gateway's `parseVerdict` accepts (`services/gateway/src/classifier.ts`), with highlight spans that slice back to their text.
+- Binary models return no category.
+- The service refuses to start without a token.
+
+MiniLM's occlusion highlights are tested with a fake `sentence_transformers` module, so nothing is downloaded. `tests/test_service.py` still needs real artifacts and is skipped otherwise.
 
 ### Optional: working on the code locally
 

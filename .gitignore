@@ -1,4 +1,4 @@
-# Secrets (Twilio credentials, API keys)
+# Secrets (Photon webhook secret, API keys)
 .env
 .env.*
 !.env.example

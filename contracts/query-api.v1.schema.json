@@ -21,16 +21,63 @@
           "type": "object",
           "required": ["participantId", "display"],
           "additionalProperties": false,
-          "properties": {
-            "participantId": { "type": "string" },
-            "display": { "type": "string" }
-          }
+          "properties": { "participantId": { "type": "string" }, "display": { "type": "string" } }
         },
         "body": { "type": "string" },
         "receivedAt": { "type": "string", "format": "date-time" },
         "action": { "enum": ["pending", "delivered", "blocked"] },
-        "reason": { "enum": ["model_verdict", "classifier_unavailable", null] },
-        "verdict": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/verdict" }] }
+        "reason": { "enum": ["model_verdict", "classifier_unavailable", "not_classified", "sender_blocked", "override", null] },
+        "verdict": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/verdict" }] },
+        "kind": {
+          "description": "What was sent. Optional for older v1 producers; absent means \"text\".",
+          "enum": ["text", "link", "attachment", "reaction", "contact", "album"]
+        },
+        "conversation": {
+          "description": "The iMessage chat it arrived in. Optional; absent means a DM.",
+          "type": "object",
+          "required": ["id", "type"],
+          "additionalProperties": false,
+          "properties": { "id": { "type": "string" }, "type": { "enum": ["dm", "group"] } }
+        },
+        "attachments": {
+          "description": "Attachment metadata only (no bytes or URLs).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "mimeType", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": ["string", "null"] },
+              "mimeType": { "type": ["string", "null"] },
+              "size": { "type": ["integer", "null"], "minimum": 0 }
+            }
+          }
+        },
+        "reaction": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["emoji", "targetPreview"],
+              "additionalProperties": false,
+              "properties": { "emoji": { "type": "string" }, "targetPreview": { "type": ["string", "null"] } }
+            }
+          ]
+        },
+        "contact": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["name", "phones"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": ["string", "null"] },
+                "phones": { "description": "Masked, like from.display", "type": "array", "items": { "type": "string" } }
+              }
+            }
+          ]
+        }
       }
     },
     "verdict": {

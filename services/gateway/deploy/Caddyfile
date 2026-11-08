@@ -1,0 +1,8 @@
+# T-Gate gateway behind Caddy (automatic HTTPS via Let's Encrypt).
+# bootstrap.sh renders this to /etc/caddy/Caddyfile, replacing GATEWAY_HOST.
+# Needs a DNS A record for GATEWAY_HOST pointing at this VM, and ports 80 + 443 open.
+# Photon delivers to https://GATEWAY_HOST/webhooks/photon; the web app reads /api/messages.
+GATEWAY_HOST {
+	encode gzip
+	reverse_proxy localhost:8787
+}

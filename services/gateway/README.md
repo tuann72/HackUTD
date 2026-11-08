@@ -1,10 +1,10 @@
 # T-Gate interception gateway
 
-The gateway is the victim number's "carrier". Twilio (or the perpetrator simulator) POSTs every inbound SMS for the victim number to `POST /twilio/sms`. The gateway verifies the signature, dedupes, stores the message, answers Twilio immediately with empty TwiML, then classifies the message in the background and either **delivers** it to the virtual inbox or **blocks** it. The web app reads the result from `GET /api/messages`.
+The gateway is the victim line's "carrier". Photon (Spectrum), or the perpetrator simulator, POSTs every inbound **iMessage** for the victim line to `POST /webhooks/photon`. The gateway verifies the signature, dedupes, stores the message, answers `200 ok` right away, then classifies the message in the background and either **delivers** it to the virtual inbox or **blocks** it. The web app reads the result from `GET /api/messages`.
 
-Task 1.2 of [`docs/features/twilio-mvp.md`](../../docs/features/twilio-mvp.md). The only thing it shares with the web app is [`contracts/`](../../contracts/README.md).
+Plan: [`docs/features/photon-imessage.md`](../../docs/features/photon-imessage.md), which replaces the Twilio webhook of [`twilio-mvp.md`](../../docs/features/twilio-mvp.md). The only thing it shares with the web app is [`contracts/`](../../contracts/README.md).
 
-Stack: TypeScript on Node 24, [Hono](https://hono.dev) with `@hono/node-server`, built-in `node:sqlite`, the official `twilio` package (signature check only, it never calls the Twilio API).
+Stack: TypeScript on Node 24, [Hono](https://hono.dev) with `@hono/node-server`, built-in `node:sqlite`. It has no Photon SDK dependency: the signature check is ~20 lines of `node:crypto` (`src/photon.ts`), and the gateway never calls Photon's API.
 
 ## Run
 
@@ -21,8 +21,9 @@ npm run dev               # http://localhost:8787, reloads on change
 | `npm start` | Start without reload |
 | `npm test` | Vitest suite (in-memory SQLite, fake classifiers, no network beyond localhost) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run send:sample` | Send one signed, Twilio-format SMS to the local gateway, using the fixture in `contracts/fixtures/`. Options: `-- "custom body"`, `-- --from +15555550177`, `-- --sid SM...` (reuse a sid to test dedupe) |
+| `npm run send:sample` | Send one signed, Photon-format iMessage webhook to the local gateway, using the fixture in `contracts/fixtures/`. Options: `-- "custom body"`, `-- --from +15555550177` (or an email handle), `-- --id spc-msg-...` (reuse an id to test dedupe) |
 | `npm run db:reset` | Delete the SQLite file at `DB_PATH` (stop the gateway first) |
+| `npm run message:restore -- <msg id>` | "Not a scam": move that one blocked message to the inbox (reason `override`). Needs `ADMIN_TOKEN` (and `GATEWAY_URL` if not local) |
 
 Quick check:
 
@@ -36,9 +37,9 @@ curl -s localhost:8787/api/messages | jq
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `8787` | Listen port |
-| `TWILIO_AUTH_TOKEN` | required | Token used to verify `X-Twilio-Signature`. Local dev uses the placeholder `dev-auth-token-change-me`, which the simulator also uses. For the real number, use the Twilio account's auth token (in `.env` only, never committed) |
-| `PUBLIC_WEBHOOK_URL` | empty | The exact URL configured in the Twilio console. Twilio signs against that URL, so set it whenever the gateway sits behind a proxy, host or tunnel. Empty = validate against the URL the request arrived on (`http://localhost:8787/twilio/sms` in dev) |
-| `DB_PATH` | `./data/gateway.sqlite` | SQLite file (gitignored). `:memory:` works too |
+| `PHOTON_WEBHOOK_SECRET` | required | The webhook's signing secret, shown once when it's registered. Verifies `X-Spectrum-Signature` (Stable) or `webhook-signature` (Photon 2.0 / Beta, a `whsec_` secret). Local dev uses the placeholder `dev-photon-webhook-secret-change-me`, which the simulator also uses. Keep the real one in `.env` only |
+| `SIGNATURE_TOLERANCE_SECONDS` | `300` | Reject deliveries whose `X-Spectrum-Timestamp` is further than this from now (replay protection, Photon's recommended value) |
+| `DB_PATH` | `./data/gateway.sqlite` | SQLite file (gitignored). `:memory:` works too. A file left over from the Twilio schema is refused at startup: delete it (`npm run db:reset`) |
 | `CLASSIFIER_URL` | empty | Empty = built-in keyword stub (`stub@0`). Set = call `POST ${CLASSIFIER_URL}/classify` |
 | `CLASSIFIER_TOKEN` | empty | Sent as `Authorization: Bearer ...` when set |
 | `CLASSIFIER_TIMEOUT_MS` | `2500` | Abort the classifier call after this long |
@@ -46,21 +47,33 @@ curl -s localhost:8787/api/messages | jq
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to `GET /api/*` |
 | `GATEWAY_DEBUG` | `0` | `1` registers `POST /debug/reset`. Startup fails if `DEBUG_TOKEN` is empty |
 | `DEBUG_TOKEN` | empty | Required `X-Debug-Token` value for debug routes |
+| `ADMIN_TOKEN` | empty | Turns on `POST /admin/messages/restore` ("Not a scam" for one message), checked against `X-Admin-Token`. At least 16 characters. Empty means the route is off |
+| `SENDER_BLOCKLIST` | `off` | **`off` (default, Tuan 2026-11-08): block the message, not the sender.** No blocklist calls, no fingerprints and no Atlas connection, and the settings below are ignored. `on` is the parked option: block known scam senders without the model |
+| `MONGODB_URI` | empty | With `SENDER_BLOCKLIST=on` only: the Atlas connection string. Empty means an in-process blocklist that resets on restart. Ignored (with a log line) when off |
+| `MONGODB_DB` | `tgate` | Atlas database name |
+| `DNS_SERVERS` | empty | With `SENDER_BLOCKLIST=on` only: comma-separated DNS server IPs for Node's own lookups, for example `1.1.1.1,8.8.8.8`. Set it if Atlas fails with `querySrv ECONNREFUSED`: on some machines Node gets a DNS server that doesn't answer the SRV lookup `mongodb+srv://` needs. Empty means the OS default |
+| `FINGERPRINT_SECRET` | empty | With `SENDER_BLOCKLIST=on` only: HMAC key for sender and text fingerprints (`openssl rand -hex 32`). Required with `MONGODB_URI`. Empty means a random key per process |
+| `SENDER_BLOCK_STRIKES` | `3` | Model blocks from one sender before it's blocklisted (TBD) |
+| `SENDER_BLOCK_SCORE` | `0.95` | One block at or above this score blocklists the sender at once (TBD) |
+| `SENDER_BLOCK_TTL_DAYS` | `7` | How long a blocklisting lasts |
 
 ## Endpoints
 
-### `POST /twilio/sms` (Twilio webhook)
+### `POST /webhooks/photon` (Photon webhook)
 
-Form-encoded, exactly as Twilio sends it ([fixture](../../contracts/fixtures/twilio-inbound-sms.sample.json)).
+JSON, exactly as Photon sends it ([fixture](../../contracts/fixtures/photon-inbound-imessage.sample.json), [Photon docs](https://photon.codes/docs/webhooks/events)).
 
-1. Verify `X-Twilio-Signature` with `twilio.validateRequest`. Missing or invalid → `403`. There is no bypass flag; tests and the simulator sign their requests.
-2. Dedupe on `MessageSid` (UNIQUE in SQLite). A retry gets `200` and empty TwiML, and nothing else happens.
-3. Map `From` to an opaque, stable `participantId` (`p_<hex>`) and a masked display (`***-***-0142`).
-4. Store the message as `pending` and answer `200`, `Content-Type: text/xml`, body `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`. The gateway never replies to the sender.
-5. After responding, classify through the `Classifier` interface. `score >= BLOCK_THRESHOLD` → `blocked`, else `delivered`, reason `model_verdict`.
-6. If the classifier throws, times out or returns something malformed, **fail open** (Tuan, 2026-11-07): `delivered`, reason `classifier_unavailable`, `verdict: null`. The UI shows this as "unverified".
+1. Verify the **raw body** before parsing: `X-Spectrum-Signature` must equal `v0=` + hex HMAC-SHA256(`PHOTON_WEBHOOK_SECRET`, `"v0:" + X-Spectrum-Timestamp + ":" + body`), compared in constant time, with the timestamp within `SIGNATURE_TOLERANCE_SECONDS`. A missing header or stale timestamp gets `400`, and a bad signature gets `401`. There's no bypass flag. Tests and the simulator sign their requests.
+2. Parse. A signed but malformed body (not JSON, no `message.id` or `message.sender.id`) gets `400`. Anything the gateway doesn't handle gets `200 ok` and is dropped, so Photon doesn't retry it: an event other than `messages`, a platform other than `imessage`, a non-inbound message, an unknown content type, or empty text.
+3. Map content to the API `kind`. `text`, `richlink` (its URL) and `group` albums (text items joined, attachment items listed) are classified. `attachment`, `reaction` and `contact` have no text, so they're stored with their metadata (contact phones masked) and **delivered with reason `not_classified`**. Group chats (`space.type == "group"`) get an opaque `conversation` id. See the table in [the plan](../../docs/features/photon-imessage.md#payload-handled).
+4. Dedupe on `message.id` (UNIQUE in SQLite). Photon delivers at least once and retries on 5xx, 408, 429 and timeouts. A retry gets `200 ok` and nothing else happens.
+5. Map `sender.id` (an E.164 number or an Apple ID email) to an opaque, stable `participantId` (`p_<hex>`) and a masked display (`***-***-0142` or `j***@icloud.com`).
+6. Store the message as `pending` and answer `200 ok`. The gateway never replies to the sender, and it has no Photon send code.
+7. After responding, judge **each message on its own** (Tuan, 2026-11-08: block the message, not the sender). Text-less content is `delivered` with reason `not_classified`. Text is classified through the `Classifier` interface: `score >= BLOCK_THRESHOLD` → `blocked`, else `delivered`, reason `model_verdict`. A scam sender's next legit message is delivered.
+8. Only with `SENDER_BLOCKLIST=on` (parked): before classifying, check the blocklist with a keyed hash of the normalized handle. A blocklisted sender's message, including text-less content, is `blocked` with reason `sender_blocked`, `verdict: null` and no classifier call. Every model block records fingerprints, and `SENDER_BLOCK_STRIKES` blocks, or one at `SENDER_BLOCK_SCORE` or above, blocklist the sender for `SENDER_BLOCK_TTL_DAYS`. Atlas errors are logged and ignored (fail open).
+9. If the classifier throws, times out or returns something malformed, **fail open** (Tuan, 2026-11-07): the message is `delivered` with reason `classifier_unavailable` and `verdict: null`. The UI shows this as "unverified".
 
-Raw phone numbers and Twilio SIDs live only in the SQLite file. They never appear in API responses, and logs show only masked numbers and opaque ids.
+Raw handles and Photon message and space ids live only in the SQLite file. They never appear in API responses, and logs show only masked handles and opaque ids.
 
 ### `GET /api/messages?limit=N`
 
@@ -69,6 +82,16 @@ Read-only, `limit` 1–200 (default 100), newest first. The response shape is ex
 ### `GET /healthz`
 
 `{"ok":true}`.
+
+### `POST /admin/messages/restore` (operator tool, not part of the contract)
+
+"Not a scam" for **one message**. It only exists when `ADMIN_TOKEN` is set (otherwise `404`). Send `X-Admin-Token: <ADMIN_TOKEN>` (missing → `401`, wrong → `403`) and the body `{"messageId": "msg_..."}`, the opaque id from `GET /api/messages`, never a handle.
+
+It moves only that message from blocked to the inbox, with reason `override`, keeping its verdict. A message that isn't blocked gets `409`. Only with `SENDER_BLOCKLIST=on`, it also allowlists the sender. The response is `{ok, messageId, allowlisted}`, where `allowlisted` is `null` when the blocklist is off and `false` if the Atlas write failed (run it again). **The web app must never call it.**
+
+```bash
+npm run message:restore -- msg_0123abcd...
+```
 
 ### `POST /debug/reset` (developer tool, not part of the contract)
 
@@ -83,25 +106,29 @@ curl -X POST -H "X-Debug-Token: $DEBUG_TOKEN" localhost:8787/debug/reset
 ## Classifiers
 
 - **`StubClassifier`** (default): keyword/regex rules that return `{label, score, category, model: "stub@0", highlights}`. Highlights are exact character spans into the message. Categories are the seven names in [`data/scam_categories.csv`](../../data/scam_categories.csv); legit messages get `category: null`. It's a placeholder for demos and tests, not a model.
-- **`HttpClassifier`** (when `CLASSIFIER_URL` is set): `POST {CLASSIFIER_URL}/classify` with JSON `{messageId, text}` only (the opaque gateway id, never a phone number or SID). Expects `{messageId, label, score, category, model, highlights: [{start, end, text, weight}]}`. Highlight spans that don't fit the message are dropped, and `text` is re-sliced from the message so it always matches the span.
+- **`HttpClassifier`** (when `CLASSIFIER_URL` is set): `POST {CLASSIFIER_URL}/classify` with JSON `{messageId, text}` only (the opaque gateway id, never a handle or Photon id). Expects `{messageId, label, score, category, model, highlights: [{start, end, text, weight}]}`. Highlight spans that don't fit the message are dropped, and `text` is re-sliced from the message so it always matches the span.
 
-## Pointing a real Twilio number at it
+## Connecting a real Photon iMessage line
 
-1. Run the gateway somewhere Twilio can reach over HTTPS. For the Vultr VM, follow [`DEPLOY.md`](DEPLOY.md).
-2. In the Twilio console, under the victim number → Messaging → "A message comes in", set **Webhook**, `HTTP POST`, URL `https://<host>/twilio/sms`.
-3. Set `TWILIO_AUTH_TOKEN` to the account's auth token and `PUBLIC_WEBHOOK_URL` to that exact URL, then restart.
+1. Run the gateway somewhere Photon can reach over **public HTTPS**. Photon refuses `http`, private and loopback addresses, and redirects. For the Vultr VM, follow [`DEPLOY.md`](DEPLOY.md).
+2. Register the webhook with `npm run photon:webhook -- register https://149-28-243-66.sslip.io/webhooks/photon --write-env` ([`DEPLOY.md`](DEPLOY.md) step 6). A `pho_prj_` project id selects Photon 2.0 / Beta, which is what the team uses. `PHOTON_PROJECT_SECRET` is then a `pho_ask_` or `pho_sk_` API key.
 
-A tunnel (cloudflared, ngrok) is needed **only** when a real phone texts a gateway running on a laptop: Twilio can't reach `localhost`. The simulator and `npm run send:sample` POST to `localhost` directly and need no tunnel. With a tunnel, put the tunnel's URL in both the Twilio console and `PUBLIC_WEBHOOK_URL`, since the signature covers the exact URL.
+3. `--write-env` puts the signing secret in `PHOTON_WEBHOOK_SECRET`. Restart the gateway. The project id and key are only for registering. The gateway doesn't need them.
+
+The URL isn't part of the signature, so proxies and tunnels need no extra config (there's no `PUBLIC_WEBHOOK_URL` anymore). A tunnel (cloudflared, ngrok) is needed **only** when a real iMessage should reach a gateway on a laptop. The simulator and `npm run send:sample` POST to `localhost` directly.
 
 ## Layout
 
 ```
 src/app.ts         createApp({ db, classifier, config }) -> Hono app (+ idle() for tests)
+src/photon.ts      Spectrum signature check and payload parsing
 src/server.ts      reads env, opens SQLite, picks the classifier, listens
 src/classifier.ts  Classifier interface, StubClassifier, HttpClassifier
-src/db.ts          SQLite schema and queries, number masking
+src/db.ts          SQLite schema and queries
+src/handle.ts      iMessage handle normalization and masking (shared by db and blocklist)
+src/blocklist.ts   sender blocklist (parked, SENDER_BLOCKLIST=on): fingerprints, MemoryBlocklist, MongoBlocklist
 src/config.ts      env parsing and validation
 src/types.ts       types copied from the v1 contract
-scripts/           db-reset, send-sample
+scripts/           db-reset, send-sample, message-restore
 test/              vitest suites and a local fake classifier server
 ```

@@ -1,26 +1,34 @@
 /**
  * A tiny stand-in for the gateway, for testing the simulator alone.
- * Verifies X-Twilio-Signature with twilio.validateRequest, logs each message,
- * and returns empty TwiML (403 on a bad signature). No classification.
+ * Verifies X-Spectrum-Signature and the timestamp window, logs each message,
+ * and returns 200 ok (400/401 on a bad request, like the gateway). No classification.
  *
  *   npm run fake-gateway            # listens on the port in GATEWAY_WEBHOOK_URL (default 8787)
  */
+import { timingSafeEqual } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { pathToFileURL } from "node:url";
-import twilio from "twilio";
 import { configFromEnv, loadDotEnv } from "./config.ts";
-import { maskNumber } from "./twilio-request.ts";
+import { maskNumber, signBody, type SpectrumPayload } from "./spectrum-request.ts";
 
 export interface ReceivedMessage {
-  params: Record<string, string>;
+  payload: SpectrumPayload | null;
+  raw: string;
   signature: string;
+  timestamp: string;
   valid: boolean;
 }
 
-/** `webhookUrl` is the public URL the signature must be computed against (as the real gateway is configured). */
+export function verify(secret: string, signature: string, timestamp: string, raw: string, nowS = Date.now() / 1000): boolean {
+  if (!signature || !/^\d+$/.test(timestamp) || Math.abs(nowS - Number(timestamp)) > 300) return false;
+  const a = Buffer.from(signBody(secret, timestamp, raw));
+  const b = Buffer.from(signature);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function startFakeGateway(opts: {
   webhookUrl: string;
-  authToken: string;
+  webhookSecret: string;
   port?: number;
   log?: (line: string) => void;
 }): Promise<{ server: Server; port: number; received: ReceivedMessage[]; close: () => Promise<void> }> {
@@ -35,18 +43,25 @@ export function startFakeGateway(opts: {
     req.setEncoding("utf8");
     req.on("data", (c) => (raw += c));
     req.on("end", () => {
-      const params = Object.fromEntries(new URLSearchParams(raw));
-      const signature = String(req.headers["x-twilio-signature"] ?? "");
-      const valid = twilio.validateRequest(opts.authToken, signature, opts.webhookUrl, params);
-      received.push({ params, signature, valid });
-      opts.log?.(
-        `${valid ? "valid  " : "INVALID"} ${params.MessageSid} from ${maskNumber(params.From ?? "")}: ${params.Body}`,
-      );
+      const signature = String(req.headers["x-spectrum-signature"] ?? "");
+      const timestamp = String(req.headers["x-spectrum-timestamp"] ?? "");
+      const valid = verify(opts.webhookSecret, signature, timestamp, raw);
+      let payload: SpectrumPayload | null = null;
+      try {
+        payload = JSON.parse(raw) as SpectrumPayload;
+      } catch {
+        /* recorded as null */
+      }
+      received.push({ payload, raw, signature, timestamp, valid });
+      const m = payload?.message;
+      const c = m?.content;
+      const what = c?.type === "text" ? c.text : `[${c?.type ?? "?"}]`;
+      opts.log?.(`${valid ? "valid  " : "INVALID"} ${m?.id} from ${maskNumber(m?.sender.id ?? "")}: ${what}`);
       if (!valid) {
-        res.writeHead(403, { "Content-Type": "text/plain" }).end("invalid signature");
+        res.writeHead(401, { "Content-Type": "text/plain" }).end("bad signature");
         return;
       }
-      res.writeHead(200, { "Content-Type": "text/xml" }).end("<Response></Response>");
+      res.writeHead(200, { "Content-Type": "text/plain" }).end("ok");
     });
   });
   return new Promise((resolve) => {
@@ -67,7 +82,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   loadDotEnv();
   const config = configFromEnv();
   const port = Number(new URL(config.webhookUrl).port || 80);
-  startFakeGateway({ webhookUrl: config.webhookUrl, authToken: config.authToken, port, log: console.log }).then(() =>
-    console.log(`fake gateway listening on 127.0.0.1:${port}, verifying against ${config.webhookUrl}`),
+  startFakeGateway({ webhookUrl: config.webhookUrl, webhookSecret: config.webhookSecret, port, log: console.log }).then(() =>
+    console.log(`fake gateway listening on 127.0.0.1:${port} for ${new URL(config.webhookUrl).pathname}`),
   );
 }
