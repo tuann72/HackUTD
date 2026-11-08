@@ -8,6 +8,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 > - [`docs/features/twilio-mvp.md`](docs/features/twilio-mvp.md): the MVP (gateway, simulator, basic message UI). Its Twilio webhook parts are superseded by the Photon plan.
 > - [`docs/features/sender-blocklist.md`](docs/features/sender-blocklist.md): sender blocklist and scam fingerprints in MongoDB Atlas (in progress).
 > - [`docs/features/voice-scam-guard.md`](docs/features/voice-scam-guard.md): proposed later feature for SIP-routed call transcription, classification, and warnings.
+> - [`docs/features/potential-threat-data.md`](docs/features/potential-threat-data.md): synthetic threat/coercion/fake-emergency texts with a proposed label 8 "Potential Threat" (in progress; label scheme TBD).
 >
 > New plans start from [`docs/features/_TEMPLATE.md`](docs/features/_TEMPLATE.md). Add each new plan to the list above.
 
