@@ -65,6 +65,7 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 
 ## Progress notes
 
+- **2026-11-07:** Full 8-class runs of both models done on a laptop GPU (task 2.1, minus the binary runs and the Vultr GPU). TF-IDF + LR beats MiniLM + LR on its own (F1 0.982 vs 0.957), but stacking both gives the best zero-day recall (0.954 vs 0.927 for TF-IDF). Proposed: ship the stacked flow. Both models pass `tests/test_service.py`. Results: `CHANGELOG.md`, "TF-IDF vs. MiniLM, combined flows and zero-day test". Scripts: `classifier/experiments/`.
 - **2026-11-07:** TF-IDF + LR merged (#6) at Tuan's request without a training run or test run. Task 2.1 must train both models and run `tests/test_service.py` against each.
 
 - **2026-11-07:** Review pass. Dataset check: no empty messages, and `label_class` and `is_spam` agree on every row. 2,397 messages are over 5,000 characters (101 in test), so the service now accepts up to 50k characters instead of rejecting them. MiniLM truncates at 256 tokens. Val/test are ~80% email, so `train.py` now also reports SMS-only F1. The service refuses to start without `CLASSIFIER_TOKEN` (unless `CLASSIFIER_ALLOW_NO_AUTH=1`), the container runs as non-root, and `deploy/` adds Docker Compose + Caddy (HTTPS through sslip.io; the image builds on the server, so no registry is needed). The README is rewritten as a step-by-step `vultr-cli` guide, with a prompt for AI agents. Not yet run: a full training run, the Docker build and the tests. Those run on Vultr in tasks 2.1 and 3.1.

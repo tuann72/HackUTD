@@ -46,7 +46,7 @@ Planned after the MVP works, not part of the MVP:
 
 ### Classifier (agreed: MiniLM on Vultr)
 
-**Decision (Tuan, 2026-11-07):** use **MiniLM**, trained and hosted on **Vultr** (the team has Vultr credits, and it covers the Vultr track). TF-IDF + logistic regression is no longer the plan. Its binary baseline (F1 ≈ 0.98 on the real test split, `data/README.md`) is the bar MiniLM is compared against.
+**Decision (Tuan, 2026-11-07):** use **MiniLM**, trained and hosted on **Vultr** (the team has Vultr credits, and it covers the Vultr track). TF-IDF + logistic regression is no longer the plan. Its binary baseline (F1 ≈ 0.98 on the real test split, `data/README.md`) is the bar MiniLM is compared against. **Full runs (Timothy, 2026-11-07):** TF-IDF beats MiniLM alone, but the two combined ("stacked") catch the most never-seen scam types. Proposed: ship the stacked flow. See `CHANGELOG.md`, "TF-IDF vs. MiniLM, combined flows and zero-day test".
 
 - **Model:** frozen `sentence-transformers/all-MiniLM-L6-v2` embeddings with a logistic-regression head. Fine-tuning MiniLM is a fallback only if the head-only model falls clearly short of the baseline.
 - **Training:** on a **Vultr Cloud GPU** instance, destroyed after each run. Code and runbook: [`classifier/`](classifier/README.md). Plan: [`docs/features/classifier-service.md`](docs/features/classifier-service.md).

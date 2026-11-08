@@ -6,6 +6,52 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-07: TF-IDF vs. MiniLM, combined flows and zero-day test
+
+- **What ran (Timothy, laptop RTX 3050):** classifier task 2.1's full training runs on `data/scam_categories_100k_full.csv`, 8-class labels, for both models, then two experiments: [`classifier/experiments/compare.py`](classifier/experiments/compare.py) and [`zeroday.py`](classifier/experiments/zeroday.py). Everything tuned or fit is fit on the real `val` split; numbers below are the real `test` split (3,155 messages, 607 of them SMS). Both models pass `tests/test_service.py`. Binary-label runs are not done yet.
+- **Earlier numbers:** the MiniLM result going around (scam-vs-ham F1 0.949, macro-F1 0.80) is the 5k-row Mac smoke test, not a full run.
+
+**Each model alone (`train.py` metrics, full data):**
+
+| Test split | TF-IDF + LR | MiniLM + LR |
+|---|---|---|
+| Scam vs. ham precision / recall / F1 | 0.984 / 0.980 / **0.982** | 0.935 / 0.979 / 0.957 |
+| SMS-only scam vs. ham F1 | **0.936** | 0.875 |
+| 8-class accuracy / macro-F1 | **0.947 / 0.908** | 0.888 / 0.823 |
+| Train time (laptop) | 109 s features + 221 s fit, CPU | 311 s embeddings (GPU) + 43 s fit |
+
+TF-IDF wins every category, most on Imposter & Phishing (F1 0.852 vs 0.713).
+
+**Combined flows** (scam score = 1 − P(Ham), cutoff 0.5):
+
+| Setup | Precision | Recall | False blocks | Missed scams | SMS F1 | Calibration error (ECE) |
+|---|---|---|---|---|---|---|
+| TF-IDF + LR | 0.973 | 0.988 | 42 | 18 | 0.917 | 0.025 |
+| MiniLM + LR | 0.923 | 0.984 | 125 | 24 | 0.852 | 0.040 |
+| Average (0.8 TF-IDF + 0.2 MiniLM) | 0.976 | 0.990 | 37 | 15 | 0.935 | 0.031 |
+| Cascade (MiniLM only when TF-IDF score is 0.05–0.60, 14% of messages) | 0.976 | 0.990 | 37 | 15 | 0.935 | 0.027 |
+| TF-IDF recalibrated on `val` | 0.980 | 0.983 | 30 | 26 | 0.929 | **0.005** |
+| **Stacked** (small LR on both models' log-probabilities, fit on `val`) | **0.983** | 0.978 | **26** | 33 | **0.952** | 0.007 |
+
+On known scam categories the combinations gain only a few messages over TF-IDF alone, and most of the stacked model's calibration gain comes from refitting on real data (the recalibrated TF-IDF row).
+
+**Zero-day test:** for each of the 7 scam categories, both models were retrained as scam/ham with that whole category removed from training (and from the TF-IDF vocabulary); anything fit on `val` also excluded it. Recall on the never-seen category, test split, weighted by category size (1,526 messages over the 7 runs):
+
+| Setup | Unseen category caught (cutoff 0.5) | Unseen category caught (97%-precision threshold) | False blocks on ham |
+|---|---|---|---|
+| **Stacked** | **0.902** | **0.954** | **1.3%** |
+| Cascade | 0.900 | 0.950 | 1.6% |
+| Average | 0.898 | 0.950 | 1.5% |
+| TF-IDF + LR | 0.885 | 0.927 | 1.6% |
+| TF-IDF recalibrated | 0.880 | 0.927 | 1.5% |
+| MiniLM + LR | 0.874 | 0.771 | 4.4% |
+
+Adding MiniLM catches about 2.5 points more of a brand-new scam type (about 40 more messages here) with no more false blocks. It helps in 6 of 7 hold-outs; the exception is Jobs, Business & Investment (TF-IDF 0.925, stacked 0.868). MiniLM alone is the weakest setup everywhere.
+
+- **Recommendation (Timothy, proposed):** ship the **stacked** flow. TF-IDF + LR and MiniLM + LR both score every message, and a small LR fit on real `val` data combines them into one risk score. It has the best calibration of the combined flows (needed for a risk-score threshold), the fewest false blocks, the best SMS F1, and the best zero-day recall. The cascade is the fallback if MiniLM's CPU cost is a problem: same zero-day recall, MiniLM on only ~14% of messages, but less honest scores.
+- **Not built yet:** the service serves one model at a time. The stacked flow needs `train.py` to write both models plus the combiner, and `service/app.py` to load all three. `val` currently does double duty (combiner fit and threshold choice); split it in half when this is built.
+- **Still TBD:** binary vs. 8-class labels for the service, and the block threshold.
+
 ### 2026-11-07: Scene and message list on one page; 2D bubble image
 
 - **Decision (Tuan):** combine the initial scene and the message list into **one page at `/`**: the scene band on top, the inbox and blocked lists below. `/messages` and `/scene` redirect to `/` (temporary redirects, in case the routes split again).
