@@ -191,7 +191,7 @@ export function MessagesView() {
             </span>
           </div>
           <section
-            aria-label="Animation: each message flies to the Receiver; blocked ones are slapped away"
+            aria-label="Animation: each message flies toward the Receiver; blocked ones bounce off the T-Guard shield"
             className="h-[45dvh] min-h-64 overflow-hidden sm:h-[60dvh] sm:min-h-80"
           >
             <SceneClient feed={feed} />
