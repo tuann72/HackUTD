@@ -13,6 +13,8 @@ import type { MessagesResponse, Verdict } from './types.js';
 
 /** Path Photon delivers inbound iMessage webhooks to. */
 export const WEBHOOK_PATH = '/webhooks/photon';
+/** Header the web UI's Unblock and Clear blocks buttons send, checked against UI_ACTION_PASSWORD. */
+export const ACTION_PASSWORD_HEADER = 'X-Action-Password';
 
 export interface Logger {
   info(msg: string): void;
@@ -33,12 +35,13 @@ export interface AppDeps {
     | 'debugToken'
     | 'adminToken'
     | 'senderBlocklist'
+    | 'uiActionPassword'
     | 'reviewBandLow'
     | 'reviewBandHigh'
   > &
     Partial<Pick<GatewayConfig, 'voiceScoreToken' | 'voiceWarnThreshold'>>;
   /**
-   * Sender blocklist (docs/features/sender-blocklist.md), a parked option. Used only when
+   * Sender blocklist (docs/features/sender-blocklist.md), on by default since 2026-11-08. Used only when
    * `config.senderBlocklist` is true and both are given; otherwise never called, and every message
    * is judged on its own. Errors from the blocklist are logged and ignored (fail open).
    */
@@ -81,7 +84,8 @@ export function createApp({
   const store = new Store(db);
   const pending = new Set<Promise<void>>();
   const app = new Hono();
-  // Default (Tuan, 2026-11-08): block the message, not the sender. The blocklist is off unless configured on.
+  // SENDER_BLOCKLIST is on by default (Tuan, 2026-11-08); with it off, or no blocklist given, bl is null and
+  // every message is judged on its own.
   const bl = config.senderBlocklist && blocklist && fingerprinter ? { list: blocklist, fp: fingerprinter } : null;
 
   /** True only if the blocklist answered yes. An error counts as "not blocked" (fail open). */
@@ -224,8 +228,43 @@ export function createApp({
 
   app.use(
     '/api/*',
-    cors({ origin: config.corsOrigins, allowMethods: ['GET', 'DELETE'], maxAge: 600 }),
+    cors({
+      origin: config.corsOrigins,
+      allowMethods: ['GET', 'POST', 'DELETE'],
+      allowHeaders: ['Content-Type', ACTION_PASSWORD_HEADER],
+      maxAge: 600,
+    }),
   );
+
+  /** The web UI's password check for Unblock and Clear blocks (constant-time compare). */
+  function passwordOk(given: string | undefined): boolean {
+    return !!given && safeEqual(given, config.uiActionPassword);
+  }
+
+  /**
+   * Move one blocked message to the inbox (reason `override`, verdict kept). With the blocklist on, also
+   * allowlist its sender; an allowlist write error is logged and the restore still happens (fail open).
+   * Shared by the admin route and the web UI's Unblock button.
+   */
+  async function restoreBlocked(
+    messageId: string,
+  ): Promise<{ ok: true; allowlisted: boolean | null } | { ok: false; status: 404 | 409; error: string }> {
+    const decision = store.decisionOf(messageId);
+    if (!decision) return { ok: false, status: 404, error: 'no such message' };
+    if (decision.action !== 'blocked') return { ok: false, status: 409, error: `message is ${decision.action}, not blocked` };
+    let allowlisted: boolean | null = null;
+    if (bl) {
+      allowlisted = false;
+      try {
+        await bl.list.allow(bl.fp.sender(store.senderHandleOf(messageId)!), now());
+        allowlisted = true;
+      } catch (err) {
+        logger.warn(`${messageId}: allowlist write failed (${(err as Error).message})`);
+      }
+    }
+    store.restoreMessage(messageId, now());
+    return { ok: true, allowlisted };
+  }
 
   app.get('/api/messages', (c) => {
     const rawLimit = c.req.query('limit');
@@ -248,6 +287,46 @@ export function createApp({
     logger.warn(`clear chats: deleted ${cleared} messages`);
     c.header('Cache-Control', 'no-store');
     return c.json({ ok: true, cleared });
+  });
+
+  // Unblock one message (contracts/README.md, "Unblock and Clear blocks"). Needs X-Action-Password.
+  app.post('/api/messages/:id/unblock', async (c) => {
+    c.header('Cache-Control', 'no-store');
+    if (!passwordOk(c.req.header(ACTION_PASSWORD_HEADER))) return c.json({ error: 'wrong password' }, 401);
+    const messageId = c.req.param('id');
+    const res = await restoreBlocked(messageId);
+    if (!res.ok) return c.json({ error: res.error }, res.status);
+    logger.warn(`ui unblock: ${messageId} moved to the inbox${res.allowlisted === null ? '' : ` (sender allowlisted=${res.allowlisted})`}`);
+    return c.json({ ok: true, messageId, allowlisted: res.allowlisted });
+  });
+
+  // Blocklist status for the web UI. No password. If the blocklist store fails (Atlas down), 503 with
+  // the error rather than a guessed count; message handling is unaffected (it fails open).
+  app.get('/api/blocklist', async (c) => {
+    c.header('Cache-Control', 'no-store');
+    if (!bl) return c.json({ enabled: false, blockedSenders: 0 });
+    try {
+      return c.json({ enabled: true, blockedSenders: await bl.list.countBlocked(now()) });
+    } catch (err) {
+      logger.warn(`blocklist status unavailable (${(err as Error).message})`);
+      return c.json({ error: 'blocklist unavailable' }, 503);
+    }
+  });
+
+  // "Clear blocks": unblock every sender. Deletes all sender records (blocks, strikes, allowlist) and
+  // keeps text fingerprints. Messages already in the blocked log stay there. Needs X-Action-Password.
+  app.post('/api/blocklist/clear', async (c) => {
+    c.header('Cache-Control', 'no-store');
+    if (!passwordOk(c.req.header(ACTION_PASSWORD_HEADER))) return c.json({ error: 'wrong password' }, 401);
+    if (!bl) return c.json({ ok: true, cleared: 0, enabled: false });
+    try {
+      const cleared = await bl.list.clear();
+      logger.warn(`clear blocks: removed ${cleared} sender records`);
+      return c.json({ ok: true, cleared, enabled: true });
+    } catch (err) {
+      logger.warn(`clear blocks failed (${(err as Error).message})`);
+      return c.json({ error: 'blocklist unavailable' }, 503);
+    }
   });
 
   // Developer tool, not part of the contract. The web app must never call it.
@@ -279,24 +358,10 @@ export function createApp({
         return c.json({ error: 'body must be JSON: {"messageId": "msg_..."}' }, 400);
       }
       if (typeof messageId !== 'string' || !messageId) return c.json({ error: 'messageId is required' }, 400);
-      const decision = store.decisionOf(messageId);
-      if (!decision) return c.json({ error: 'no such message' }, 404);
-      if (decision.action !== 'blocked') return c.json({ error: `message is ${decision.action}, not blocked` }, 409);
-
-      // Only with the blocklist on: also allowlist the sender so the blocklist never blocks them again.
-      let allowlisted: boolean | null = null;
-      if (bl) {
-        allowlisted = false;
-        try {
-          await bl.list.allow(bl.fp.sender(store.senderHandleOf(messageId)!), now());
-          allowlisted = true;
-        } catch (err) {
-          logger.warn(`${messageId}: allowlist write failed (${(err as Error).message})`);
-        }
-      }
-      store.restoreMessage(messageId, now());
-      logger.warn(`admin restore: ${messageId} moved to the inbox${allowlisted === null ? '' : ` (sender allowlisted=${allowlisted})`}`);
-      return c.json({ ok: true, messageId, allowlisted });
+      const res = await restoreBlocked(messageId);
+      if (!res.ok) return c.json({ error: res.error }, res.status);
+      logger.warn(`admin restore: ${messageId} moved to the inbox${res.allowlisted === null ? '' : ` (sender allowlisted=${res.allowlisted})`}`);
+      return c.json({ ok: true, messageId, allowlisted: res.allowlisted });
     });
   }
 

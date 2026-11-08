@@ -74,6 +74,13 @@ export interface Blocklist {
   recordScam(event: ScamEvent, now?: Date): Promise<RecordResult>;
   /** "Not a scam": lift the block and never blocklist this sender again. */
   allow(senderFp: string, now?: Date): Promise<void>;
+  /**
+   * "Clear blocks": delete every sender record (blocks, strikes and allowlist entries).
+   * Text fingerprints are kept. Returns how many sender records were removed.
+   */
+  clear(): Promise<number>;
+  /** How many senders are blocked right now (block not expired, not allowlisted), the same rule as isBlocked. */
+  countBlocked(now?: Date): Promise<number>;
   close(): Promise<void>;
 }
 
@@ -172,6 +179,18 @@ export class MemoryBlocklist implements Blocklist {
     }
   }
 
+  async clear(): Promise<number> {
+    const n = this.senders.size;
+    this.senders.clear();
+    return n;
+  }
+
+  async countBlocked(now = new Date()): Promise<number> {
+    let n = 0;
+    for (const doc of this.senders.values()) if (isActive(doc, now)) n += 1;
+    return n;
+  }
+
   async close(): Promise<void> {}
 }
 
@@ -257,6 +276,15 @@ export class MongoBlocklist implements Blocklist {
       },
       { upsert: true },
     );
+  }
+
+  async clear(): Promise<number> {
+    const res = await this.senders.deleteMany({});
+    return res.deletedCount;
+  }
+
+  async countBlocked(now = new Date()): Promise<number> {
+    return this.senders.countDocuments({ allowlisted: { $ne: true }, blockedUntil: { $gt: now } });
   }
 
   async close(): Promise<void> {

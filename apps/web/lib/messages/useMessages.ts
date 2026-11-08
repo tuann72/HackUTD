@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { diffMessages, type MessageChange } from "./diff";
+import type { BlockActions } from "./actions";
 import { pickSource, type MessageSource, type SourceMode } from "./source";
 import type { Message } from "./types";
 
@@ -21,6 +22,10 @@ export interface UseMessagesResult {
   error: string | null;
   /** Deletes every message at the source, then empties the list. Null when the source can't clear. */
   clear: (() => Promise<void>) | null;
+  /** Unblock and Clear blocks at the source. Null until loaded, and for the mock sources. */
+  actions: BlockActions | null;
+  /** Polls now instead of waiting for the next tick (e.g. right after an unblock). */
+  refresh: () => void;
 }
 
 /**
@@ -31,10 +36,12 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
   const [messages, setMessages] = useState<Message[]>([]);
   const [mode, setMode] = useState<SourceMode | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actions, setActions] = useState<BlockActions | null>(null);
   const prev = useRef<Message[]>([]);
   const srcRef = useRef<MessageSource | null>(null);
   // Bumped by clear() so a poll that started before the delete can't put the old list back.
   const generation = useRef(0);
+  const kick = useRef<() => void>(() => {});
   const onChangesRef = useRef(onChanges);
   useEffect(() => {
     onChangesRef.current = onChanges;
@@ -44,13 +51,17 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
     let src: MessageSource | null = null;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
+    let running = false;
 
     const tick = async () => {
+      if (running) return;
+      running = true;
       try {
         if (!src) {
           src = source ?? pickSource(new URLSearchParams(window.location.search).get("source"));
           srcRef.current = src;
           setMode(src.mode);
+          setActions(src.actions ?? null);
         }
         const gen = generation.current;
         const next = await src.fetch();
@@ -63,13 +74,24 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
       } catch (e) {
         if (!stopped) setError(String(e instanceof Error ? e.message : e));
       } finally {
-        if (!stopped) timer = setTimeout(tick, intervalMs);
+        running = false;
+        if (!stopped) {
+          clearTimeout(timer);
+          timer = setTimeout(tick, intervalMs);
+        }
       }
+    };
+    // A poll already in flight may predate the change; the next tick picks it up.
+    kick.current = () => {
+      if (stopped || running) return;
+      clearTimeout(timer);
+      void tick();
     };
     tick();
     return () => {
       stopped = true;
       clearTimeout(timer);
+      kick.current = () => {};
     };
   }, [intervalMs, source]);
 
@@ -80,5 +102,14 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
     setMessages([]);
   }, []);
 
-  return { messages, mode, error, clear: mode && mode !== "static" ? clear : null };
+  const refresh = useCallback(() => kick.current(), []);
+
+  return {
+    messages,
+    mode,
+    error,
+    clear: mode && mode !== "static" ? clear : null,
+    actions,
+    refresh,
+  };
 }

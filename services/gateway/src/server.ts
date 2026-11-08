@@ -23,8 +23,8 @@ const rules = {
   highScore: config.senderBlockScore,
   ttlMs: config.senderBlockTtlDays * 24 * 60 * 60 * 1000,
 };
-// SENDER_BLOCKLIST=off (default, Tuan 2026-11-08): no blocklist object, no Atlas connection.
-// on: Atlas if MONGODB_URI is set, else an in-process blocklist and per-process key (both reset on restart).
+// SENDER_BLOCKLIST=on (default since 2026-11-08, Tuan): Atlas if MONGODB_URI is set, else an in-process
+// blocklist and per-process key (both reset on restart). off: no blocklist object, no Atlas connection.
 let blocklist: Blocklist | undefined;
 if (config.senderBlocklist) {
   blocklist = config.mongodbUri

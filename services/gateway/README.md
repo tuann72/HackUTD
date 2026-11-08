@@ -45,12 +45,13 @@ curl -s localhost:8787/api/messages | jq
 | `CLASSIFIER_TIMEOUT_MS` | `2500` | Abort the classifier call after this long |
 | `BLOCK_THRESHOLD` | `0.5` | Block when `verdict.score >= threshold`. The VM uses `0.7` |
 | `MONEY_WARN_AMOUNT` | `500` | Add `verdict.warning` to a delivered message asking the reader for at least this many dollars. Never blocks. `0` turns it off |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to `GET /api/*` |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated origins allowed to call `/api/*` (GET, POST, DELETE, with the `X-Action-Password` and `Content-Type` headers) |
+| `UI_ACTION_PASSWORD` | `4321` | Password the web UI's Unblock and Clear blocks buttons send in `X-Action-Password` (Tuan, 2026-11-08). Any non-empty string; blank means the default. It is a demo guard, not real auth: change it on a public deploy |
 | `GATEWAY_DEBUG` | `0` | `1` registers `POST /debug/reset`. Startup fails if `DEBUG_TOKEN` is empty |
 | `DEBUG_TOKEN` | empty | Required `X-Debug-Token` value for debug routes |
 | `ADMIN_TOKEN` | empty | Turns on `POST /admin/messages/restore` ("Not a scam" for one message), checked against `X-Admin-Token`. At least 16 characters. Empty means the route is off |
-| `SENDER_BLOCKLIST` | `off` | **`off` (default, Tuan 2026-11-08): block the message, not the sender.** No blocklist calls, no fingerprints and no Atlas connection, and the settings below are ignored. `on` is the parked option: block known scam senders without the model |
-| `MONGODB_URI` | empty | With `SENDER_BLOCKLIST=on` only: the Atlas connection string. Empty means an in-process blocklist that resets on restart. Ignored (with a log line) when off |
+| `SENDER_BLOCKLIST` | `on` | **`on` (default since 2026-11-08, Tuan): block known scam senders without the model** (reason `sender_blocked`). `off`: block the message, not the sender. No blocklist calls, no fingerprints and no Atlas connection, and the settings below are ignored |
+| `MONGODB_URI` | empty | With `SENDER_BLOCKLIST=on` only: the Atlas connection string. Empty means an in-process blocklist that resets on restart (so set it in production). Ignored (with a log line) when off |
 | `MONGODB_DB` | `tgate` | Atlas database name |
 | `DNS_SERVERS` | empty | With `SENDER_BLOCKLIST=on` only: comma-separated DNS server IPs for Node's own lookups, for example `1.1.1.1,8.8.8.8`. Set it if Atlas fails with `querySrv ECONNREFUSED`: on some machines Node gets a DNS server that doesn't answer the SRV lookup `mongodb+srv://` needs. Empty means the OS default |
 | `FINGERPRINT_SECRET` | empty | With `SENDER_BLOCKLIST=on` only: HMAC key for sender and text fingerprints (`openssl rand -hex 32`). Required with `MONGODB_URI`. Empty means a random key per process |
@@ -71,18 +72,34 @@ JSON, exactly as Photon sends it ([fixture](../../contracts/fixtures/photon-inbo
 5. Map `sender.id` (an E.164 number or an Apple ID email) to an opaque, stable `participantId` (`p_<hex>`) and a masked display (`***-***-0142` or `j***@icloud.com`).
 6. Store the message as `pending` and answer `200 ok`. The gateway never replies to the sender, and it has no Photon send code.
 7. After responding, judge **each message on its own** (Tuan, 2026-11-08: block the message, not the sender). Text-less content is `delivered` with reason `not_classified`. Text is classified through the `Classifier` interface: `score >= BLOCK_THRESHOLD` → `blocked`, else `delivered`, reason `model_verdict`. A scam sender's next legit message is delivered.
-8. Only with `SENDER_BLOCKLIST=on` (parked): before classifying, check the blocklist with a keyed hash of the normalized handle. A blocklisted sender's message, including text-less content, is `blocked` with reason `sender_blocked`, `verdict: null` and no classifier call. Every model block records fingerprints, and `SENDER_BLOCK_STRIKES` blocks, or one at `SENDER_BLOCK_SCORE` or above, blocklist the sender for `SENDER_BLOCK_TTL_DAYS`. Atlas errors are logged and ignored (fail open).
+8. With `SENDER_BLOCKLIST=on` (the default): before classifying, check the blocklist with a keyed hash of the normalized handle. A blocklisted sender's message, including text-less content, is `blocked` with reason `sender_blocked`, `verdict: null` and no classifier call. Every model block records fingerprints, and `SENDER_BLOCK_STRIKES` blocks, or one at `SENDER_BLOCK_SCORE` or above, blocklist the sender for `SENDER_BLOCK_TTL_DAYS`. Atlas errors are logged and ignored (fail open).
 9. If the classifier throws, times out or returns something malformed, **fail open** (Tuan, 2026-11-07): the message is `delivered` with reason `classifier_unavailable` and `verdict: null`. The UI shows this as "unverified".
 
 Raw handles and Photon message and space ids live only in the SQLite file. They never appear in API responses, and logs show only masked handles and opaque ids.
 
 ### `GET /api/messages?limit=N`
 
-Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET and DELETE.
+Read-only, `limit` 1–200 (default 100), newest first. The response shape is exactly [`contracts/query-api.v1.schema.json`](../../contracts/query-api.v1.schema.json); a test validates real output against it. CORS allows `CORS_ORIGINS`, GET, POST and DELETE.
 
 ### `DELETE /api/messages`
 
 Deletes every stored message, conversation and participant (the same as `POST /debug/reset`) and returns `{ok, cleared}`. The web app's "Clear chats" button calls it (Tuan, 2026-11-08). **No token:** anyone who can reach the gateway can wipe the inbox.
+
+### `POST /api/messages/:id/unblock`
+
+The web UI's Unblock button. Send `X-Action-Password: <UI_ACTION_PASSWORD>`; missing or wrong gets `401 {"error":"wrong password"}`. It does the same as `POST /admin/messages/restore` (shared code): the message moves to the inbox with reason `override`, its verdict kept, and with the blocklist on its sender is allowlisted. Returns `{ok, messageId, allowlisted}` (`null` when the blocklist is off, `false` if the allowlist write failed; the message is restored either way). `404` if no such message, `409` if it isn't blocked.
+
+### `GET /api/blocklist`
+
+`{enabled, blockedSenders}`: whether the sender blocklist is on and how many senders are blocked right now (block not expired, not allowlisted). No password, `Cache-Control: no-store`. When off: `{enabled: false, blockedSenders: 0}`. If Atlas fails: `503 {"error":"blocklist unavailable"}` (message handling still fails open).
+
+### `POST /api/blocklist/clear`
+
+The web UI's Clear blocks button: unblocks every sender. Needs `X-Action-Password` like Unblock. It deletes every sender record (blocks, strikes and allowlist entries) and keeps the text fingerprints. Messages already in the blocked log stay there. Returns `{ok, cleared, enabled}`, where `cleared` is the number of sender records removed (`cleared: 0, enabled: false` when the blocklist is off). Atlas error: `503`.
+
+```bash
+curl -s -X POST -H 'X-Action-Password: 4321' localhost:8787/api/blocklist/clear
+```
 
 ### `GET /healthz`
 
@@ -92,7 +109,7 @@ Deletes every stored message, conversation and participant (the same as `POST /d
 
 "Not a scam" for **one message**. It only exists when `ADMIN_TOKEN` is set (otherwise `404`). Send `X-Admin-Token: <ADMIN_TOKEN>` (missing → `401`, wrong → `403`) and the body `{"messageId": "msg_..."}`, the opaque id from `GET /api/messages`, never a handle.
 
-It moves only that message from blocked to the inbox, with reason `override`, keeping its verdict. A message that isn't blocked gets `409`. Only with `SENDER_BLOCKLIST=on`, it also allowlists the sender. The response is `{ok, messageId, allowlisted}`, where `allowlisted` is `null` when the blocklist is off and `false` if the Atlas write failed (run it again). **The web app must never call it.**
+It moves only that message from blocked to the inbox, with reason `override`, keeping its verdict. A message that isn't blocked gets `409`. Only with `SENDER_BLOCKLIST=on`, it also allowlists the sender. The response is `{ok, messageId, allowlisted}`, where `allowlisted` is `null` when the blocklist is off and `false` if the Atlas write failed (run it again). **The web app must never call it**; it uses `POST /api/messages/:id/unblock`, which runs the same code behind the UI password.
 
 ```bash
 npm run message:restore -- msg_0123abcd...
@@ -135,7 +152,7 @@ src/server.ts      reads env, opens SQLite, picks the classifier, listens
 src/classifier.ts  Classifier interface, StubClassifier, HttpClassifier
 src/db.ts          SQLite schema and queries
 src/handle.ts      iMessage handle normalization and masking (shared by db and blocklist)
-src/blocklist.ts   sender blocklist (parked, SENDER_BLOCKLIST=on): fingerprints, MemoryBlocklist, MongoBlocklist
+src/blocklist.ts   sender blocklist (SENDER_BLOCKLIST, on by default): fingerprints, MemoryBlocklist, MongoBlocklist
 src/config.ts      env parsing and validation
 src/types.ts       types copied from the v1 contract
 scripts/           db-reset, send-sample, message-restore

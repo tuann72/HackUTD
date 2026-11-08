@@ -27,7 +27,8 @@ export const fingerprinter = makeFingerprinter('test-fingerprint-secret-01234567
 
 /**
  * Every test app gets an in-memory blocklist unless `blocklist: null` is passed. It is only
- * used when `config.senderBlocklist` is true; the default is off, as in production.
+ * used when `config.senderBlocklist` is true. Production defaults to on (2026-11-08), but test apps
+ * default to off so each test opts in to sender-level blocking explicitly.
  * Pass `now` to move the clock (blocklist expiry).
  */
 export function makeApp(
@@ -49,6 +50,7 @@ export function makeApp(
       debugToken: null,
       adminToken: null,
       senderBlocklist: false,
+      uiActionPassword: '4321',
       reviewBandLow: 0.22,
       reviewBandHigh: 0.77,
       ...opts.config,

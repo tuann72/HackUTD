@@ -14,7 +14,7 @@ const validate = ajv.compile(readContract('contracts/query-api.v1.schema.json'))
 
 const SCAMMER = '+15555550166';
 
-/** The parked option: SENDER_BLOCKLIST=on. */
+/** SENDER_BLOCKLIST=on (the production default since 2026-11-08; test apps default to off). */
 const makeOn = (opts: Parameters<typeof makeApp>[0] = {}) => makeApp({ ...opts, config: { senderBlocklist: true, ...opts.config } });
 
 /** Scores every message `score`, and counts calls. */
@@ -40,7 +40,7 @@ async function send(app: ReturnType<typeof makeApp>, id: string, opts: { from?: 
   expect(res.status).toBe(200);
 }
 
-describe('SENDER_BLOCKLIST=on (parked option)', () => {
+describe('SENDER_BLOCKLIST=on', () => {
   it('after 3 model blocks, the 4th message is sender_blocked without a classifier call', async () => {
     const { classifier, calls } = fixedClassifier(0.8);
     const app = makeOn({ classifier });
@@ -131,6 +131,12 @@ describe('SENDER_BLOCKLIST=on (parked option)', () => {
       allow: async () => {
         throw new Error('atlas down');
       },
+      clear: async () => {
+        throw new Error('atlas down');
+      },
+      countBlocked: async () => {
+        throw new Error('atlas down');
+      },
       close: async () => {},
     };
     const { classifier, calls } = fixedClassifier(0.1);
@@ -188,21 +194,34 @@ function spyBlocklist() {
     isBlocked: (...a) => (calls.push('isBlocked'), inner.isBlocked(...a)),
     recordScam: (...a) => (calls.push('recordScam'), inner.recordScam(...a)),
     allow: (...a) => (calls.push('allow'), inner.allow(...a)),
+    clear: () => (calls.push('clear'), inner.clear()),
+    countBlocked: (...a) => (calls.push('countBlocked'), inner.countBlocked(...a)),
     close: () => inner.close(),
   };
   return { list, calls };
 }
 
-describe('SENDER_BLOCKLIST=off (default): block the message, not the sender', () => {
-  it('is off by default in config', async () => {
+describe('SENDER_BLOCKLIST config', () => {
+  it('is on by default, and off still works', async () => {
     const { loadConfig } = await import('../src/config.js');
-    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't' }).senderBlocklist).toBe(false);
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't' }).senderBlocklist).toBe(true);
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'off' }).senderBlocklist).toBe(false);
     expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'on' }).senderBlocklist).toBe(true);
     expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'yes' })).toThrow(/SENDER_BLOCKLIST/);
     // Atlas settings aren't validated while off.
-    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', MONGODB_URI: 'mongodb+srv://x' })).not.toThrow();
-    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'on', MONGODB_URI: 'mongodb+srv://x' })).toThrow(/FINGERPRINT_SECRET/);
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', SENDER_BLOCKLIST: 'off', MONGODB_URI: 'mongodb+srv://x' })).not.toThrow();
+    expect(() => loadConfig({ PHOTON_WEBHOOK_SECRET: 't', MONGODB_URI: 'mongodb+srv://x' })).toThrow(/FINGERPRINT_SECRET/);
   });
+
+  it('UI_ACTION_PASSWORD defaults to 4321', async () => {
+    const { loadConfig } = await import('../src/config.js');
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't' }).uiActionPassword).toBe('4321');
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', UI_ACTION_PASSWORD: '  ' }).uiActionPassword).toBe('4321');
+    expect(loadConfig({ PHOTON_WEBHOOK_SECRET: 't', UI_ACTION_PASSWORD: 'hunter2' }).uiActionPassword).toBe('hunter2');
+  });
+});
+
+describe('SENDER_BLOCKLIST=off: block the message, not the sender', () => {
 
   it('never calls the blocklist, even after repeated scams; the scammer’s next legit message is delivered', async () => {
     const spy = spyBlocklist();
@@ -214,7 +233,7 @@ describe('SENDER_BLOCKLIST=off (default): block the message, not the sender', ()
         return { label: score >= 0.5 ? 'scam' : 'legit', score, category: score >= 0.5 ? 'Imposter & Phishing' : null, model: 'm', highlights: [] };
       },
     };
-    const app = makeApp({ classifier, blocklist: spy.list }); // default config: off
+    const app = makeApp({ classifier, blocklist: spy.list, config: { senderBlocklist: false } });
     for (const id of ['spc-1', 'spc-2', 'spc-3', 'spc-4']) await send(app, id);
     await send(app, 'spc-att', { content: { type: 'attachment', id: 'g', name: 'card.jpg' } });
     await app.idle();
@@ -254,7 +273,7 @@ describe('POST /admin/messages/restore ("Not a scam" for one message)', () => {
 
   it('off: restores only the named message, keeps its verdict, touches no blocklist', async () => {
     const spy = spyBlocklist();
-    const app = makeApp({ classifier: fixedClassifier(0.97).classifier, blocklist: spy.list, config: { adminToken: ADMIN } });
+    const app = makeApp({ classifier: fixedClassifier(0.97).classifier, blocklist: spy.list, config: { adminToken: ADMIN, senderBlocklist: false } });
     await send(app, 'spc-1');
     await send(app, 'spc-2');
     await app.idle();
