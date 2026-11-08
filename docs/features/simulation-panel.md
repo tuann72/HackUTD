@@ -2,7 +2,7 @@
 
 - **Slug:** `sim-panel` (branch `feat/web-sim-panel`)
 - **Phase:** MVP (demo tooling)
-- **Status:** In progress
+- **Status:** In review
 - **Owner:** Tuan + Claude Code
 
 ## Goal
@@ -29,4 +29,17 @@ Buttons in a sidebar on `/` that run perpetrator simulations without a terminal:
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Server route, bank sync, presets, sidebar UI, tests, docs | — | — | In progress | `feat/web-sim-panel` | Tuan + Claude Code | TBD |
+| 1.1 | Server route, bank sync, presets, sidebar UI, tests, docs | — | — | In review | `feat/web-sim-panel` | Tuan + Claude Code | [#54](https://github.com/tuann72/HackUTD/pull/54) |
+
+## Setup
+
+On Vercel (Project > Settings > Environment Variables, server-only):
+
+- `SIM_WEBHOOK_SECRET`: the VM gateway's `PHOTON_WEBHOOK_SECRET`, when `NEXT_PUBLIC_API_URL` points at the VM. Not needed when the page reads the Vercel backup itself (it reuses `PHOTON_WEBHOOK_SECRET`).
+- `SIM_WEBHOOK_URL` (optional): another webhook to send to.
+
+Locally: put the same values in `apps/web/.env.local` next to `NEXT_PUBLIC_API_URL=http://localhost:8787` (the gateway's dev secret is `dev-photon-webhook-secret-change-me`).
+
+## Progress notes
+
+- 2026-11-08: built in #54. Tests cover the planner, validation, rails, rate limit and a round trip through the Vercel webhook receiver.

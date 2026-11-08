@@ -10,7 +10,9 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "sync:contract": "node scripts/sync-contract.mjs",
-    "check:contract": "node scripts/sync-contract.mjs --check"
+    "check:contract": "node scripts/sync-contract.mjs --check",
+    "sync:bank": "node scripts/sync-bank.mjs",
+    "check:bank": "node scripts/sync-bank.mjs --check"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

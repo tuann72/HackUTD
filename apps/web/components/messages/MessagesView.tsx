@@ -9,6 +9,7 @@ import {
 } from "@/lib/messages";
 import { createShotFeed, toSceneMessage } from "@/components/scene/feed";
 import { SceneClient } from "@/components/scene/SceneClient";
+import { SimPanel } from "@/components/sim/SimPanel";
 import { MessageCard } from "./MessageCard";
 import { useNow } from "./useNow";
 
@@ -130,70 +131,73 @@ export function MessagesView() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
-        <header className="mb-6 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">T-Guard</h1>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={clear}
-                disabled={!clearSource || clearing || messages.length === 0}
-                title="Delete all messages from the gateway. This can't be undone."
-                className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-              >
-                {clearing ? "Clearing…" : "Clear chats"}
-              </button>
+      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-x-6 gap-y-8 px-4 py-6 sm:py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="min-w-0">
+          <header className="mb-6 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight">T-Guard</h1>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={clear}
+                  disabled={!clearSource || clearing || messages.length === 0}
+                  title="Delete all messages from the gateway. This can't be undone."
+                  className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  {clearing ? "Clearing…" : "Clear chats"}
+                </button>
+              </div>
             </div>
-          </div>
-          {error && (
-            <p
-              role="status"
-              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
-            >
-              Couldn&apos;t refresh messages: {error}. Retrying…
-            </p>
-          )}
-          {clearError && (
-            <p
-              role="alert"
-              className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
-            >
-              Couldn&apos;t clear messages: {clearError}
-            </p>
-          )}
-        </header>
+            {error && (
+              <p
+                role="status"
+                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
+              >
+                Couldn&apos;t refresh messages: {error}. Retrying…
+              </p>
+            )}
+            {clearError && (
+              <p
+                role="alert"
+                className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
+              >
+                Couldn&apos;t clear messages: {clearError}
+              </p>
+            )}
+          </header>
 
-        <section
-          aria-label="Animation: each message flies to the victim; blocked ones pop before they arrive"
-          className="mb-8 h-[45dvh] min-h-64 overflow-hidden rounded-2xl sm:h-[65dvh] sm:min-h-80"
-        >
-          <SceneClient feed={feed} />
-        </section>
+          <section
+            aria-label="Animation: each message flies to the victim; blocked ones pop before they arrive"
+            className="mb-8 h-[45dvh] min-h-64 overflow-hidden rounded-2xl sm:h-[65dvh] sm:min-h-80"
+          >
+            <SceneClient feed={feed} />
+          </section>
 
-        <LayoutGroup>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-6">
-            <Column
-              title="Inbox"
-              count={deliveredCount}
-              empty={mode == null ? "Loading…" : "No messages delivered yet."}
-              messages={inbox}
-              now={now}
-            />
-            <Column
-              title="Blocked"
-              count={blocked.length}
-              empty={mode == null ? "Loading…" : "Nothing blocked yet."}
-              messages={blocked}
-              now={now}
-            />
-          </div>
-        </LayoutGroup>
+          <LayoutGroup>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-6">
+              <Column
+                title="Inbox"
+                count={deliveredCount}
+                empty={mode == null ? "Loading…" : "No messages delivered yet."}
+                messages={inbox}
+                now={now}
+              />
+              <Column
+                title="Blocked"
+                count={blocked.length}
+                empty={mode == null ? "Loading…" : "Nothing blocked yet."}
+                messages={blocked}
+                now={now}
+              />
+            </div>
+          </LayoutGroup>
 
-        <p className="mt-10 text-xs text-zinc-500 dark:text-zinc-400">
-          &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
-          blocked messages are disabled.
-        </p>
+          <p className="mt-10 text-xs text-zinc-500 dark:text-zinc-400">
+            &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
+            blocked messages are disabled.
+          </p>
+        </div>
+        <SimPanel />
       </main>
     </MotionConfig>
   );
