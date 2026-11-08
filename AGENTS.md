@@ -13,7 +13,7 @@ This file is the shared source of truth for every coding agent (Claude Code, Cod
 - **Name:** **T-Gate** (renamed from the earlier working name "Gate Guardian"). The repository folder and GitHub repo are still called `HackUTD`.
 - **Problem:** Scam calls and messages pressure people, especially older adults, into rash decisions that cause financial, personal, or emotional harm.
 - **Concept:** Detect likely scam activity, warn the recipient, and potentially help respond on their behalf while keeping the recipient in control.
-- **Hackathon tracks:** **Safe Signal (T-Mobile)**, **NVIDIA** and **Photon** (Timothy, 2026-11-07). This replaces the earlier Safe Signal + Vultr pair. NVIDIA is covered by Nemotron (see [Scam follow-up](#scam-follow-up-nemotron-and-nessie-proposed)). **Nothing in the repo uses Photon yet**, so what covers the Photon track is TBD. Vultr is no longer a track, but the classifier and gateway still run on Vultr (credits).
+- **Hackathon tracks:** **Safe Signal (T-Mobile)**, **NVIDIA** and **Photon** (Timothy, 2026-11-07). This replaces the earlier Safe Signal + Vultr pair. The NVIDIA track is Nemotron (see [Scam follow-up](#scam-follow-up-nemotron-proposed)). The Photon track needs an agent built on Photon 2.0 (see [Photon track](#photon-track-proposed)); nothing in the repo uses Photon yet. Vultr is no longer a track, but the classifier and gateway still run on Vultr (credits).
 - **Current project state:** Building the Twilio MVP (Tuan lifted the scaffolding hold for it on 2026-11-07): the query API contract in [`contracts/`](contracts/README.md), the message bank in [`data/message_bank/`](data/message_bank/README.md), the perpetrator simulator in [`services/perpetrator-sim/`](services/perpetrator-sim/README.md), the gateway in [`services/gateway/`](services/gateway/README.md), and the message UI (`apps/web/`, route `/messages`) are on `main`. The repo also has the classifier's training script and inference service (MiniLM and a TF-IDF + LR baseline) in [`classifier/`](classifier/README.md), and a labeled message dataset plus its build scripts in [`data/`](data/) (see [Data](#data)). Do not assume an implementation or technology stack exists until it is present in the repo or agreed by the team.
 
 ## Current scope (agreed)
@@ -57,16 +57,29 @@ Planned after the MVP works, not part of the MVP:
 
 **Training data (agreed, Tuan):** train on [`data/scam_categories_100k_full.csv`](data/README.md#scam_categories_100k_fullcsv), the most aggregated labeled file. It has the 8-class `label_class`, the binary `is_spam`, and the `split`/`style`/`is_synthetic`/`label_confidence` metadata, so it supports either label scheme. Evaluate only on the real `val`/`test` splits. The message bank is separate demo input, not training data.
 
-### Scam follow-up: Nemotron and Nessie (proposed)
+### Scam follow-up: Nemotron (proposed)
 
-**Decision (Timothy, 2026-11-07):** add **NVIDIA Nemotron** (LLM) and **Capital One's Nessie** (mock banking API) as a second layer behind the classifier. Nemotron covers the NVIDIA track. The flow below is a proposal, not agreed.
+**Decision (Timothy, 2026-11-07):** add **NVIDIA Nemotron** (LLM) as a second layer behind the classifier. Nemotron is the NVIDIA track. The flow below is a proposal, not agreed.
 
 - **Not every message.** MiniLM scores every message. Nemotron is called only when it's worth it, so cost and latency stay low.
-- **Uncertain band (text only):** messages whose classifier score falls between a low and a high threshold get a second opinion from Nemotron on the text alone, with no bank data. Confident lows are delivered and confident highs are blocked without it. The band is tuned on the real `val` split so it holds a small share of traffic but most of the classifier's errors.
-- **Bank check (Nemotron + Nessie):** the safety net for scams the classifier misses. When the victim's Nessie account shows a risky transaction (new payee, large transfer or withdrawal) within a window after a delivered message, Nemotron reviews the transaction together with those recent messages and can warn the victim. This catches false negatives where they cause harm, instead of checking the bank on every message.
+- **Uncertain band:** messages whose classifier score falls between a low and a high threshold get a second opinion from Nemotron. Confident lows are delivered and confident highs are blocked without it. The band is tuned on the real `val` split so it holds a small share of traffic but most of the classifier's errors.
 - **Content triggers (optional):** a message asking for payment, gift cards, codes or account or login details is escalated to Nemotron regardless of score.
-- **Policy stays in the gateway.** Nemotron and Nessie return findings. The gateway decides deliver, block or warn.
-- **Still TBD:** thresholds and band size; how Nemotron is hosted (NVIDIA API catalog / NIM, or self-hosted on Vultr GPU); which Nemotron model; the transaction window and risk rules; what the victim sees on a bank-check warning; and privacy rules for sending account data to an LLM (Nessie data is mock, but the rule should be set before any real data path). Whether a blocked high-score scam also triggers a bank check is TBD: the victim never saw it, so it mainly helps detect harm from earlier messages.
+- **Policy stays in the gateway.** Nemotron returns a finding. The gateway decides deliver, block or warn. As with the classifier, only message text and an opaque id are sent, never phone numbers.
+- **Still TBD:** thresholds and band size; which Nemotron model; how it's hosted (NVIDIA API catalog / NIM, or self-hosted on a Vultr GPU); its timeout and fail-open behavior.
+
+### Photon track (proposed)
+
+**Rules** ([Photon 2.0 hackathon guidelines](https://somethingreat.notion.site/Hackathon-Guidelines-for-Photon-2-0-3f8e443f36bb81f9893fed0d08a4c01d)): "your project must be built on Photon 2.0 and live on at least one Photon channel." Photon 2.0 ([photon.codes/beta](https://photon.codes/beta)) is a free beta framework that gives an agent a phone number on iMessage, SMS, RCS, WhatsApp, Telegram, email and phone calls. iMessage is the main channel for text agents. Voice runs on a Photon SMS number connected over SIP to Retell, ElevenLabs, LiveKit or Twilio. The SDK is TypeScript ([`spectrum-ts`](https://photon.codes/docs/spectrum-ts/introduction)). Prizes: iMessage winner and runner-up, and a separate Best Voice Agent prize. Judging covers vision, craft, depth (real-world context and edge cases) and traction. The criteria include "thoughtful safety and fallback behaviors that earn trust" and "real human-in-the-loop collaboration".
+
+**Why Photon was dropped earlier:** Tuan dropped it to focus on Safe Signal; no rationale was recorded (see `CHANGELOG.md`).
+
+**What it would take:** the Twilio gateway doesn't qualify on its own, because Twilio isn't a Photon channel. T-Gate needs a victim-facing agent on Photon. Proposal, smallest first:
+
+1. **Block notices:** the agent sends the scam notice (component 6, whose destination is TBD) on iMessage or SMS.
+2. **Forward-to-check:** the victim forwards a suspicious message to the agent and gets the verdict and highlighted phrases back.
+3. **Stretch, voice:** a Photon voice agent for the deferred in-call detection, aimed at the Best Voice Agent prize.
+
+The agent would only read verdicts from the gateway and talk to the victim; interception stays on Twilio. That means new outbound messaging to the victim, so it needs team agreement and its own `docs/features/` plan. **TBD:** whether to build it, which channel, and which items.
 
 ## Proposed architecture: interception gateway and demo scene (not agreed)
 
@@ -113,8 +126,8 @@ Everything above except the two firm requirements is a proposal. Open items stay
 - **Twilio architecture:** TypeScript with Hono is agreed for the gateway. Still TBD: how inbound webhooks reach the gateway during development and the demo (hosting, tunneling). The decoupled event stream, scene, scam notice and panel are proposed (see [Proposed architecture](#proposed-architecture-interception-gateway-and-demo-scene-not-agreed)) but not agreed.
 - **Perpetrator simulator:** the CLI supports all three (scripted `scenario` files, `random` bank draws, typed `send`). Which mix the demo uses is TBD.
 - **Message bank:** which `data/` rows to use (likely SMS-style rows from the real `test` split), how many, whether to add generated messages and how to generate them (templates or an LLM), and the bank's file format.
-- **Photon track:** which part of T-Gate uses Photon, and which Photon product or version ("Photon (beta) 2.0" was mentioned). Nothing uses it yet.
-- **Nemotron and Nessie:** see the TBDs in [Scam follow-up](#scam-follow-up-nemotron-and-nessie-proposed).
+- **Photon track:** whether and what to build on Photon 2.0. See [Photon track](#photon-track-proposed).
+- **Nemotron:** see the TBDs in [Scam follow-up](#scam-follow-up-nemotron-proposed).
 - **Classifier:** MiniLM on Vultr is agreed (see above). Still open: label scheme (binary spam/ham or the 8-class scam categories), thresholds, whether fine-tuning is needed, and evaluation measures.
 - **Live public demo:** moderation, rate limits, privacy of numbers texting in, and cost controls.
 - **Privacy, storage, latency, and fail-safe behavior.**
