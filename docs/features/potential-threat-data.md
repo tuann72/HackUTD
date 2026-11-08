@@ -28,7 +28,7 @@ The classifier handles threat and coercion texts badly, for example "MOM IM DYIN
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Generator `data/build_threat_synthetic.py`, `data/potential_threat_synthetic.csv`, `data/potential_threat_eval.csv`, docs | — | — | In progress | `data/potential-threat-synthetic` | Tuan + Claude Code | draft |
+| 1.1 | Generator `data/build_threat_synthetic.py`, `data/potential_threat_synthetic.csv`, `data/potential_threat_eval.csv`, docs | — | — | In review | `data/potential-threat-synthetic` | Tuan + Claude Code | [#43](https://github.com/tuann72/HackUTD/pull/43) |
 
 ### Stage 2: Train and serve a 9th class (only if the team picks 9 classes)
 
@@ -72,4 +72,5 @@ The classifier handles threat and coercion texts badly, for example "MOM IM DYIN
 
 ## Progress notes
 
+- **2026-11-08 (Claude Code):** task 1.1 built. 4,100 train rows (2,650 label 8, 1,450 label 0) and 100 eval rows (58 / 42). Two runs (and a different `PYTHONHASHSEED`) give byte-identical files; no row matches the 100k corpus or the eval file. ALL CAPS share: 34% of label 8, 38% of label 0. Nothing trained.
 - **2026-11-08 (Claude Code):** coverage check of `scam_categories_100k_full.csv`: kidnap/ransom/hostage 86 rows, nearly all Enron spam noise in labels 5/7; "or else / I know where you live" 34, mostly eBay phishing and ham; hitman 2 (ham); "hi mum/dad" family-emergency 143, 139 of them label 1 (all synthetic train). No ALL-CAPS message with a money amount exists, and 215 of 239 short ALL-CAPS texts are ham. The model has no examples of threat-plus-money texts and has seen that caps usually means ham.
