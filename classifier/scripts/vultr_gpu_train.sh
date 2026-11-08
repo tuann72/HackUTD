@@ -6,7 +6,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-nvidia-smi || { echo "No GPU visible; is this a GPU instance?"; exit 1; }
+nvidia-smi || { echo "No GPU visible. Is this a Cloud GPU instance with an NVIDIA-driver image?"; exit 1; }
+[ -f data/scam_categories_100k_full.csv ] || { echo "Missing data/scam_categories_100k_full.csv"; exit 1; }
+python3 -m venv --help >/dev/null 2>&1 || { apt-get update -q && apt-get install -yq python3-venv; }
 python3 -m venv classifier/.venv
 source classifier/.venv/bin/activate
 pip install --upgrade pip

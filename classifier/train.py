@@ -66,7 +66,7 @@ def main() -> None:
     target = "label_class" if args.labels == "category" else "is_spam"
     label_names = load_label_names(args.labels)
 
-    df = pd.read_csv(args.data, usecols=["id", "message", target, "split"])
+    df = pd.read_csv(args.data, usecols=["id", "message", target, "split", "style"])
     df["message"] = df["message"].fillna("").astype(str)
     if args.limit:
         train = df[df.split == "train"].sample(n=min(args.limit, (df.split == "train").sum()), random_state=0)
@@ -74,6 +74,8 @@ def main() -> None:
     print(f"rows={len(df)} device={device} labels={args.labels}")
 
     encoder = SentenceTransformer(ENCODER, device=device)
+    # MiniLM reads at most this many tokens (~1,000 characters); longer emails are truncated.
+    print(f"encoder max_seq_length={encoder.max_seq_length} tokens")
     t0 = time.time()
     X = encoder.encode(
         df["message"].tolist(),
@@ -86,6 +88,7 @@ def main() -> None:
     print(f"encoded {len(df)} messages in {encode_secs:.0f}s")
     y = df[target].to_numpy()
     split = df["split"].to_numpy()
+    style = df["style"].to_numpy()
 
     clf = LogisticRegression(max_iter=3000, class_weight="balanced", C=4.0)
     clf.fit(X[split == "train"], y[split == "train"])
@@ -101,13 +104,17 @@ def main() -> None:
             "n": int(mask.sum()),
             "scam_vs_ham": {"precision": round(p, 4), "recall": round(r, 4), "f1": round(f, 4)},
             "macro_f1": round(f1_score(true, pred, average="macro"), 4),
+            # T-Gate handles SMS, but ~80% of val/test rows are email, so report SMS on its own.
+            "sms_scam_vs_ham_f1": round(f1_score(
+                true[style[mask] == "sms"] != 0, pred[style[mask] == "sms"] != 0), 4),
             "report": classification_report(
                 true, pred, labels=list(range(len(label_names))), target_names=label_names,
                 output_dict=True, zero_division=0,
             ),
         }
         print(f"\n== {name} (real rows only, n={mask.sum()}) ==")
-        print(f"scam-vs-ham P={p:.4f} R={r:.4f} F1={f:.4f}  macro-F1={metrics[name]['macro_f1']:.4f}")
+        print(f"scam-vs-ham P={p:.4f} R={r:.4f} F1={f:.4f}  macro-F1={metrics[name]['macro_f1']:.4f}  "
+              f"SMS-only scam-vs-ham F1={metrics[name]['sms_scam_vs_ham_f1']:.4f} (n={(style[mask] == 'sms').sum()})")
         print(classification_report(true, pred, labels=list(range(len(label_names))),
                                     target_names=label_names, zero_division=0))
 

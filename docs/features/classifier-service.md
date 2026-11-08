@@ -58,5 +58,7 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 
 ## Progress notes
 
+- **2026-11-07:** Review pass. Dataset check: no empty messages, and `label_class` and `is_spam` agree on every row. 2,397 messages are over 5,000 characters (101 in test), so the service now accepts up to 50k characters instead of rejecting them. MiniLM truncates at 256 tokens. Val/test are ~80% email, so `train.py` now also reports SMS-only F1. The service refuses to start without `CLASSIFIER_TOKEN` (unless `CLASSIFIER_ALLOW_NO_AUTH=1`), the container runs as non-root, and `deploy/` adds Docker Compose + Caddy (HTTPS through sslip.io; the image builds on the server, so no registry is needed). The README is rewritten as a step-by-step `vultr-cli` guide, with a prompt for AI agents. Not yet run: a full training run, the Docker build and the tests. Those run on Vultr in tasks 2.1 and 3.1.
+
 - **2026-11-07:** Smoke test on a Mac (5k train rows, 8-class head): scam-vs-ham F1 0.949 and macro-F1 0.80 on the real test split. A full run is still needed to compare with the TF-IDF baseline. CPU inference takes about 15–120 ms per message, including highlights.
 - **2026-11-07:** Tuan chose MiniLM, trained and hosted on Vultr (Vultr credits; Vultr track).

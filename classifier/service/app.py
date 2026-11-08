@@ -5,8 +5,8 @@ POST /classify  {"messageId": "...", "text": "..."}
 GET  /healthz
 
 Returns a verdict only. Block/deliver policy and thresholds live in the gateway.
-Auth: `Authorization: Bearer $CLASSIFIER_TOKEN` (required unless CLASSIFIER_TOKEN is unset,
-which is only acceptable for local development).
+Auth: `Authorization: Bearer $CLASSIFIER_TOKEN`. The service refuses to start without a token
+unless CLASSIFIER_ALLOW_NO_AUTH=1 (local development only).
 """
 
 from __future__ import annotations
@@ -25,6 +25,8 @@ from sentence_transformers import SentenceTransformer
 
 ARTIFACTS = Path(os.environ.get("CLASSIFIER_ARTIFACTS", Path(__file__).resolve().parent.parent / "artifacts"))
 TOKEN = os.environ.get("CLASSIFIER_TOKEN", "")
+if not TOKEN and os.environ.get("CLASSIFIER_ALLOW_NO_AUTH") != "1":
+    raise SystemExit("Set CLASSIFIER_TOKEN (or CLASSIFIER_ALLOW_NO_AUTH=1 for local development).")
 MAX_HIGHLIGHT_WORDS = 60  # occlusion cost grows with word count; long texts only score the first N words
 TOP_HIGHLIGHTS = 5
 STOPWORDS = set("a an the is are was were be to of in on at for and or but your you my me i we it this that with from by as our us".split())
@@ -40,7 +42,9 @@ app = FastAPI(title="T-Gate classifier", version=meta["model"])
 
 class ClassifyIn(BaseModel):
     messageId: str = Field(max_length=128)
-    text: str = Field(max_length=5000)
+    # SMS tops out at 1,600 chars, but the dataset has emails up to ~20k. Accept them rather than
+    # fail (a rejected message would trip the gateway's fail-safe); MiniLM truncates to 256 tokens.
+    text: str = Field(max_length=50_000)
 
 
 class Highlight(BaseModel):
@@ -62,7 +66,7 @@ class ClassifyOut(BaseModel):
 def require_token(authorization: str = Header(default="")) -> None:
     if not TOKEN:
         return
-    if not secrets.compare_digest(authorization, f"Bearer {TOKEN}"):
+    if not secrets.compare_digest(authorization.encode(), f"Bearer {TOKEN}".encode()):
         raise HTTPException(status_code=401, detail="unauthorized")
 
 

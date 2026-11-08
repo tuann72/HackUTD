@@ -3,3 +3,4 @@ artifacts/
 *.npy
 .venv/
 __pycache__/
+deploy/.env
