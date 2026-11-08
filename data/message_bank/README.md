@@ -64,5 +64,5 @@ Counts in `generated.jsonl`: Imposter & Phishing 8 (grandparent/family emergency
 - **Labels are machine-assigned** (keyword rules plus a classifier), not human-annotated. Some `bank.jsonl` labels may be wrong.
 - **Don't tune block thresholds on these rows.** `bank.jsonl` comes from the `test` split; tuning on it makes the reported test metrics dishonest. Tune on `val`.
 - **`expected` / `expected_label` are for checking only.** The simulator never sends them; the gateway never sees them.
-- Real dataset rows contain real scam links and brand names (for example, Philippine banks and wallets). Don't open the links.
+- Many real scam rows come from Philippine SMS sources (peso amounts, local banks and wallets, some Tagalog), so they may not read as US texts. They contain real scam links and brand names: don't open the links.
 - Generated rows use fictional brands and `bit.ly/...` or `example.com` links, and no real people.
