@@ -12,6 +12,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Each model alone on the same 606 texts (missed / false blocks):** stacked LR 8 / 4, TF-IDF + SGD 11 / 2, TF-IDF + LR 10 / 7, MiniLM + LR 9 / 29. TF-IDF and MiniLM are the two halves of v0.5. SGD was trained on the same rows, with alpha picked on val, and isn't deployed.
 - **Web:** the model name on a card opens these figures as a fixed table labeled "Model comparison". It doesn't switch models.
 
+### 2026-11-08: Two more captions removed
+
+- **Decision (Tuan):** remove the Simulate sidebar's line "Sends signed, simulated iMessages from fictional numbers to <gateway host>." and the "Masked by the gateway" note on the dashboard's Most active numbers panel. Nothing else changes: simulated senders are still fictional `+1555` numbers and the numbers shown are still masked by the gateway.
+
 ### 2026-11-08: Rapid fire uses its own 200-sentence dataset
 
 - **Decision (Tuan):** a Rapid fire dataset of 200 complete sentences, 40% scam and 60% legitimate, and Rapid fire draws from it. No note about it in the UI.

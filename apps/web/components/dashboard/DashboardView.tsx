@@ -260,7 +260,7 @@ export function DashboardView() {
       </section>
 
       <div className="grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">
-        <Panel title="Most active numbers" note="Masked by the gateway">
+        <Panel title="Most active numbers">
           <Senders senders={s.senders} total={s.total} />
         </Panel>
         <Panel title="Scam categories" note="Blocked messages">
