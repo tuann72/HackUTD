@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
+import { maskHandle, maskNumber, normalizeHandle } from './handle.js';
 import type { InboundMessage } from './photon.js';
 import type { Action, ApiMessage, Attachment, Conversation, MessageKind, Reason, Verdict } from './types.js';
 
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS messages (
   extras_json          TEXT NOT NULL,
   received_at          TEXT NOT NULL,
   action          TEXT NOT NULL CHECK (action IN ('pending', 'delivered', 'blocked')),
-  reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable', 'not_classified')),
+  reason          TEXT CHECK (reason IN ('model_verdict', 'classifier_unavailable', 'not_classified', 'sender_blocked', 'override')),
   verdict_json    TEXT,
   classified_at   TEXT
 );
@@ -45,7 +46,8 @@ export function openDb(path: string): DatabaseSync {
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   const cols = (db.prepare("SELECT name FROM pragma_table_info('messages')").all() as Array<{ name: string }>).map((c) => c.name);
-  if (cols.length > 0 && !cols.includes('extras_json')) {
+  const ddl = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'messages'").get() as { sql: string } | undefined)?.sql ?? '';
+  if (cols.length > 0 && (!cols.includes('extras_json') || !ddl.includes("'override'"))) {
     db.close();
     throw new Error(`${path} uses an older schema (Twilio or early Photon). Delete it (npm run db:reset) and restart.`);
   }
@@ -57,27 +59,7 @@ export function newId(prefix: string): string {
   return `${prefix}_${randomBytes(8).toString('hex')}`;
 }
 
-/** `+15555550142` -> `***-***-0142`. */
-export function maskNumber(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 0) return '***-***-****';
-  return `***-***-${digits.slice(-4).padStart(4, '*')}`;
-}
-
-/** iMessage handles are numbers or Apple ID emails: `jane@icloud.com` -> `j***@icloud.com`. */
-export function maskHandle(handle: string): string {
-  const at = handle.lastIndexOf('@');
-  if (at > 0) return `${handle[0]}***@${handle.slice(at + 1)}`;
-  return maskNumber(handle);
-}
-
-/** Phone handles in E.164 without formatting; email handles lowercased. One participant per person. */
-export function normalizeHandle(handle: string): string {
-  const t = handle.trim();
-  if (t.includes('@')) return t.toLowerCase();
-  const digits = t.replace(/\D/g, '');
-  return t.startsWith('+') ? `+${digits}` : digits;
-}
+export { maskHandle, maskNumber, normalizeHandle } from './handle.js';
 
 interface Extras {
   attachments: Attachment[];
@@ -149,6 +131,31 @@ export class Store {
       this.db.exec('ROLLBACK');
       throw err;
     }
+  }
+
+  /**
+   * Raw handle of a message's sender, for computing its fingerprint. Never return this to an API caller.
+   * Null if the message doesn't exist.
+   */
+  senderHandleOf(id: string): string | null {
+    const row = this.db
+      .prepare('SELECT p.handle FROM messages m JOIN participants p ON p.id = m.participant_id WHERE m.id = ?')
+      .get(id) as { handle: string } | undefined;
+    return row?.handle ?? null;
+  }
+
+  /** Current action and reason of a message, or null if it doesn't exist. */
+  decisionOf(id: string): { action: Action; reason: Reason } | null {
+    const row = this.db.prepare('SELECT action, reason FROM messages WHERE id = ?').get(id) as { action: Action; reason: Reason } | undefined;
+    return row ?? null;
+  }
+
+  /** "Not a scam": move this one blocked message to the inbox with reason `override`. Its verdict is kept. */
+  restoreMessage(id: string, now = new Date()): boolean {
+    const res = this.db
+      .prepare(`UPDATE messages SET action = 'delivered', reason = 'override', classified_at = ? WHERE id = ? AND action = 'blocked'`)
+      .run(now.toISOString(), id);
+    return Number(res.changes) === 1;
   }
 
   applyDecision(id: string, action: Exclude<Action, 'pending'>, reason: Exclude<Reason, null>, verdict: Verdict | null, now = new Date()): void {

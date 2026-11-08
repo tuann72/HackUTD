@@ -1,12 +1,14 @@
 "use client";
 
-import { isGroupChat, isNotClassified, isUnverified, type Message } from "@/lib/messages";
+import { isGroupChat, isNotClassified, isRestored, isSenderBlocked, isUnverified, type Message } from "@/lib/messages";
 import { categoryClass, categoryLabel } from "./category";
 import { MessageBody } from "./MessageBody";
 import { MessageExtras } from "./MessageExtras";
 import { formatRelative, formatScore } from "./time";
 
 const UNVERIFIED_TITLE = "The classifier was unavailable, so this was delivered without a check.";
+const SENDER_BLOCKED_TITLE = "This sender sent earlier scams, so T-Gate blocked this without checking it again.";
+const RESTORED_TITLE = "Someone marked this message \"Not a scam\", so it was moved to the inbox.";
 const NOT_CLASSIFIED_TITLE = "No text to check (attachment, reaction or contact card), so this was delivered without a check.";
 
 export function CategoryBadge({ category }: { category: string | null | undefined }) {
@@ -71,6 +73,15 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
               Potential scam
             </span>
           )}
+          {isRestored(m) && (
+            <span
+              title={RESTORED_TITLE}
+              aria-label={`Restored. ${RESTORED_TITLE}`}
+              className="inline-flex cursor-help items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30"
+            >
+              Restored
+            </span>
+          )}
           {isNotClassified(m) && (
             <span
               title={NOT_CLASSIFIED_TITLE}
@@ -94,7 +105,16 @@ export function MessageCard({ message: m, now }: { message: Message; now: number
 
       {blocked && (
         <div className="mb-2">
-          <CategoryBadge category={m.verdict?.category} />
+          {isSenderBlocked(m) ? (
+            <span
+              title={SENDER_BLOCKED_TITLE}
+              className="inline-flex cursor-help items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-800 ring-1 ring-inset ring-rose-600/30 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/30"
+            >
+              Blocked: known scam sender
+            </span>
+          ) : (
+            <CategoryBadge category={m.verdict?.category} />
+          )}
         </div>
       )}
 
