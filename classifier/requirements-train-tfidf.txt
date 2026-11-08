@@ -1,0 +1,4 @@
+# Training the TF-IDF + LR model only (CPU, no PyTorch).
+scikit-learn>=1.5
+pandas>=2.2
+joblib>=1.4
