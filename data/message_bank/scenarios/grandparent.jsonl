@@ -1,0 +1,5 @@
+{"delayMs": 0, "from": "+15555550101", "body": "Your prescription is ready for pickup at Main St Pharmacy.", "expected": "deliver"}
+{"delayMs": 6000, "from": "+15555550142", "body": "Hi Grandma it's me, I lost my phone, this is my new number", "expected": "deliver"}
+{"delayMs": 6000, "from": "+15555550142", "body": "I'm in trouble, I need $800 in gift cards, please don't tell mom", "expected": "block"}
+{"delayMs": 6000, "from": "+15555550177", "body": "Your account is locked. Verify at bit.ly/acct-verify now", "expected": "block"}
+{"delayMs": 7000, "from": "+15555550110", "body": "Dinner Sunday still on?", "expected": "deliver"}
