@@ -16,6 +16,8 @@ Rules:
   * Threat rows are templates and exist only for train and val. 15% of each scenario goes to val,
     because the stacker is fit on val and the real val split has no threat messages.
     Test stays 100% real; threat rows never enter it.
+  * data/free_ham_synthetic.csv (harmless "free" ham texts) is merged with the threat rows and
+    split the same way, so "free" alone stops reading as a scam cue.
 """
 
 from __future__ import annotations
@@ -137,6 +139,10 @@ def main() -> None:
 
     base = pd.read_csv(data / "scam_categories_100k_full.csv", usecols=COLUMNS)
     threats = pd.read_csv(data / "potential_threat_synthetic.csv", usecols=COLUMNS + ["scenario"])
+    # Harmless "free" texts (label 0) ride along with the threat templates: same columns, same
+    # leak checks and the same 15%-per-scenario share to val.
+    free_ham = pd.read_csv(data / "free_ham_synthetic.csv", usecols=COLUMNS + ["scenario"])
+    threats = pd.concat([threats, free_ham], ignore_index=True)
     threat_eval = pd.read_csv(data / "potential_threat_eval.csv", usecols=COLUMNS + ["scenario"])
     train_val, test, held_threats, stats = clean_splits(base, threats, threat_eval)
 

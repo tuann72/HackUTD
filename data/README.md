@@ -110,6 +110,25 @@ Threat, coercion and fake-emergency extortion texts, for example "MOM IM DYING R
 
 ---
 
+## 5. Harmless "free" texts (label 0)
+
+**Why (Tuan, 2026-11-08):** the model was overfitting on the word "free" and flagging everyday texts such as "Feel free to do this" or "Free pizza". In `scam_categories_100k_full.csv`, "free" appears in about 5,800 scam rows and only about 2,100 ham rows.
+
+| file | rows | use |
+|---|---|---|
+| `free_ham_synthetic.csv` | 300, all label 0 | Extra **training** rows (`split = train`). `classifier/build_splits.py` merges them with the threat rows, so 15% of each scenario goes to val (255 train / 45 val). |
+| `build_free_ham_synthetic.py` | | Generator. Stdlib only, fixed seed, `python3 -I data/build_free_ham_synthetic.py [out_dir]`. Two runs give byte-identical files. |
+
+**Columns:** the same as `potential_threat_synthetic.csv`: `label_class` 0, `category_name` Ham, `is_spam` 0, `label_method` `ham`, `source` `synthetic_free_ham`, `gen_method` `template`, `style` `sms`, `is_synthetic` True.
+
+**Scenarios:** `feel_free` (80, "feel free to call me anytime"), `free_time` (70, "are you free tonight?"), `free_food_event` (60, "free pizza in the break room"), `free_everyday` (50, "parking is free after 6", "shipping was free"), `free_idiom` (40, "gluten free", "hands free", "free throw").
+
+**Method:** slot-filled templates (names, family words, times, foods, places, events), then light styling: openers and closers ("hey", "lmk", "love you"), punctuation, emojis, and 14% ALL CAPS so caps plus "free" doesn't read as spam either. No row has a link, a phone number, a prize, a "claim/reply/call now" call to action or a money request. Rows are deduplicated case- and punctuation-insensitively and never repeat a row in `scam_categories_100k.csv` or the threat files.
+
+**Caveats:** template-generated, so easy to recognize; 300 rows is small next to the ~5,800 scam rows with "free", so it may soften the cue without removing it. There's no held-out "free" ham check yet. Retrain to take effect.
+
+---
+
 ## Where the data comes from
 
 | `source` value | origin | style |

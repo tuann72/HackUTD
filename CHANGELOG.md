@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Harmless "free" training texts
+
+Tuan: the classifier overfit on "free" and flagged texts like "Feel free to do this" or "Free pizza". Added `data/free_ham_synthetic.csv` (300 ham rows using "free" harmlessly: "feel free", "are you free", free food at events, "parking is free", idioms), built by `data/build_free_ham_synthetic.py`. `classifier/build_splits.py` merges it with the threat rows (255 train, 45 val). It only takes effect after a retrain, which hasn't been run. There's no held-out "free" ham eval yet. See `data/README.md`, section 5.
+
 ### 2026-11-08: Simulate sidebar on the home page
 
 - **Decision (Tuan):** run perpetrator simulations from buttons on `/`, configurable, instead of only from the CLI.
