@@ -20,8 +20,8 @@ export interface UseMessagesResult {
   mode: SourceMode | null;
   /** Last fetch error, if the most recent poll failed. Polling keeps going. */
   error: string | null;
-  /** Deletes every message at the source, then empties the list. Null when the source can't clear. */
-  clear: (() => Promise<void>) | null;
+  /** Deletes every message at the source, then empties the list. Live sources need the action password. Null when the source can't clear. */
+  clear: ((password?: string) => Promise<void>) | null;
   /** Unblock and Clear blocks at the source. Null until loaded, and for the mock sources. */
   actions: BlockActions | null;
   /** Polls now instead of waiting for the next tick (e.g. right after an unblock). */
@@ -95,8 +95,8 @@ export function useMessages({ intervalMs = 1500, source, onChanges }: UseMessage
     };
   }, [intervalMs, source]);
 
-  const clear = useCallback(async () => {
-    await srcRef.current?.clear?.();
+  const clear = useCallback(async (password?: string) => {
+    await srcRef.current?.clear?.(password);
     generation.current++;
     prev.current = [];
     setMessages([]);

@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Clear chats needs the password too
+
+Tuan asked for a password on Clear chats, the same `4321` as Unblock and Clear blocks. On a live source the button now opens the password prompt instead of a browser confirm. `DELETE /api/messages` on the VM gateway and on the Vercel backup checks `X-Action-Password` against `UI_ACTION_PASSWORD` (default `4321`) and answers `401` without deleting anything when it's missing or wrong. The demo replay (no gateway URL) has no server to check a password, so it keeps the plain confirm. The VM gateway needs a redeploy for the check to take effect there; until then the old gateway ignores the header and still clears.
+
 ### 2026-11-08: Collapse buttons on both /messages side panels
 
 Tuan asked for buttons on each panel to collapse it left and right. On wide screens the message panel has a chevron button beside its tabs that collapses it to a thin strip at the left edge (showing the message and blocked counts), and Simulate has one that collapses it to the right edge. Clicking the chevron or the strip's label opens the panel again. The width change is a 300 ms CSS transition (off for reduced motion), and the panel's content keeps its full width while it opens, so it is revealed rather than squeezed. On phones the panels stack as before; Simulate keeps its show/hide title. Shared button: `components/brand/CollapseButton.tsx`.

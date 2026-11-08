@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { ActionError } from "../actions";
 import { diffMessages } from "../diff";
-import { replaySource, staticSource } from "../source";
+import { liveSource, replaySource, staticSource } from "../source";
 import type { Message } from "../types";
 
 const msg = (id: string, action: Message["action"]): Message => ({
@@ -75,5 +76,30 @@ describe("replaySource.clear", () => {
     const after = await src.fetch();
     expect(after.length).toBe(1);
     expect(before.has(after[0].id)).toBe(false);
+  });
+});
+
+describe("liveSource.clear", () => {
+  it("sends the password and throws ActionError on a 401", async () => {
+    const calls: [string, RequestInit | undefined][] = [];
+    let status = 401;
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      calls.push([url, init]);
+      return new Response(JSON.stringify(status === 200 ? { ok: true, cleared: 1 } : { error: "wrong password" }), { status });
+    });
+    try {
+      const src = liveSource("https://gw.example/");
+      const err = await src.clear!("1234").catch((e) => e);
+      expect(err).toBeInstanceOf(ActionError);
+      expect(err.status).toBe(401);
+      status = 200;
+      await src.clear!("4321");
+      expect(calls.map(([u, i]) => [u, i?.method, (i?.headers as Record<string, string>)["X-Action-Password"]])).toEqual([
+        ["https://gw.example/api/messages", "DELETE", "1234"],
+        ["https://gw.example/api/messages", "DELETE", "4321"],
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

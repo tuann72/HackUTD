@@ -1,4 +1,4 @@
-import { blockActions, type BlockActions } from "./actions";
+import { ActionError, blockActions, type BlockActions } from "./actions";
 import fixture from "./fixture.v1.json";
 import type { Message, MessagesResponse } from "./types";
 
@@ -14,8 +14,12 @@ export interface MessageSource {
   mode: SourceMode;
   /** Current list, newest first. */
   fetch(): Promise<Message[]>;
-  /** Deletes every message (live: DELETE /api/messages; replay: restarts empty). Absent for static. */
-  clear?(): Promise<void>;
+  /**
+   * Deletes every message (live: DELETE /api/messages with the action password, which the
+   * server checks; a wrong one throws ActionError 401. Replay: restarts empty, no password).
+   * Absent for static.
+   */
+  clear?(password?: string): Promise<void>;
   /** Unblock and Clear blocks (password-protected). Live only: the mock sources have no server to check a password. */
   actions?: BlockActions;
 }
@@ -36,9 +40,18 @@ export function liveSource(apiUrl: string, limit = 100): MessageSource {
       }
       return data.messages;
     },
-    async clear() {
-      const res = await fetch(`${base}/api/messages`, { method: "DELETE", cache: "no-store" });
-      if (!res.ok) throw new Error(`DELETE /api/messages failed: ${res.status}`);
+    async clear(password = "") {
+      let res: Response;
+      try {
+        res = await fetch(`${base}/api/messages`, {
+          method: "DELETE",
+          cache: "no-store",
+          headers: { "X-Action-Password": password },
+        });
+      } catch (e) {
+        throw new ActionError(0, e instanceof Error ? e.message : String(e));
+      }
+      if (!res.ok) throw new ActionError(res.status, `DELETE /api/messages failed: ${res.status}`);
     },
   };
 }

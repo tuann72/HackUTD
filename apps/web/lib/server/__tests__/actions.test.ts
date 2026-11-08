@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Message } from "../../messages/types";
-import { actionPassword, checkActionPassword, handleBlocklistClear, handleBlocklistStatus, handleUnblock, passwordMatches } from "../actions";
+import {
+  actionPassword,
+  checkActionPassword,
+  handleBlocklistClear,
+  handleBlocklistStatus,
+  handleClearChats,
+  handleUnblock,
+  passwordMatches,
+} from "../actions";
 import { MemoryStore } from "../inbox";
 
 const env = (UI_ACTION_PASSWORD?: string) => ({ UI_ACTION_PASSWORD }) as unknown as NodeJS.ProcessEnv;
@@ -69,6 +77,25 @@ describe("POST /api/messages/:id/unblock (Vercel backup)", () => {
     const store = await storeWith(msg("m_d", "delivered"));
     expect((await handleUnblock(req("4321"), "m_missing", { store: async () => store, env: env() })).status).toBe(404);
     expect((await handleUnblock(req("4321"), "m_d", { store: async () => store, env: env() })).status).toBe(409);
+  });
+});
+
+describe("DELETE /api/messages (Clear chats, Vercel backup)", () => {
+  it("needs the password and deletes nothing without it", async () => {
+    const store = await storeWith(msg("a", "delivered"), msg("b", "blocked"));
+    for (const p of [undefined, "1234"]) {
+      const res = await handleClearChats(req(p), { store: async () => store, env: env() });
+      expect(res.status).toBe(401);
+    }
+    expect(await store.list(10)).toHaveLength(2);
+  });
+
+  it("deletes every message with the password", async () => {
+    const store = await storeWith(msg("a", "delivered"), msg("b", "blocked"));
+    const res = await handleClearChats(req("4321"), { store: async () => store, env: env() });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, cleared: 2 });
+    expect(await store.list(10)).toEqual([]);
   });
 });
 

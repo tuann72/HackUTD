@@ -21,7 +21,20 @@ import { useNow } from "./useNow";
 /** Tooltip on Unblock and Clear blocks when there's no gateway to check the password (mock data). */
 const MOCK_ACTIONS_OFF = "Needs a live gateway (set NEXT_PUBLIC_API_URL). The demo data can't be unblocked.";
 
-type Prompt = { kind: "clear" } | { kind: "unblock"; message: Message };
+type Prompt = { kind: "chats" } | { kind: "clear" } | { kind: "unblock"; message: Message };
+
+const PROMPT_TEXT = {
+  chats: {
+    title: "Clear chats",
+    description: "Delete every message, in the inbox and the Blocked list, for everyone. This can't be undone.",
+    confirm: "Clear chats",
+  },
+  clear: {
+    title: "Clear blocks",
+    description: "Unblock every sender T-Guard has blocked. Messages already in the Blocked list stay there.",
+    confirm: "Clear blocks",
+  },
+} as const;
 
 /** The scene's guard switch: the pink shield or the slapping hand. */
 const GUARDS: { id: Guard; label: string }[] = [
@@ -74,11 +87,16 @@ export function MessagesView() {
   const now = useNow();
 
   // "Clear chats" deletes every stored message on the gateway (or the Vercel backup), not just this screen.
+  // A live source asks for the password (the server checks it); the demo replay just confirms.
   const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
   const clear = async () => {
     if (!clearSource) return;
-    if (!window.confirm("Delete all messages? This removes them for everyone and can't be undone.")) return;
+    if (actions) {
+      setPrompt({ kind: "chats" });
+      return;
+    }
+    if (!window.confirm("Delete all messages? This can't be undone.")) return;
     setClearing(true);
     setClearError(null);
     try {
@@ -104,7 +122,12 @@ export function MessagesView() {
   const openUnblock = useCallback((message: Message) => setPrompt({ kind: "unblock", message }), []);
   const runPrompt = async (password: string) => {
     if (!actions || !prompt) return;
-    if (prompt.kind === "clear") {
+    if (prompt.kind === "chats") {
+      if (!clearSource) return;
+      await clearSource(password);
+      setClearError(null);
+      setNotice("Deleted every message.");
+    } else if (prompt.kind === "clear") {
       const r = await actions.clearBlocks(password);
       setNotice(clearBlocksText(r));
       blocklist.refresh();
@@ -214,7 +237,7 @@ export function MessagesView() {
                   type="button"
                   onClick={clear}
                   disabled={!clearSource || clearing || messages.length === 0}
-                  title="Delete all messages from the gateway. This can't be undone."
+                  title={actions ? "Delete all messages from the gateway. Needs the password." : "Delete all messages. This can't be undone."}
                   className={TOOL}
                 >
                   {clearing ? "Clearing…" : "Clear chats"}
@@ -254,14 +277,14 @@ export function MessagesView() {
 
       {prompt && (
         <PasswordPrompt
-          key={prompt.kind === "clear" ? "clear" : prompt.message.id}
-          title={prompt.kind === "clear" ? "Clear blocks" : "Unblock message"}
+          key={prompt.kind === "unblock" ? prompt.message.id : prompt.kind}
+          title={prompt.kind === "unblock" ? "Unblock message" : PROMPT_TEXT[prompt.kind].title}
           description={
-            prompt.kind === "clear"
-              ? "Unblock every sender T-Guard has blocked. Messages already in the Blocked list stay there."
-              : `Move this potential scam from ${prompt.message.from.display} to the inbox. It will show as restored.`
+            prompt.kind === "unblock"
+              ? `Move this potential scam from ${prompt.message.from.display} to the inbox. It will show as restored.`
+              : PROMPT_TEXT[prompt.kind].description
           }
-          confirmLabel={prompt.kind === "clear" ? "Clear blocks" : "Unblock"}
+          confirmLabel={prompt.kind === "unblock" ? "Unblock" : PROMPT_TEXT[prompt.kind].confirm}
           onSubmit={runPrompt}
           onClose={() => setPrompt(null)}
         />
