@@ -57,9 +57,9 @@ The `T-Gate Voice` inbound SIP dispatch rule targets agent name `voice-guard`. S
 
 The Dockerfile compiles TypeScript into `dist/` and runs `node dist/agent.js start` as an unprivileged user. `.dockerignore` excludes local `.env` files and build artifacts. Build locally with `npm run build`; the container image installs production dependencies only.
 
-The selected host is LiveKit Cloud. Its agent deployment injects `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` automatically. Configure `VOICE_GUARD_CAPTURE_ENABLED=true` in the deployed agent's runtime secrets. Do not upload the local LiveKit credentials. `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` are currently unset, so deployment can answer calls and transcribe them but will skip classification until those values are configured.
+The selected host is LiveKit Cloud. The production `voice-guard` agent is deployed in `us-east`, is running with one ready replica, and is registered under the expected agent name. It has `VOICE_GUARD_CAPTURE_ENABLED=true`; LiveKit injects `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET`. The local `.env` is excluded from the deployment source archive. `CLASSIFIER_URL` and `CLASSIFIER_TOKEN` are not configured in Cloud, so the current deployment answers and transcribes but skips classification. To publish results after deploying the combined worker, also set `VOICE_GUARD_RESULTS_URL=https://<vercel-site>/api/voice/calls` and `VOICE_GUARD_RESULTS_INGEST_TOKEN` to the matching Vercel secret.
 
-The current Build plan includes 1,000 agent session minutes, 1,000 third-party SIP minutes, and $2.50 of LiveKit Inference allowance. Production workers can cold-start after idle, adding up to 10–20 seconds before joining a call. Stop the local worker after the Cloud deployment is verified so only the hosted worker receives production calls.
+The current Build plan includes 1,000 agent session minutes, 1,000 third-party SIP minutes, and $2.50 of LiveKit Inference allowance. Production workers can cold-start after idle, adding up to 10–20 seconds before joining a call. The worker is registered, but production dispatch has not been verified with a post-deployment call.
 
 ## Data handling
 

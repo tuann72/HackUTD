@@ -22,7 +22,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Live public demo: anyone texts the victim number, results shown in real time | _Not written yet_ | Later | Not started |
 | Sender blocklist and scam fingerprints in MongoDB Atlas | [sender-blocklist.md](docs/features/sender-blocklist.md) | MVP | Parked: wired but off by default, per-message blocking only (#22, #23, #27) |
 | Initial 3D scene: pink victim blob, sender shooting messages, potential scams blocked (first step of the parked 3D scene) | [initial-3d-scene.md](docs/features/initial-3d-scene.md) | Later | In progress (on `/` above the message lists, live polled data, #14, #19) |
-| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | Active later-stage work; local caller-only route/STT verified, Cloud deploy in progress, Vercel result path coded but gated on explicit retention/access config |
+| Voice scam guard: Photon SIP call audio, transcript classification, and Vercel warning | [voice-scam-guard.md](docs/features/voice-scam-guard.md) | Later | LiveKit Cloud worker is deployed STT-only; consolidated worker, classifier, and Vercel result code is in review and needs production configuration |
 | Scam notice and blocked-scams panel, with keyword highlights (proposed) | _Not written yet_ | TBD | Not started |
 | 3D conversation scene, Next.js + React Three Fiber (parked) | _Not written yet_ | Later | Not started |
 
@@ -32,9 +32,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
-| Voice scam guard | Photon inbound route and cost/consent checks; local call reached active media through LiveKit | `feat/voice-scam-detection` | Codex | In progress | [#36](https://github.com/tuann72/HackUTD/pull/36) |
-| Voice scam guard | Caller-only worker, AssemblyAI STT, and LiveKit Cloud container/deployment (tasks 1.1–1.2, 1.6) | `feat/voice-scam-guard-stt` | Codex | In progress | [#51](https://github.com/tuann72/HackUTD/pull/51) |
-| Voice scam guard | Submit post-call transcripts to the classifier and show versioned call results in Vercel (tasks 1.3–1.4) | `feat/voice-guard-call-results` | Codex (agent) | In progress | [#63](https://github.com/tuann72/HackUTD/pull/63) |
+| Voice scam guard | Caller-only STT worker, after-call classifier, protected Vercel result API/UI, and LiveKit Cloud deployment (tasks 1.1–1.4, 1.6; call-script and production call evaluation pending) | `feat/voice-guard-call-results` | Codex | In review | [#63](https://github.com/tuann72/HackUTD/pull/63) |
 | Photon iMessage gateway | Photon 2.0 / Beta webhooks: registration script (`pho_prj_` → destinations API, `rotate`) and Standard Webhooks + `message.received` on the Vercel route | `feat/photon-beta-webhooks` | Tuan + Claude Code | Done | — |
 | Photon iMessage gateway | Photon webhook on the Vercel site (`/webhooks/photon` + `/api/messages`, Atlas store), backup to the VM gateway | `feat/web-photon-webhook` | Tuan + Claude Code | In review | — |
 | Sender blocklist | `DNS_SERVERS` for Atlas on Windows; drop deprecated `timeoutMS` | `fix/sender-blocklist-dns` | Timothy + Claude Code | Done | [#29](https://github.com/tuann72/HackUTD/pull/29) |

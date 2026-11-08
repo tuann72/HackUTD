@@ -9,11 +9,17 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 ### 2026-11-08: Add the after-call classifier result path and Vercel display
 
 - **User request:** pass the caller transcript to the existing classifier and render the result in the Vercel app.
-- **Worker flow:** after STT finalizes on hangup, the worker sends `{ messageId, text }` to `POST /classify`. On success, it posts the transcript and verdict fields to `VOICE_GUARD_RESULTS_URL` with an opaque UUID and `VOICE_GUARD_RESULTS_INGEST_TOKEN`. Neither transcript nor credentials are logged, and an upload failure does not affect call completion.
+- **Worker flow:** after STT finalizes on hangup, the worker sends the finalized caller transcript unchanged as `text` in `{ messageId, text }` to `POST /classify`. The ID is an opaque UUID and the worker verifies that the response echoes it. On success, it posts the transcript and verdict fields to `VOICE_GUARD_RESULTS_URL` with `VOICE_GUARD_RESULTS_INGEST_TOKEN`. Neither transcript nor credentials are logged, and an upload failure does not affect call completion.
 - **Contract and app:** added v1 submission and query schemas, a synthetic fixture, `POST /api/voice/calls`, and a read-only `GET /api/voice/calls`. The `/voice` page requires an operator-entered view token, keeps it only in React memory, refreshes every five seconds, and renders transcript, verdict, score, category, model, and completion time. The worker and web app exchange only the versioned contract, not code.
 - **Persistence gate:** Vercel refuses result writes unless Atlas, separate ingest and view tokens, and a positive `VOICE_GUARD_RESULTS_TTL_SECONDS` are configured. Records go to a separate Atlas collection with `expiresAt` anchored to call completion, a Mongo TTL index, and an expiry filter on reads. Local development may use process memory. No default TTL is selected; the duration and intended viewer list remain TBD. The view token is a protective shared-secret mechanism, not a settled identity policy.
 - **Limit:** the classifier is SMS-trained, so the call verdict is an experimental plumbing result, not validated call-level accuracy. No live call, classifier evaluation, or paid usage test was run in this task.
-- **Status:** tasks 1.3–1.4 are in progress on `feat/voice-guard-call-results`, stacked on `feat/voice-scam-guard-stt` (draft PR #63).
+- **Status:** task 1.3 call-script evaluation remains in progress; task 1.4 is under review in the consolidated `feat/voice-guard-call-results` PR #63. The worker and result API are included together; the production Cloud worker still needs classifier/result configuration.
+
+### 2026-11-08: Deploy the caller-only worker to LiveKit Cloud
+
+- **Deployment:** the production `voice-guard` agent was deployed in `us-east` on the existing LiveKit Cloud Build project and registered under the expected agent name.
+- **Configuration:** `VOICE_GUARD_CAPTURE_ENABLED=true`; LiveKit injects its project credentials. The local `.env` was excluded from the deployment. `CLASSIFIER_URL`/`CLASSIFIER_TOKEN` and result publishing are not configured in Cloud.
+- **Limit:** the deployment answers/transcribes only until classifier and Vercel result settings are configured. No post-deployment call was placed.
 
 ### 2026-11-08: Verify local voice answer and transcription; select LiveKit Cloud deployment
 
