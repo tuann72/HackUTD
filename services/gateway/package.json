@@ -1,0 +1,30 @@
+{
+  "name": "@t-gate/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/server.ts",
+    "start": "tsx --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:reset": "tsx --env-file-if-exists=.env scripts/db-reset.ts",
+    "send:sample": "tsx --env-file-if-exists=.env scripts/send-sample.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "hono": "^4.13.17",
+    "twilio": "^6.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
