@@ -21,7 +21,7 @@ export function formatRelative(iso: string, nowMs: number): string {
  * absorbs float error (0.29 * 10000 = 2899.9999…).
  */
 export function formatScore(score: number): string {
-  if (!Number.isFinite(score)) return "–";
+  if (!Number.isFinite(score)) return "N/A";
   const clamped = Math.max(0, Math.min(1, score));
   return `${(Math.floor(clamped * 10000 + 1e-6) / 100).toFixed(2)}%`;
 }

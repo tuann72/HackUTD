@@ -3,23 +3,37 @@
 import { motion, useReducedMotion } from "motion/react";
 
 /**
- * The color-block composition on the right of the landing page. Every block
- * and rule is placed in percent of a 932 x 548 frame, so it scales with the
- * panel. Measured from the design mock.
+ * The color-block composition on the right of the landing page: a "T" built
+ * from flat pink blocks (crossbar, a serif under its left end, the stem with a
+ * deep-pink foot) beside a black slab, with thin grid rules. Every block and
+ * rule is placed in percent of the panel, so it scales with it.
  */
+const HOT = "#e1346f";
+const LIGHT = "#ec4f8e";
+const DEEP = "#b5225a";
+const INK = "#100f0d";
+
 const BLOCKS = [
-  { left: 6.87, top: 0, width: 41.2, height: 78.47, color: "#e1346f" },
-  { left: 48.07, top: 8.39, width: 13.73, height: 23.36, color: "#ec4f8e" },
-  { left: 34.33, top: 78.47, width: 13.73, height: 21.53, color: "#b5225a" },
-  { left: 48.07, top: 31.75, width: 51.93, height: 68.25, color: "#100f0d" },
+  // Crossbar: one long block, then a lighter block and a deep-pink end cap.
+  { id: "bar", left: 8, top: 6, width: 53, height: 28, color: HOT },
+  { id: "bar-light", left: 61, top: 6, width: 19, height: 28, color: LIGHT },
+  { id: "bar-cap", left: 80, top: 6, width: 12, height: 28, color: DEEP },
+  // Serif hanging under the crossbar's left end.
+  { id: "serif", left: 8, top: 34, width: 12, height: 12, color: LIGHT },
+  // Stem, centered under the crossbar, with a deep-pink foot.
+  { id: "stem", left: 39, top: 34, width: 22, height: 42, color: HOT },
+  { id: "foot", left: 39, top: 76, width: 22, height: 24, color: DEEP },
+  // Black slab to the right of the stem.
+  { id: "slab", left: 61, top: 46, width: 39, height: 54, color: INK },
 ];
 
-/** Thin grid rules: horizontal ones run from the left edge, vertical ones from the top. */
+/** Thin grid rules: horizontal ones have a width, vertical ones a height. */
 const RULES = [
-  { left: 0, top: 31.75, width: 48.07, height: 0 },
-  { left: 0, top: 78.47, width: 48.07, height: 0 },
-  { left: 48.07, top: 0, width: 0, height: 31.75 },
-  { left: 89.27, top: 0, width: 0, height: 31.75 },
+  { left: 0, top: 34, width: 39, height: 0 },
+  { left: 0, top: 76, width: 39, height: 0 },
+  { left: 39, top: 0, width: 0, height: 6 },
+  { left: 92, top: 0, width: 0, height: 6 },
+  { left: 92, top: 34, width: 0, height: 12 },
 ];
 
 const pct = (n: number) => `${n}%`;
@@ -31,7 +45,7 @@ export function Blocks() {
     <div aria-hidden className="relative h-full w-full">
       {BLOCKS.map((b, i) => (
         <motion.div
-          key={b.color}
+          key={b.id}
           className="absolute"
           style={{
             left: pct(b.left),

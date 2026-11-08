@@ -6,6 +6,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: No em dashes, sortable senders, a "T" on the landing page
+
+- **Decision (Tuan):** no em dashes in the UI. The wordmark and box text read "T-GUARD", missing values show "N/A", and ranges use "to" (score buckets, the dashboard's time span, simulate error messages). Code comments and message-bank sample texts are not UI and were left alone.
+- **Dashboard:** the most-active-numbers table sorts by Messages, Blocked or Share (click a header; click again to flip). Share orders like Messages, since it is each sender's part of all messages. Sorting is `sortSenders` in `lib/messages/stats.ts`, tested.
+- **Landing:** the pink blocks now form a **T** in the same flat-block style: a crossbar (hot pink, light pink, deep-pink end cap), a light-pink serif under its left end, a stem with a deep-pink foot, the black slab beside the stem, and the thin rules.
+
 ### 2026-11-08: Harmless official-sounding texts, model v0.5
 
 - **Problem (Timothy):** the 600 government, IRS, ID and health scam rows had no harmless counterparts, so words like "IRS", "Medicare" or "prescription" could become scam cues by themselves, the way "free" did. "Your order is ready for pickup at the pharmacy" scored 72%.

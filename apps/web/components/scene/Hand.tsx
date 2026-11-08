@@ -49,7 +49,7 @@ interface HandProps {
   labelAnchor?: RefObject<Object3D | null>;
 }
 
-/** "T—GUARD" on the box's front face, drawn once into a canvas texture (no font download). */
+/** "T-GUARD" on the box's front face, drawn once into a canvas texture (no font download). */
 function useFrontLabel() {
   return useMemo(() => {
     if (typeof document === "undefined") return null;
@@ -61,7 +61,7 @@ function useFrontLabel() {
     c.fillStyle = "#3c0523";
     c.font = "900 112px Impact, Arial Black, Arial, sans-serif";
     c.textAlign = "center";
-    c.fillText("T—GUARD", 256, 140);
+    c.fillText("T-GUARD", 256, 140);
     c.font = "bold 28px Arial, sans-serif";
     c.fillText("ACTIVE DEFENSE SYSTEM", 256, 196);
     const texture = new CanvasTexture(canvas);

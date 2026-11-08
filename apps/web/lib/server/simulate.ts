@@ -56,7 +56,7 @@ function parseContent(raw: unknown, nested = false): SimContent {
   if (!isObj(raw)) throw new Error("content must be an object");
   switch (raw.type) {
     case "text":
-      if (!str(raw.text)) throw new Error(`text must be 1–${MAX_TEXT} characters`);
+      if (!str(raw.text)) throw new Error(`text must be 1 to ${MAX_TEXT} characters`);
       return { type: "text", text: raw.text };
     case "richlink":
       if (!str(raw.url, 500)) throw new Error("richlink needs a url");
@@ -84,7 +84,7 @@ function parseContent(raw: unknown, nested = false): SimContent {
     case "group":
       if (nested) throw new Error("albums can't nest");
       if (!Array.isArray(raw.items) || raw.items.length === 0 || raw.items.length > MAX_ITEMS) {
-        throw new Error(`an album needs 1–${MAX_ITEMS} items`);
+        throw new Error(`an album needs 1 to ${MAX_ITEMS} items`);
       }
       return { type: "group", items: raw.items.map((it) => parseContent(it, true)) };
     default:
@@ -97,14 +97,14 @@ export function parseStep(raw: unknown): Pick<Step, "from" | "body" | "content" 
   if (!isObj(raw)) throw new Error("body must be a JSON object");
   if (typeof raw.from !== "string" || !isFictionalNumber(raw.from)) throw new Error("from must be a fictional +1555xxxxxxx number");
   if (raw.group !== undefined && !(typeof raw.group === "string" && /^[\w-]{1,40}$/.test(raw.group))) {
-    throw new Error("group must be 1–40 letters, digits, - or _");
+    throw new Error("group must be 1 to 40 letters, digits, - or _");
   }
   const group = raw.group as string | undefined;
   if (raw.content !== undefined) {
     if (raw.body !== undefined) throw new Error("give either body or content, not both");
     return { from: raw.from, content: parseContent(raw.content), ...(group ? { group } : {}) };
   }
-  if (!str(raw.body)) throw new Error(`body must be 1–${MAX_TEXT} characters`);
+  if (!str(raw.body)) throw new Error(`body must be 1 to ${MAX_TEXT} characters`);
   return { from: raw.from, body: raw.body, ...(group ? { group } : {}) };
 }
 

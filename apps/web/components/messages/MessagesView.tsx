@@ -141,7 +141,7 @@ export function MessagesView() {
             href="/"
             className="whitespace-nowrap text-[28px] font-black tracking-[-0.06em] text-ink transition-colors hover:text-hot focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot"
           >
-            T—GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
+            T-GUARD<span className="ml-1 align-top text-xs tracking-normal">®</span>
           </Link>
           <span className="hidden font-label text-[10px] uppercase tracking-[0.06em] text-muted sm:block">
             Personal space. Protected.
