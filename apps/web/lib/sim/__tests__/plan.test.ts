@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRESETS } from "../presets";
-import { isFictionalNumber, presetSteps, randomSteps, scenarioSteps, SCENARIO_IDS, SENDER_POOL } from "../plan";
+import { isFictionalNumber, presetSteps, RAPID_ROWS, randomSteps, scenarioSteps, SCENARIO_IDS, SENDER_POOL } from "../plan";
 
 const base = { n: 10, scamRatio: 0.6, intervalMs: 1500, from: "", seed: 42 };
 
@@ -38,7 +38,20 @@ describe("simulation plan", () => {
     const rapid = presetSteps(PRESETS.find((p) => p.id === "rapid")!, base);
     expect(rapid).toHaveLength(50);
     expect(rapid.slice(1).every((s) => s.delayMs === 100)).toBe(true);
-    expect(rapid.filter((s) => s.expected === "block")).toHaveLength(30);
+    expect(rapid.filter((s) => s.expected === "block")).toHaveLength(20);
+  });
+
+  it("Rapid fire draws only from its 200-sentence dataset, 40% scam, without repeats", () => {
+    expect(RAPID_ROWS).toHaveLength(200);
+    expect(RAPID_ROWS.filter((r) => r.label === "scam")).toHaveLength(80);
+    expect(RAPID_ROWS.every((r) => /^[A-Z].*[.?!]$/.test(r.text))).toBe(true);
+    const rapid = presetSteps(PRESETS.find((p) => p.id === "rapid")!, base);
+    const texts = new Set(RAPID_ROWS.map((r) => r.text));
+    expect(rapid.every((s) => texts.has(s.body!))).toBe(true);
+    expect(new Set(rapid.map((s) => s.body)).size).toBe(50);
+    // The other random presets keep the main bank.
+    const burst = presetSteps(PRESETS.find((p) => p.id === "burst")!, base);
+    expect(burst.some((s) => !texts.has(s.body!))).toBe(true);
   });
 
   it("every scenario preset exists in the copied bank", () => {

@@ -13,7 +13,9 @@ This is **demo input, not training data**. The classifier trains on `data/scam_c
 | `scenarios/grandparent.jsonl` | The main demo story (5 steps, about 25 s) |
 | `scenarios/smoke.jsonl` | 3 quick messages, 500 ms apart, for smoke tests |
 | `scenarios/imessage-demo.jsonl` | The iMessage demo (10 steps, about 80 s): family texts, a group-chat album and a reaction, the grandparent scam, a scammer's photo, a phishing link, a fake "Bank Fraud Dept" contact card and a final bank scam. See [`docs/DEMO.md`](../../docs/DEMO.md) |
+| `rapid.jsonl` | 200 hand-written complete sentences for the web panel's **Rapid fire** button: 80 scams (40%) across the scam groups, 120 ordinary texts. Rapid fire draws only from this file; the other buttons and the CLI simulator use `bank.jsonl` and `generated.jsonl` |
 | `build_bank.py` | Rebuilds `bank.jsonl` from the CSV |
+| `build_rapid.py` | Writes `rapid.jsonl` from the messages listed in it (`python3 -I data/message_bank/build_rapid.py`), checking the 200 / 80 counts and that each text is a full sentence |
 
 ## Fields
 

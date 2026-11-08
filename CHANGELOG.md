@@ -10,6 +10,12 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 - **Decision (Tuan):** remove the Simulate sidebar's line "Sends signed, simulated iMessages from fictional numbers to <gateway host>." and the "Masked by the gateway" note on the dashboard's Most active numbers panel. Nothing else changes: simulated senders are still fictional `+1555` numbers and the numbers shown are still masked by the gateway.
 
+### 2026-11-08: Rapid fire uses its own 200-sentence dataset
+
+- **Decision (Tuan):** a Rapid fire dataset of 200 complete sentences, 40% scam and 60% legitimate, and Rapid fire draws from it. No note about it in the UI.
+- **Data:** `data/message_bank/rapid.jsonl`, written by `build_rapid.py` (hand-written messages, fictional links and names). 80 scams: Imposter & Phishing 22, Prizes 12, Jobs & Investment 12, Loans 10, Health 8, Shopping 8, Internet & Telecom 5, Threats & Extortion 3. 120 everyday texts. No grandparent-style scams. Demo input, not training data.
+- **Wiring:** `npm run sync:bank` copies it into `apps/web/lib/sim/bank.json` as `rapid`. The Rapid fire preset has `dataset: "rapid"` and a scam ratio of 0.4 (was 0.6), so each run sends 20 scams and 30 legit texts with no repeats. Send a scam, Send a legit text, Random burst and the CLI simulator keep the main bank.
+
 ### 2026-11-08: Less small text on /messages, bigger totals labels
 
 - **Decision (Tuan):** remove the small captions on `/messages`: "01 / The protector" and "Fictional senders. Real classifier." under the scene, "You're in good hands." and "Let through, untouched." under the totals, and the footer note "“Potential scam” is the classifier's verdict and can be wrong. Links and phone numbers in blocked messages are disabled." The "Threats blocked" and "Delivered" labels go from 10px to 20px (`text-xl`). Links and numbers in blocked messages are still disabled; only the note saying so is gone.
