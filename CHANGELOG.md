@@ -14,7 +14,8 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 - **Verified (laptop RTX 3050, full data, 8-class):** featurize 328 s, fit 168 s. Run through the service's own code path, the saved model reproduces the comparison exactly: at score ≥ 0.5 on test, 26 false blocks, 33 missed scams, SMS F1 0.952, ECE 0.008. `tests/test_service.py` passes (4/4). CPU latency on the laptop: about 70 ms for a scam with highlights, 29 ms for a legit message.
 - **Suggested thresholds** (picked on val, checked on test): **0.19** gives 97.1% precision and 99.3% recall; **0.75** gives 98.9% precision and 96.9% recall. These are inputs for the gateway's `BLOCK_THRESHOLD` (and a possible Nemotron review band), not a decision.
 - **Note on `train.py` metrics:** they count a message as scam when its top class isn't Ham, while the service uses P(scam) ≥ 0.5. For the stacked model that gives 22 false blocks / 39 missed on test instead of the service's 26 / 33. This was already true for the other kinds; the gateway sees the service's numbers.
-- **Still TBD:** whether stacked replaces MiniLM as the agreed model (proposed), the block threshold, binary vs. 8-class labels, and a stacked run on the Vultr GPU (the steps are the same as MiniLM with `--model stacked`).
+- **Deployed (Timothy, 2026-11-08):** the stacked model runs on the gateway's Vultr VM (the `MODE=shared` layout, Tuan informed): a Docker container on `127.0.0.1:8000`, token in `/etc/tgate/classifier.env`, and the gateway calls it over loopback. Artifacts came from the laptop run, so the Vultr GPU wasn't used. On the VM's one CPU, with a 2 GB plan: about 120 ms for a scam with highlights, 30 ms for a legit message. `BLOCK_THRESHOLD` stays 0.5.
+- **Still TBD:** whether stacked formally replaces MiniLM as the agreed model, the block threshold, and binary vs. 8-class labels.
 
 ### 2026-11-07: TF-IDF vs. MiniLM, combined flows and zero-day test
 
