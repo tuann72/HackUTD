@@ -7,7 +7,7 @@
 
 ## Goal
 
-Buttons in a sidebar on `/` that run perpetrator simulations without a terminal: preset scenarios, random bursts from the message bank, and a custom message. Each run is configurable (count, scam ratio, interval, sender) and can be stopped. Requested by Tuan on 2026-11-08.
+Buttons in a sidebar on `/messages` (on `/` until the landing page took `/` in #55) that run perpetrator simulations without a terminal: preset scenarios, random bursts from the message bank, and a custom message. Each run is configurable (count, scam ratio, interval, sender) and can be stopped. Requested by Tuan on 2026-11-08.
 
 ## Design
 
