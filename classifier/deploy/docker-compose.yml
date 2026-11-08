@@ -1,0 +1,24 @@
+# Runs ON the Vultr inference server (not your laptop).
+#   cd ~/tgate/classifier/deploy && docker compose up -d --build
+# Needs a .env next to this file with TGATE_DOMAIN and CLASSIFIER_TOKEN (see .env.example).
+services:
+  classifier:
+    build: ..                       # classifier/Dockerfile; artifacts/ must exist
+    restart: unless-stopped
+    environment:
+      CLASSIFIER_TOKEN: ${CLASSIFIER_TOKEN:?set CLASSIFIER_TOKEN in deploy/.env}
+    expose: ["8000"]                # only Caddy can reach it; not published to the internet
+
+  caddy:                            # HTTPS in front, with an automatic Let's Encrypt certificate
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      TGATE_DOMAIN: ${TGATE_DOMAIN:?set TGATE_DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [classifier]
+
+volumes:
+  caddy_data:
