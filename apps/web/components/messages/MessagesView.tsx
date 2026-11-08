@@ -1,0 +1,164 @@
+"use client";
+
+import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
+import { useMemo, type ReactNode } from "react";
+import { useMessages, type Message, type SourceMode } from "@/lib/messages";
+import { categoryClass, categoryLabel } from "./category";
+import { MessageCard } from "./MessageCard";
+import { useNow } from "./useNow";
+
+const MODE_LABEL: Record<SourceMode, string> = {
+  live: "Live",
+  replay: "Replay (mock)",
+  static: "Static (mock)",
+};
+
+function SourceIndicator({ mode }: { mode: SourceMode | null }) {
+  const live = mode === "live";
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+      <span
+        aria-hidden
+        className={`size-2 rounded-full ${
+          mode == null ? "bg-zinc-300 dark:bg-zinc-600" : live ? "bg-emerald-500" : "bg-sky-500"
+        } ${live ? "animate-pulse motion-reduce:animate-none" : ""}`}
+      />
+      {mode == null ? "Connecting…" : MODE_LABEL[mode]}
+    </span>
+  );
+}
+
+function Column({
+  title,
+  count,
+  empty,
+  messages,
+  now,
+}: {
+  title: string;
+  count: ReactNode;
+  empty: string;
+  messages: Message[];
+  now: number | null;
+}) {
+  return (
+    <section aria-label={title} className="flex min-w-0 flex-col gap-3">
+      <h2 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        {title}
+        <span className="tabular-nums text-zinc-400 dark:text-zinc-500">{count}</span>
+      </h2>
+      {messages.length === 0 && (
+        <p className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          {empty}
+        </p>
+      )}
+      <ul className="flex flex-col gap-3">
+        <AnimatePresence initial={false}>
+          {messages.map((m) => (
+            <motion.li
+              key={m.id}
+              layout="position"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+              <MessageCard message={m} now={now} />
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </ul>
+    </section>
+  );
+}
+
+/** The /messages page: inbox (delivered, plus pending at top) and blocked. */
+export function MessagesView() {
+  const { messages, mode, error } = useMessages({ intervalMs: 1500 });
+  const now = useNow();
+
+  const { inbox, blocked, deliveredCount, pendingCount, categories } = useMemo(() => {
+    const pending = messages.filter((m) => m.action === "pending");
+    const delivered = messages.filter((m) => m.action === "delivered");
+    const blocked = messages.filter((m) => m.action === "blocked");
+    const counts = new Map<string, { category: string | null; n: number }>();
+    for (const m of blocked) {
+      const c = m.verdict?.category ?? null;
+      const key = categoryLabel(c);
+      counts.set(key, { category: c, n: (counts.get(key)?.n ?? 0) + 1 });
+    }
+    return {
+      inbox: [...pending, ...delivered],
+      blocked,
+      deliveredCount: delivered.length,
+      pendingCount: pending.length,
+      categories: [...counts.entries()].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0])),
+    };
+  }, [messages]);
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
+        <header className="mb-6 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">T-Gate · Messages</h1>
+            <SourceIndicator mode={mode} />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="rounded-md bg-zinc-100 px-2 py-1 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              Inbox <span className="tabular-nums">{deliveredCount}</span>
+            </span>
+            <span className="rounded-md bg-rose-50 px-2 py-1 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+              Blocked <span className="tabular-nums">{blocked.length}</span>
+            </span>
+            {pendingCount > 0 && (
+              <span className="px-1 text-zinc-500 dark:text-zinc-400">
+                Checking <span className="tabular-nums">{pendingCount}</span>
+              </span>
+            )}
+            {categories.map(([label, { category, n }]) => (
+              <span
+                key={label}
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClass(category)}`}
+              >
+                {label} <span className="tabular-nums opacity-80">{n}</span>
+              </span>
+            ))}
+          </div>
+          {error && (
+            <p
+              role="status"
+              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
+            >
+              Couldn&apos;t refresh messages: {error}. Retrying…
+            </p>
+          )}
+        </header>
+
+        <LayoutGroup>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-6">
+            <Column
+              title="Inbox"
+              count={deliveredCount}
+              empty={mode == null ? "Loading…" : "No messages delivered yet."}
+              messages={inbox}
+              now={now}
+            />
+            <Column
+              title="Blocked"
+              count={blocked.length}
+              empty={mode == null ? "Loading…" : "Nothing blocked yet."}
+              messages={blocked}
+              now={now}
+            />
+          </div>
+        </LayoutGroup>
+
+        <p className="mt-10 text-xs text-zinc-500 dark:text-zinc-400">
+          &ldquo;Potential scam&rdquo; is the classifier&apos;s verdict and can be wrong. Links and phone numbers in
+          blocked messages are disabled.
+        </p>
+      </main>
+    </MotionConfig>
+  );
+}
