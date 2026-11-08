@@ -262,11 +262,11 @@ function parseBetaContent(content: unknown): Content | null {
 export function parseBetaEvent(raw: Record<string, unknown>): ParseResult {
   if (raw.type !== 'message.received') return { kind: 'ignored', reason: `event ${JSON.stringify(raw.type)}` };
   const msg = isObj(raw.data) && isObj(raw.data.object) ? raw.data.object : null;
-  if (!msg || typeof msg.id !== 'string' || !msg.id) return { kind: 'invalid', error: 'missing data.object.id' };
+  // Ignored, not invalid: like the Vercel route, ack with a 200 so Photon doesn't retry something we'll never handle.
+  if (!msg || typeof msg.id !== 'string' || !msg.id) return { kind: 'ignored', reason: 'missing data.object.id' };
   const sender = isObj(msg.sentBy) && typeof msg.sentBy.handle === 'string' ? msg.sentBy.handle : '';
-  if (!sender) return { kind: 'invalid', error: 'missing data.object.sentBy.handle' };
+  if (!sender) return { kind: 'ignored', reason: 'missing data.object.sentBy.handle' };
   if (msg.platform !== 'imessage') return { kind: 'ignored', reason: `platform ${JSON.stringify(msg.platform)}` };
-  if (msg.status !== undefined && msg.status !== 'received') return { kind: 'ignored', reason: `status ${String(msg.status)}` };
 
   const content = parseBetaContent(msg.content);
   if (!content) return { kind: 'ignored', reason: `content type ${isObj(msg.content) ? String(msg.content.type) : 'none'}` };

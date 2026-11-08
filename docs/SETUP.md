@@ -30,25 +30,27 @@ The dev placeholder secrets already match each other. Accounts are needed only f
 
 ## 1. Photon project and line
 
-1. Sign up at [app.photon.codes](https://app.photon.codes) and create a project.
-2. Get the **project id** and **project secret** from the dashboard's Settings page, or from `photon projects show` in the [`@photon-ai/cli`](https://photon.codes/docs/cli/overview).
-3. Use the project's iMessage number. **Decided (Tuan, 2026-11-08):** the team is on Free/Pro, so it's a **shared-pool** number ([line model](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing)). That number is the victim number. What a shared pool means:
+The team's project is on **Photon 2.0 / Beta**, which the Photon track requires (Timothy, 2026-11-08). The stable site, API and CLI defaults are a different backend, and a Beta project doesn't exist there.
+
+1. Use the project at [app.beta.photon.codes](https://app.beta.photon.codes). Its id starts with `pho_prj_`. The Stable API rejects that id with a 422.
+2. Create an **API key** (`pho_ask_...` or `pho_sk_...`) in the Beta dashboard.
+3. Use the project's iMessage number. **Decided (Tuan, 2026-11-08):** it's a **shared-pool** number ([line model](https://photon.codes/docs/spectrum-ts/providers/imessage/connection-and-routing)). That number is the victim number. What a shared pool means:
    - no group chats
    - at most **50 new conversations per line per day**, which matters if many judges text in (ask help@photon.codes to raise it)
    - Photon's docs don't say whether any iPhone can reach the project or only linked users, so check with a phone that has never texted it.
-4. Register the webhook once the gateway has a public HTTPS URL. [`DEPLOY.md`](../services/gateway/DEPLOY.md) step 6 runs:
+4. Register the webhook once the gateway has a public HTTPS URL. The VM's is `https://149-28-243-66.sslip.io/webhooks/photon`. [`DEPLOY.md`](../services/gateway/DEPLOY.md) step 6 runs:
 
    ```bash
-   npm run photon:webhook -- register https://<gateway-host>/webhooks/photon --write-env
+   npm run photon:webhook -- register https://149-28-243-66.sslip.io/webhooks/photon --write-env
    ```
 
    Photon shows the **signing secret** only in that response.
 
 | Value | Goes in | Notes |
 |---|---|---|
-| `PHOTON_PROJECT_ID` | Only the shell that runs `npm run photon:webhook` (`read -p`, see DEPLOY step 6) | Not needed by the running gateway |
-| `PHOTON_PROJECT_SECRET` | Same. Never in a file you commit | Full management access to the project. Rotate it with `photon projects regenerate-secret` if it leaks |
-| `PHOTON_WEBHOOK_SECRET` | `services/gateway/.env` on the VM (`--write-env` puts it there) | Signing secret, 64 characters. If it's lost, rotate: register again, update `.env`, then `npm run photon:webhook -- delete <old-id>` |
+| `PHOTON_PROJECT_ID` | Only the shell that runs `npm run photon:webhook` (`read -p`, see DEPLOY step 6) | Starts with `pho_prj_`. Not needed by the running gateway |
+| `PHOTON_PROJECT_SECRET` | Same. Never in a file you commit | The Beta API key (`pho_ask_...` or `pho_sk_...`) |
+| `PHOTON_WEBHOOK_SECRET` | `services/gateway/.env` on the VM (`--write-env` puts it there) | Signing secret, starts with `whsec_`. If it's lost or leaks: `npm run photon:webhook -- rotate <id> --write-env` |
 
 ## 2. Vultr account and API key
 

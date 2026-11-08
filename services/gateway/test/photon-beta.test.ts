@@ -94,9 +94,11 @@ describe('Photon 2.0 / Beta webhooks', () => {
     expect(m.body).toBe('look');
   });
 
-  it('400s a signed event with no sender', async () => {
+  it('acks a signed event with no sender and stores nothing, like the Vercel route', async () => {
     const body = event();
     delete (body.data.object as Record<string, unknown>).sentBy;
-    expect((await app().request(req(body))).status).toBe(400);
+    const a = app();
+    expect((await a.request(req(body))).status).toBe(200);
+    expect(await list(a)).toHaveLength(0);
   });
 });

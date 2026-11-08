@@ -111,15 +111,9 @@ curl -X POST -H "X-Debug-Token: $DEBUG_TOKEN" localhost:8787/debug/reset
 ## Connecting a real Photon iMessage line
 
 1. Run the gateway somewhere Photon can reach over **public HTTPS**. Photon refuses `http`, private and loopback addresses, and redirects. For the Vultr VM, follow [`DEPLOY.md`](DEPLOY.md).
-2. Register the webhook (dashboard at app.photon.codes, the "Webhook" tab, or the API):
+2. Register the webhook with `npm run photon:webhook -- register https://149-28-243-66.sslip.io/webhooks/photon --write-env` ([`DEPLOY.md`](DEPLOY.md) step 6). A `pho_prj_` project id selects Photon 2.0 / Beta, which is what the team uses. `PHOTON_PROJECT_SECRET` is then a `pho_ask_` or `pho_sk_` API key.
 
-   ```bash
-   curl -X POST "https://spectrum.photon.codes/projects/$PHOTON_PROJECT_ID/webhooks/" \
-     -u "$PHOTON_PROJECT_ID:$PHOTON_PROJECT_SECRET" -H "Content-Type: application/json" \
-     -d '{"webhookUrl":"https://<host>/webhooks/photon"}'
-   ```
-
-3. Put the returned `data.signingSecret` in `PHOTON_WEBHOOK_SECRET` and restart. The project id and secret are only for registering. The gateway doesn't need them.
+3. `--write-env` puts the signing secret in `PHOTON_WEBHOOK_SECRET`. Restart the gateway. The project id and key are only for registering. The gateway doesn't need them.
 
 The URL isn't part of the signature, so proxies and tunnels need no extra config (there's no `PUBLIC_WEBHOOK_URL` anymore). A tunnel (cloudflared, ngrok) is needed **only** when a real iMessage should reach a gateway on a laptop. The simulator and `npm run send:sample` POST to `localhost` directly.
 
