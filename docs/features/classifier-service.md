@@ -23,12 +23,13 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 
 ## Tasks
 
-### Stage 1: code (done in the first PR)
+### Stage 1: code
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 1.1 | `train.py`: MiniLM embeddings + LR head, eval on real val/test, write artifacts | — | 1.2 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 | 1.2 | Inference service (FastAPI), bearer auth, occlusion highlights, Dockerfile | — | 1.1 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
+| 1.3 | TF-IDF + LR model (`train.py --model tfidf`), served by the same service with coefficient-based highlights; the comparison baseline and a fallback | 1.1, 1.2 | 2.1 | In progress | `feat/classifier-tfidf-lr` | Tuan + Claude Code | |
 
 ### Stage 2: train on Vultr
 
