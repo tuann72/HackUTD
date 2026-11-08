@@ -3,8 +3,9 @@
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
 import Link from "next/link";
 import { ShieldLetter } from "@/components/brand/ShieldLetter";
-import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
+  clearBlocksText,
   useMessages,
   type Message,
   type MessageChange,
@@ -14,7 +15,14 @@ import { SceneClient } from "@/components/scene/SceneClient";
 import type { Guard } from "@/components/scene/Scene";
 import { SimPanel } from "@/components/sim/SimPanel";
 import { MessageCard } from "./MessageCard";
+import { PasswordPrompt } from "./PasswordPrompt";
+import { clearBlocksLabel, useBlocklist } from "./useBlocklist";
 import { useNow } from "./useNow";
+
+/** Tooltip on Unblock and Clear blocks when there's no gateway to check the password (mock data). */
+const MOCK_ACTIONS_OFF = "Needs a live gateway (set NEXT_PUBLIC_API_URL). The demo data can't be unblocked.";
+
+type Prompt = { kind: "clear" } | { kind: "unblock"; message: Message };
 
 /** The scene's guard switch: the pink shield or the slapping hand. */
 const GUARDS: { id: Guard; label: string }[] = [
@@ -31,12 +39,16 @@ function Column({
   empty,
   messages,
   now,
+  onUnblock,
+  unblockOff,
 }: {
   title: string;
   count: ReactNode;
   empty: string;
   messages: Message[];
   now: number | null;
+  onUnblock?: (m: Message) => void;
+  unblockOff?: string | null;
 }) {
   const [open, setOpen] = useState(true);
   const bodyId = useId();
@@ -88,7 +100,7 @@ function Column({
                     exit={{ opacity: 0, transition: { duration: 0.15 } }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                   >
-                    <MessageCard message={m} now={now} />
+                    <MessageCard message={m} now={now} onUnblock={onUnblock} unblockOff={unblockOff} />
                   </motion.li>
                 ))}
               </AnimatePresence>
@@ -115,7 +127,7 @@ export function MessagesView() {
     },
     [feed],
   );
-  const { messages, mode, error, clear: clearSource } = useMessages({ intervalMs: 1500, onChanges });
+  const { messages, mode, error, clear: clearSource, actions, refresh } = useMessages({ intervalMs: 1500, onChanges });
   const now = useNow();
 
   // "Clear chats" deletes every stored message on the gateway (or the Vercel backup), not just this screen.
@@ -132,6 +144,32 @@ export function MessagesView() {
       setClearError(e instanceof Error ? e.message : String(e));
     } finally {
       setClearing(false);
+    }
+  };
+
+  // Unblock and Clear blocks: both ask for the password, which the server checks.
+  const blocklist = useBlocklist(actions);
+  const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 5000);
+    return () => clearTimeout(t);
+  }, [notice]);
+  // Null while loading too, so the buttons stay off until the source is known.
+  const actionsOff = actions ? null : mode == null ? "Loading…" : MOCK_ACTIONS_OFF;
+  const openUnblock = useCallback((message: Message) => setPrompt({ kind: "unblock", message }), []);
+  const runPrompt = async (password: string) => {
+    if (!actions || !prompt) return;
+    if (prompt.kind === "clear") {
+      const r = await actions.clearBlocks(password);
+      setNotice(clearBlocksText(r));
+      blocklist.refresh();
+    } else {
+      const r = await actions.unblock(prompt.message.id, password);
+      setNotice(r.allowlisted ? "Moved to the inbox. That sender won't be blocked again." : "Moved to the inbox.");
+      refresh();
+      blocklist.refresh();
     }
   };
 
@@ -179,11 +217,21 @@ export function MessagesView() {
               {clearing ? "Clearing…" : "Clear chats"}
               <span aria-hidden>↺</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setPrompt({ kind: "clear" })}
+              disabled={!!actionsOff}
+              title={actionsOff ?? "Unblock every sender T-Guard has blocked. Needs the password."}
+              className="flex items-center gap-4 border border-ink px-4 py-3 font-label text-[10px] uppercase tracking-[0.06em] text-ink transition-colors hover:bg-ink hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hot disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+            >
+              <span className="tabular-nums">{clearBlocksLabel(blocklist.status)}</span>
+              <span aria-hidden>⊘</span>
+            </button>
           </div>
         </header>
 
         <div className="min-w-0">
-          {(error || clearError) && (
+          {(error || clearError || notice) && (
             <div className="mb-4 flex flex-col gap-2">
               {error && (
                 <p role="status" className="border-l-4 border-hot bg-card px-3 py-2 text-sm text-ink">
@@ -193,6 +241,11 @@ export function MessagesView() {
               {clearError && (
                 <p role="alert" className="border-l-4 border-hot-deep bg-card px-3 py-2 text-sm text-ink">
                   Couldn&apos;t clear messages: {clearError}
+                </p>
+              )}
+              {notice && (
+                <p role="status" className="border-l-4 border-ink bg-card px-3 py-2 text-sm font-bold text-ink">
+                  {notice}
                 </p>
               )}
             </div>
@@ -256,12 +309,28 @@ export function MessagesView() {
                 empty={mode == null ? "Loading…" : "Nothing blocked yet."}
                 messages={blocked}
                 now={now}
+                onUnblock={openUnblock}
+                unblockOff={actionsOff}
               />
             </div>
           </LayoutGroup>
         </div>
         <SimPanel />
       </main>
+      {prompt && (
+        <PasswordPrompt
+          key={prompt.kind === "clear" ? "clear" : prompt.message.id}
+          title={prompt.kind === "clear" ? "Clear blocks" : "Unblock message"}
+          description={
+            prompt.kind === "clear"
+              ? "Unblock every sender T-Guard has blocked. Messages already in the Blocked list stay there."
+              : `Move this potential scam from ${prompt.message.from.display} to the inbox. It will show as restored.`
+          }
+          confirmLabel={prompt.kind === "clear" ? "Clear blocks" : "Unblock"}
+          onSubmit={runPrompt}
+          onClose={() => setPrompt(null)}
+        />
+      )}
     </MotionConfig>
   );
 }

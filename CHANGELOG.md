@@ -6,6 +6,10 @@ The detailed, evolving design document. `AGENTS.md` holds the current summary; t
 
 ## Decision log
 
+### 2026-11-08: Sender blocklist on, with Unblock and Clear blocks buttons
+
+Tuan reversed the morning's parking decision: the gateway now blocks repeat scam senders by default (`SENDER_BLOCKLIST` defaults to `on`; Atlas when `MONGODB_URI` is set, else in memory). To keep a person in control, the web UI gets two buttons, both behind a password the user types (`4321`, set by `UI_ACTION_PASSWORD`): **Unblock** on a blocked message restores it and allowlists the sender, and **Clear blocks** deletes every sender record so everyone blocked is unblocked. The password is checked on the gateway (and on the Vercel backup), never in browser code. These are the third kind of write the web app makes, after Clear chats and Simulate. Blocked messages stay in the log after Clear blocks, and text fingerprints are kept. Open: the strike/score/TTL defaults, and the 4-digit password is only a demo guard. See `contracts/README.md`, "Unblock and Clear blocks".
+
 ### 2026-11-08: Voice transcripts go to the VM gateway like simulated messages
 
 - **Decision (LacsJP27):** the voice-guard worker sends each finished call's transcript to the gateway on the VM as a signed Photon (Spectrum) inbound-iMessage webhook on `/webhooks/photon`, the same path the perpetrator simulator and the Simulate panel use. The gateway classifies it, applies its block/deliver policy (threshold, review band, money rule) and stores it, and `/messages` shows it through `GET /api/messages`.
