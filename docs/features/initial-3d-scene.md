@@ -44,7 +44,7 @@ This is the first version of the scene described in [`CHANGELOG.md`, "3D scene (
 ## Open questions
 
 - **Data source for 4.1:** task 3.4 took the polling route: the scene shares the page's `useMessages` poll of `GET /api/messages` and fires a shot for each message that resolves. Whether an event stream replaces polling later is TBD.
-- **Route:** decided (Tuan, task 3.4): the scene is the top band of the home page `/`, above the message lists. `/scene` redirects there.
+- **Route:** decided (Tuan, task 3.4): the scene is the top band of the home page `/`, above the message lists. `/scene` redirects there. **Band size (Tuan, 2026-11-08):** the band is taller, `65dvh` (min 20rem) from the `sm` breakpoint up and `45dvh` (min 16rem) on phones, and the camera sets its fov from the band's aspect ratio so both blobs, the shot arc and the labels always fit (`FitCamera` in `Scene.tsx`).
 - **Event contract v1:** this plan assumes `message.delivered` / `message.blocked` events with `action`, a label and an opaque message id, as in `CHANGELOG.md`. The contract file (`contracts/events.v1.schema.json`) doesn't exist yet. Until it does, fixtures follow the shape in `CHANGELOG.md`.
 - **Speed:** #14 fires one message every 1.3 s. Whether the demo needs a slower first pass is TBD.
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
-import { Vector3 } from "three";
+import { MathUtils, PerspectiveCamera, Vector3 } from "three";
 import { Blob, BLOB_RADIUS } from "./Blob";
 import { MessageShot } from "./MessageShot";
 import type { SceneMessage, ShotFeed } from "./feed";
@@ -21,6 +21,15 @@ const SHOT_GAP_MS = 600;
  */
 const MAX_QUEUED = 5;
 const CAMERA = { position: [0, 1.6, 8.5] as [number, number, number], fov: 45 };
+/**
+ * Half the width and height of world space, around the origin the camera
+ * looks at, that must stay in view: both blobs with the victim's shield
+ * (x -4.1 to 4.65), the shot arc and "Blocked" stamp above, and the labels
+ * below (y about -1.75 to 1.6), plus a margin.
+ */
+const FRAME_HALF_W = 5.1;
+const FRAME_HALF_H = 2.1;
+const CAMERA_DISTANCE = Math.hypot(...CAMERA.position);
 /** Capped below 2 so Retina screens don't render 4x the pixels. */
 const DPR: [number, number] = [1, 1.5];
 
@@ -100,6 +109,28 @@ function Shots({ feed, hits }: { feed: ShotFeed; hits: HitClock }) {
 }
 
 /**
+ * Sets the camera's vertical fov so the frame above just fits the band at any
+ * aspect ratio: a wide band zooms in until the blobs fill its height, and a
+ * narrow (phone) band zooms out so neither blob is cut off at the sides.
+ */
+function FitCamera() {
+  const get = useThree((s) => s.get);
+  const aspect = useThree((s) => s.size.width / Math.max(s.size.height, 1));
+
+  useEffect(() => {
+    // Read from the store, not a hook value: the camera is a three.js object
+    // R3F owns, and the React compiler lint forbids mutating hook results.
+    const { camera } = get();
+    if (!(camera instanceof PerspectiveCamera)) return;
+    const halfH = Math.max(FRAME_HALF_H, FRAME_HALF_W / aspect);
+    camera.fov = MathUtils.radToDeg(2 * Math.atan(halfH / CAMERA_DISTANCE));
+    camera.updateProjectionMatrix();
+  }, [get, aspect]);
+
+  return null;
+}
+
+/**
  * The scene band on the home page: every message the page receives flies from
  * the sender to the victim; blocked ones pop in front of the victim's shield.
  * It renders the gateway's decision and never makes one.
@@ -112,6 +143,7 @@ export default function Scene({ feed }: { feed: ShotFeed }) {
       {/* No `shadows`: nothing receives a shadow map. ContactShadows draws the
           ground shadow on its own. */}
       <Canvas camera={CAMERA} dpr={DPR}>
+        <FitCamera />
         <color attach="background" args={["#0b1020"]} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 6, 5]} intensity={1.6} />

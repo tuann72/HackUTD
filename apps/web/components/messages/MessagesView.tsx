@@ -195,7 +195,7 @@ export function MessagesView() {
 
         <section
           aria-label="Animation: each message flies to the victim; blocked ones pop before they arrive"
-          className="mb-8 h-[42dvh] min-h-64 overflow-hidden rounded-2xl"
+          className="mb-8 h-[45dvh] min-h-64 overflow-hidden rounded-2xl sm:h-[65dvh] sm:min-h-80"
         >
           <SceneClient feed={feed} />
         </section>
