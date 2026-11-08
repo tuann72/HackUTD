@@ -56,4 +56,14 @@ Display helpers: `isPotentialScam(m)` (the gateway's label is `scam`; say "poten
 
 Copy `.env.example` to `.env.local`. `NEXT_PUBLIC_API_URL` is the gateway base URL, for example `http://localhost:8787`. It ships to the browser, so never put secrets in `NEXT_PUBLIC_` variables.
 
+## Deploy (Vercel)
+
+The repo-root [`vercel.json`](../../vercel.json) deploys only this app, as a single Vercel service named `web` that serves every path. The gateway and the classifier run on Vultr, not on Vercel. The browser calls the gateway directly, so there are no Vercel service bindings.
+
+1. Import the repo into Vercel and keep the project's Root Directory as the repo root, so `vercel.json` is picked up.
+2. Set `NEXT_PUBLIC_API_URL` to the gateway's public **HTTPS** URL (for example `https://<gateway-host>`) for Production and Preview. It's inlined at build time, so redeploy after changing it. An `http://` URL fails from an HTTPS page as mixed content.
+3. On the gateway, add the Vercel domain to `CORS_ORIGINS` (comma-separated, for example `https://<project>.vercel.app`). Without it, `/messages` shows "Couldn't refresh messages".
+
+With `NEXT_PUBLIC_API_URL` unset, the deploy still works and replays the fixture.
+
 `AGENTS.md` in this folder is written by `next dev` and points agents at the bundled Next.js 16 docs in `node_modules/next/dist/docs/`.
