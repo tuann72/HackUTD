@@ -48,7 +48,7 @@ Tasks are grouped into ordered stages. Stage 0 gates the prototype. Stage 1 task
 | 1.4 | Add versioned read-only call-result contract/API and Vercel result display | 1.2, 1.3 | — | Done | `feat/voice-guard-call-results` | Codex | [#63](https://github.com/tuann72/HackUTD/pull/63) |
 | 1.5 | Verify caller-only end-to-end call: hang up, then see transcript and verdict in the web app | 1.1, 1.2, 1.3, 1.4 | — | Not started | — | TBD | — |
 | 1.6 | Deploy the caller-only worker to LiveKit Cloud and verify production dispatch | 1.1, 1.2 | 1.3, 1.4 | In progress | `fix/voice-classifier-proxy` | Codex | — |
-| 1.7 | Expose the existing classifier `/classify` endpoint over HTTPS for the LiveKit worker | 1.3 | 1.4, 1.6 | In progress | `fix/voice-classifier-proxy` | Codex | — |
+| 1.7 | Expose the existing classifier `/classify` endpoint over HTTPS for the LiveKit worker | 1.3 | 1.4, 1.6 | In progress | `fix/voice-classifier-proxy` | Codex | [#78](https://github.com/tuann72/HackUTD/pull/78) |
 
 ### Stage 2: connect a human victim
 

@@ -8,6 +8,7 @@ The end result:
 iPhone ──iMessage──> Photon line ──HTTPS POST /webhooks/photon──┐
                                                                  ▼
 browser (Vercel site) ──HTTPS GET /api/messages──> Caddy :443 ──> gateway :8787 (systemd) ──> SQLite file
+LiveKit voice worker ──HTTPS POST /classify──> Caddy :443 ──> classifier :8000 (loopback, bearer token required)
 ```
 
 **Why HTTPS is required:** the Vercel site is served over HTTPS, so browsers block calls to a plain-HTTP gateway (mixed content). Photon also delivers webhooks only to public HTTPS URLs, with no plain HTTP, private IPs or redirects.
@@ -18,7 +19,7 @@ The deploy files live in [`deploy/`](deploy/):
 |---|---|
 | [`bootstrap.sh`](deploy/bootstrap.sh) | Sets up or updates the VM. It's idempotent: re-run it to deploy a new commit |
 | [`t-gate-gateway.service`](deploy/t-gate-gateway.service) | The systemd unit (`npm start` as user `tgate`) |
-| [`Caddyfile`](deploy/Caddyfile) | Template for the HTTPS reverse proxy. `bootstrap.sh` fills in the hostname |
+| [`Caddyfile`](deploy/Caddyfile) | Template for the HTTPS reverse proxy. It sends only `/classify` to the loopback classifier on port 8000 and all other paths to the gateway. `bootstrap.sh` fills in the hostname |
 | [`tunnel.sh`](deploy/tunnel.sh) | For laptops only: a public HTTPS tunnel to a local gateway (`npm run tunnel`) |
 
 ## Decide before you start

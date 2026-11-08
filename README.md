@@ -37,7 +37,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 | Message UI | Landing T: remove the black slab, add the right serif and two small pink squares beside the stem | `feat/landing-t-dots` | Tuan + Claude Code | Done | [#76](https://github.com/tuann72/HackUTD/pull/76) |
 | Initial 3D scene | Shield's T in Manrope ExtraBold (closest free match to T-Mobile's TeleNeo) | `feat/scene-shield-t-font` | Tuan + Claude Code | Done | [#75](https://github.com/tuann72/HackUTD/pull/75) |
 | Voice scam guard | Caller-only STT worker, after-call classifier, protected Vercel result API/UI (tasks 1.1–1.4) | `feat/voice-guard-call-results` | Codex | Done | [#63](https://github.com/tuann72/HackUTD/pull/63) |
-| Voice scam guard | Expose the classifier's `/classify` endpoint over HTTPS for LiveKit Cloud | `fix/voice-classifier-proxy` | Codex | In progress | — |
+| Voice scam guard | Expose the classifier's `/classify` endpoint over HTTPS for LiveKit Cloud | `fix/voice-classifier-proxy` | Codex | In progress | [#78](https://github.com/tuann72/HackUTD/pull/78) |
 | Message UI | Wordmark shield (the U in T-GUARD) as tall as the letters everywhere | `feat/web-logo-shield` | Tuan + Claude Code | Done | [#73](https://github.com/tuann72/HackUTD/pull/73) |
 | Initial 3D scene | Shield/Hand switch above the scene (hand back as an option); Rapid fire button (50 msgs, 100 ms); iMessage demo and Smoke test removed | `feat/web-guard-toggle` | Tuan + Claude Code | Done | [#71](https://github.com/tuann72/HackUTD/pull/71) |
 | Message UI | Message text size follows length (short = larger, long = smaller) | `feat/web-text-size` | Tuan + Claude Code | Done | [#72](https://github.com/tuann72/HackUTD/pull/72) |
