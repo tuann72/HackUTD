@@ -11,10 +11,12 @@ COPY service/requirements.txt .
 RUN pip install -r requirements.txt
 
 # Bake the MiniLM weights into the image so startup needs no network.
+# (A TF-IDF model doesn't use them, but one image serves either kind.)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 
 COPY service/ ./service/
-COPY artifacts/head.joblib artifacts/model.json ./artifacts/
+# Whatever train.py wrote: MiniLM needs model.json + head.joblib; TF-IDF also vectorizer.joblib.
+COPY artifacts/ ./artifacts/
 
 ENV CLASSIFIER_ARTIFACTS=/app/artifacts HF_HUB_OFFLINE=1
 USER app

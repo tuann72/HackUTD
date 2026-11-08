@@ -23,12 +23,13 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 
 ## Tasks
 
-### Stage 1: code (done in the first PR)
+### Stage 1: code
 
 | # | Task | Depends on | Parallel with | Status | Branch | Owner | PR |
 |---|---|---|---|---|---|---|---|
 | 1.1 | `train.py`: MiniLM embeddings + LR head, eval on real val/test, write artifacts | — | 1.2 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
 | 1.2 | Inference service (FastAPI), bearer auth, occlusion highlights, Dockerfile | — | 1.1 | Done | `feat/classifier-minilm-vultr` | Tuan + Claude Code | [#3](https://github.com/lytx02/HackUTD/pull/3) |
+| 1.3 | TF-IDF + LR model (`train.py --model tfidf`), served by the same service with coefficient-based highlights; the comparison baseline and a fallback | 1.1, 1.2 | 2.1 | Done (code merged; full-data run and tests still pending, see 2.1) | `feat/classifier-tfidf-lr` | Tuan + Claude Code | [#6](https://github.com/lytx02/HackUTD/pull/6) |
 
 ### Stage 2: train on Vultr
 
@@ -51,12 +52,20 @@ Train a MiniLM-based scam classifier on Vultr and serve it as an HTTPS inference
 - **Files:** `CHANGELOG.md` (metrics), artifacts stored outside git (location TBD: Vultr Object Storage or the image registry).
 - **Done when:** metrics for both label schemes are recorded, a label scheme is chosen, and the GPU instance is destroyed.
 
+### 1.3 TF-IDF + LR model
+
+- **What:** `train.py --model tfidf` (TF-IDF word 1–2-grams, vocabulary fit on train only, LR with balanced class weights). The service picks the model kind from `model.json` and computes coefficient-based highlights. `scripts/train_tfidf.sh` trains on any Linux box without a GPU. README, "Option B".
+- **Files:** `classifier/train.py`, `classifier/service/app.py`, `classifier/Dockerfile`, `classifier/scripts/train_tfidf.sh`, `classifier/requirements-train-tfidf.txt`, `classifier/README.md`.
+- **Done when:** a TF-IDF model trains on the full data with its metrics printed, `tests/test_service.py` passes against it, and highlights point at the right characters.
+
 ### 3.1 Deploy
 
 - **What:** follow `classifier/README.md`, step 3.
 - **Done when:** `curl https://<host>/healthz` works from outside, `/classify` rejects requests without the token, and latency per message is measured.
 
 ## Progress notes
+
+- **2026-11-07:** TF-IDF + LR merged (#6) at Tuan's request without a training run or test run. Task 2.1 must train both models and run `tests/test_service.py` against each.
 
 - **2026-11-07:** Review pass. Dataset check: no empty messages, and `label_class` and `is_spam` agree on every row. 2,397 messages are over 5,000 characters (101 in test), so the service now accepts up to 50k characters instead of rejecting them. MiniLM truncates at 256 tokens. Val/test are ~80% email, so `train.py` now also reports SMS-only F1. The service refuses to start without `CLASSIFIER_TOKEN` (unless `CLASSIFIER_ALLOW_NO_AUTH=1`), the container runs as non-root, and `deploy/` adds Docker Compose + Caddy (HTTPS through sslip.io; the image builds on the server, so no registry is needed). The README is rewritten as a step-by-step `vultr-cli` guide, with a prompt for AI agents. Not yet run: a full training run, the Docker build and the tests. Those run on Vultr in tasks 2.1 and 3.1.
 

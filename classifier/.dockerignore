@@ -2,3 +2,4 @@
 __pycache__
 *.npy
 deploy/.env
+.venv-tfidf
