@@ -91,7 +91,7 @@ Planned after the MVP works, not part of the MVP:
 **Decoupling rules (firm requirement from Tuan).** Follow these in any implementation:
 
 - The gateway and the web app share **only the versioned contract** (event schema, query API schema and sample fixtures), never code. TypeScript types generated from the schemas are fine. Neither imports from the other.
-- Data flows **one way**. The web app subscribes to events and may **read** the query API, but never writes to the gateway or calls Photon or the classifier.
+- Data flows **one way**. The web app subscribes to events and may **read** the query API, but never writes to the gateway or calls Photon or the classifier. **One exception (Tuan, 2026-11-08):** the "Clear chats" button calls `DELETE /api/messages`, which deletes every stored message on the gateway (or the Vercel backup's Atlas inbox). It is unauthenticated by choice, so anyone who can open the page can wipe the inbox.
 - Interception behaves identically with zero, one or many displays connected. Publishing is fire-and-forget, so a crashed or slow display can never delay or change a block decision or the webhook response.
 - Each side runs and is testable alone. The gateway uses recorded webhook payloads and a fake classifier. The web app uses a mock event source and mock query responses from fixture files, and the live URLs are configuration, not code.
 - Events never contain raw phone numbers or iMessage handles, Photon message/space ids, or credentials. They use opaque participant IDs and masked display strings.

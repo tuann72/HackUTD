@@ -32,6 +32,7 @@ Every feature has a plan in [`docs/features/`](docs/features/) with ordered task
 
 | Feature | Task | Branch | Worked on by | Status | PR |
 |---|---|---|---|---|---|
+| Message UI | "Clear chats" deletes every message (`DELETE /api/messages` on the gateway and the Vercel backup) instead of hiding them | `feat/web-clear-deletes` | Tuan + Claude Code | In review | — |
 | Initial 3D scene | Sender label missing: draw each label inside its blob (bobs with it), pill background | `fix/scene-sender-label` | Tuan + Claude Code | In review | — |
 | Message UI | Remove the count/category tags under the T-Gate title | `fix/web-header-remove-tags` | Tuan + Claude Code | Done | [#42](https://github.com/tuann72/HackUTD/pull/42) |
 | Message UI | Collapsible Inbox and Blocked sections | `feat/web-collapsible-lists` | Tuan + Claude Code | Done | [#41](https://github.com/tuann72/HackUTD/pull/41) |

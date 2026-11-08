@@ -13,6 +13,7 @@ The only thing the gateway and the web app share (see `AGENTS.md`, "Decoupling r
 - Query: `limit` (1–200, default 100).
 - Returns `{ "schema": "t-gate.query-api", "version": 1, "messages": [...] }`, newest first.
 - The UI re-fetches the whole list each poll, because a message's `action` changes from `pending` once it's classified.
+- `DELETE /api/messages` deletes every message and returns `{ "ok": true, "cleared": <n> }`. It's the web UI's "Clear chats" button and the only write the web app makes (Tuan, 2026-11-08). Unauthenticated.
 
 Each message:
 

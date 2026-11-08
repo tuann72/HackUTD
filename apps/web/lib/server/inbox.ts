@@ -166,6 +166,8 @@ export interface Store {
   insert(key: string, msg: Message): Promise<boolean>;
   update(id: string, patch: Pick<Message, "action" | "reason" | "verdict">): Promise<void>;
   list(limit: number): Promise<Message[]>;
+  /** Deletes every message. Returns how many were deleted. */
+  clear(): Promise<number>;
 }
 
 /** Tests and local dev only: Vercel cold starts lose it. */
@@ -181,6 +183,11 @@ export class MemoryStore implements Store {
   }
   async list(limit: number) {
     return [...this.rows.values()].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt)).slice(0, limit);
+  }
+  async clear() {
+    const n = this.rows.size;
+    this.rows.clear();
+    return n;
   }
 }
 
@@ -202,6 +209,9 @@ export class MongoStore implements Store {
   }
   async list(limit: number) {
     return (await this.col.find({}, { projection: { _id: 0 } }).sort({ receivedAt: -1 }).limit(limit).toArray()) as Message[];
+  }
+  async clear() {
+    return (await this.col.deleteMany({})).deletedCount;
   }
 }
 
